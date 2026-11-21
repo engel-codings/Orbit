@@ -1,771 +1,1098 @@
 package de.engelcode.orbit
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RadialGradient
-import android.graphics.RectF
-import android.graphics.Shader
-import android.graphics.Typeface
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlin.math.ceil
-import kotlin.math.cos
+import android.view.MotionEvent
+import java.util.TimeZone
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.math.sqrt
-import kotlin.random.Random
 
 /**
- * ORBIT – Spiellogik und Zeichnen.
- *
- * Welt-Koordinaten: Bildschirmbreite = 1000 Einheiten, egal welches Handy.
- * Alles wird einmal vorbereitet (Glow-Bilder, Farben, Pfade) – im Spiel selbst
- * wird pro Bild nichts Neues erzeugt. Das hält alte Geräte bei 60 FPS.
+ * ORBIT – Bildschirme, Menüs, Shop, Level-Karte, Einstellungen.
+ * Die eigentliche Spielwelt steckt in World.kt.
  */
-class Game(context: Context) {
+class Game(context: Context) : World.Listener {
 
     companion object {
-        const val WORLD_W = 1000f
-        const val FLY_SPEED = 950f        // Fluggeschwindigkeit
-        const val ORBIT_SPEED = 520f      // Geschwindigkeit auf der Umlaufbahn
-        const val GRAVITY = 2.6e7f        // Stärke der Anziehung beim Fliegen
-        const val CAPTURE = 110f          // Fangzone um jeden Planeten
-        const val ORBIT_GAP = 50f         // Abstand der Umlaufbahn zur Oberfläche
-        const val MAX_PLANETS = 7
-        const val MAX_STARS = 7
-        const val MAX_PARTICLES = 120
-        const val TRAIL = 24
-        const val BG = 0xFF0B0E1A.toInt()
+        const val VERSION_CODE = 2
+        const val VERSION_NAME = "0.2.0"
+        const val W = 1000f
 
-        val PALETTE = intArrayOf(
-            0xFF2EC4B6.toInt(), // Türkis
-            0xFFFF6B6B.toInt(), // Koralle
-            0xFF9B5DE5.toInt(), // Violett
-            0xFFF4A261.toInt(), // Bernstein
-            0xFF4CC9F0.toInt(), // Himmelblau
-            0xFFF15BB5.toInt()  // Pink
+        // Knopf-Stile
+        private const val S_PRIMARY = 0
+        private const val S_SECONDARY = 1
+        private const val S_DANGER = 2
+        private const val S_PAUSE = 3
+        private const val S_BACK = 4
+        private const val S_TAB = 5
+        private const val S_ROW = 6
+        private const val S_GREEN = 7
+
+        // Dialoge
+        private const val D_NONE = 0
+        private const val D_BUY = 1
+        private const val D_RESET = 2
+        private const val D_DAILY = 3
+        private const val D_NEWS = 4
+
+        private val NEWS = arrayOf(
+            "• Level-Reise: Erde bis Saturn (50 Level)",
+            "• Shop mit 12 Skins und 7 Spuren",
+            "• Wiederbelebungen (bis zu 3)",
+            "• Sound, Musik und Vibration",
+            "• Einstellungen, Statistik, Pause",
+            "• Täglicher Bonus und Perfekt-Serien",
+            "• Neu: Eis, Gasriesen, Schwarze Löcher"
         )
-        val STAR_COLOR = 0xFFFFD166.toInt()
-        val PLAYER_COLOR = 0xFFE8FBFF.toInt()
     }
 
-    private enum class State { MENU, PLAYING, DEAD }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS }
 
-    private class Planet {
-        var x = 0f; var y = 0f; var r = 0f
-        var baseX = 0f; var amp = 0f; var speed = 0f; var phase = 0f
-        var colorIdx = 0
-        var active = false
+    private class Btn(val id: Int, var label: String, val style: Int) {
+        var x = 0f; var y = 0f; var w = 0f; var h = 0f
+        var visible = true
+        fun set(x: Float, y: Float, w: Float, h: Float) { this.x = x; this.y = y; this.w = w; this.h = h }
+        fun hit(px: Float, py: Float) = visible && px >= x && px <= x + w && py >= y && py <= y + h
     }
 
-    private class Star {
-        var x = 0f; var y = 0f; var spin = 0f
-        var active = false
-    }
+    private val save = Save(context)
+    private val sound = Sound(context, save)
+    private val gfx = Gfx()
+    private val world = World(gfx)
 
-    private class Particle {
-        var x = 0f; var y = 0f; var vx = 0f; var vy = 0f
-        var life = 0f; var maxLife = 1f; var size = 0f; var color = 0
-    }
-
-    // ---------- Speicher ----------
-    private val prefs = context.getSharedPreferences("orbit", Context.MODE_PRIVATE)
-    private var best = prefs.getInt("best", 0)
-    private var totalStars = prefs.getInt("stars", 0)
-
-    var onHaptic: ((Boolean) -> Unit)? = null
-
-    // ---------- Bildschirm ----------
     private var scale = 1f
-    private var worldH = 1800f
+    private var H = 1800f
     private var ready = false
 
-    // ---------- Zustand ----------
-    private var state = State.MENU
+    private var screen = Screen.MENU
+    private var screenTime = 0f
     private var time = 0f
-    private var stateTime = 0f
-    @Volatile private var tapPending = false
-    @Volatile private var paused = false
+
+    // ---- Knöpfe
+    private val bLevels = Btn(1, "LEVEL", S_PRIMARY)
+    private val bEndless = Btn(2, "ENDLOS", S_SECONDARY)
+    private val bShop = Btn(3, "SHOP", S_SECONDARY)
+    private val bStats = Btn(4, "STATISTIK", S_SECONDARY)
+    private val bSettings = Btn(5, "EINSTELLUNGEN", S_SECONDARY)
+    private val bBack = Btn(6, "", S_BACK)
+    private val bPause = Btn(7, "", S_PAUSE)
+    private val bResume = Btn(8, "WEITER", S_PRIMARY)
+    private val bRestart = Btn(9, "NEUSTART", S_SECONDARY)
+    private val bQuit = Btn(10, "MENÜ", S_SECONDARY)
+    private val bRevive = Btn(11, "WIEDERBELEBEN", S_GREEN)
+    private val bAgain = Btn(12, "NOCHMAL", S_PRIMARY)
+    private val bLeave = Btn(13, "MENÜ", S_SECONDARY)
+    private val bNext = Btn(14, "NÄCHSTES LEVEL", S_PRIMARY)
+    private val bToMap = Btn(15, "ZUR KARTE", S_SECONDARY)
+    private val bTab0 = Btn(16, "SKINS", S_TAB)
+    private val bTab1 = Btn(17, "SPUREN", S_TAB)
+    private val bTab2 = Btn(18, "EXTRAS", S_TAB)
+    private val bRow = Array(5) { Btn(20 + it, "", S_ROW) }
+    private val bReset = Btn(30, "FORTSCHRITT ZURÜCKSETZEN", S_DANGER)
+    private val bDlgA = Btn(31, "OK", S_PRIMARY)
+    private val bDlgB = Btn(32, "ABBRECHEN", S_SECONDARY)
+    private val bBuyRevive = Btn(33, "KAUFEN", S_PRIMARY)
+
+    private val menuBtns = arrayOf(bLevels, bEndless, bShop, bStats, bSettings)
+    private val playBtns = arrayOf(bPause)
+    private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
+    private val overBtns = arrayOf(bRevive, bAgain, bLeave)
+    private val doneBtns = arrayOf(bNext, bToMap)
+    private val shopBtns = arrayOf(bBack, bTab0, bTab1, bTab2, bBuyRevive)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bReset)
+    private val backBtns = arrayOf(bBack)
+    private val dlgBtns = arrayOf(bDlgA, bDlgB)
+    private val noBtns = arrayOf<Btn>()
+
+    // ---- Eingabe
+    private var pressed: Btn? = null
+    private var downX = 0f
+    private var downY = 0f
+    private var dragging = false
+    private var scrollStart = 0f
+    private var shopScroll = 0f
+    private var mapScroll = 0f
+
+    // ---- Dialog / Toast
+    private var dialog = D_NONE
+    private var dlgTitle = ""
+    private var dlgLines: Array<String> = arrayOf()
+    private var dlgTwo = false
+    private var dlgTop = 0f
+    private var dlgH = 0f
+    private var toast = ""
+    private var toastT = 0f
+    private var pendingTab = 0
+    private var pendingItem = 0
+    private var pendingDay = 0L
+    private var pendingStreak = 0
+    private var pendingBonus = 0
+    private var newsChecked = false
+
+    // ---- Shop
+    private var shopTab = 0
+    private val skinPrice = Array(Skins.skins.size) { Skins.skins[it].price.toString() }
+    private val trailPrice = Array(Skins.trails.size) { Skins.trails[it].price.toString() }
+    private val prevX = FloatArray(24)
+    private val prevY = FloatArray(24)
+
+    // ---- Lauf
+    private var runLevel = 0
+    private var runTime = 0f
+    private var cStars = 0; private var cBonus = 0; private var cCaptures = 0; private var cPerfects = 0
+    private var runCounted = false
+    private var runEarned = 0
     private var newRecord = false
+    private var winTimer = 0f
+    private var levelReward = 0
+    private var firstClear = false
 
-    private var camY = 0f
-    private var shake = 0f
-
-    private val planets = Array(MAX_PLANETS) { Planet() }
-    private val stars = Array(MAX_STARS) { Star() }
-    private val particles = Array(MAX_PARTICLES) { Particle() }
-    private var genCount = 0
-    private var lastGenX = 0f
-    private var lastGenY = 0f
-
-    // Spieler
-    private var plX = 0f; private var plY = 0f
-    private var vx = 0f; private var vy = 0f
-    private var current: Planet? = null
-    private var lastPlanet: Planet? = null
-    private var angle = 0f
-    private var orbitR = 0f
-    private var orbitTarget = 0f
-    private var dir = 1f
-    private var flyTime = 0f
-    private val trailX = FloatArray(TRAIL)
-    private val trailY = FloatArray(TRAIL)
-    private var trailHead = 0
-    private var trailCount = 0
-
-    private var score = 0
-    private var runStars = 0
-
-    // "PERFEKT!"-Einblendung
-    private var popT = 0f
-    private var popX = 0f
-    private var popY = 0f
-
-    // FPS-Anzeige (zum Testen)
-    private var fpsAcc = 0f
-    private var fpsFrames = 0
-    private var fpsShown = 60
-
-    // ---------- Grafik (einmal vorbereitet) ----------
-    private val planetGlow = Array(PALETTE.size) { makeGlow(PALETTE[it], 0x80) }
-    private val starGlow = makeGlow(STAR_COLOR, 0x70)
-    private val playerGlow = makeGlow(0xFF7FE7FF.toInt(), 0xA0)
-
-    private val bmpPaint = Paint(Paint.FILTER_BITMAP_FLAG)
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val trailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; color = PLAYER_COLOR
-    }
-    private val starfieldPaint = Array(3) {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            strokeCap = Paint.Cap.ROUND
-            strokeWidth = 2.5f + it * 1.5f
-            alpha = 60 + it * 60
-        }
-    }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    private val smallText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT
-    }
-    private val overlayPaint = Paint().apply { color = Color.argb(170, 5, 7, 15) }
-    private val rect = RectF()
-    private val starPath = Path().apply {
-        // 4-zackiger Stern, Radius 1 (wird beim Zeichnen skaliert)
-        moveTo(0f, -1f)
-        quadTo(0.18f, -0.18f, 1f, 0f)
-        quadTo(0.18f, 0.18f, 0f, 1f)
-        quadTo(-0.18f, 0.18f, -1f, 0f)
-        quadTo(-0.18f, -0.18f, 0f, -1f)
-        close()
-    }
-
-    private val layerPts = Array(3) { FloatArray(0) }
-    private val layerDepth = floatArrayOf(0.04f, 0.12f, 0.25f)
-
-    // Text-Cache, damit pro Bild keine neuen Strings entstehen
-    private var scoreStr = "0"; private var scoreStrVal = -1
-    private var starsStr = "0"; private var starsStrVal = -1
-    private var fpsStr = "60 FPS"; private var fpsStrVal = -1
+    // ---- Texte (Cache)
+    private var fpsAcc = 0f; private var fpsFrames = 0; private var fpsShown = 60
+    private var fpsStr = "60 FPS"; private var fpsVal = -1
+    private var scoreStr = "0"; private var scoreVal = -1
+    private var starsStr = "0"; private var starsVal = -1
+    private var progStr = ""; private var progVal = -1
+    private var levelStr = ""
     private var bestStr = ""
+    private var earnedStr = ""
+    private var reviveStr = ""
+    private var statLabels = arrayOf<String>()
+    private var statValues = arrayOf<String>()
+    private val levelNum = Array(Levels.COUNT + 1) { it.toString() }
+    private var musicTimer = 0f
 
-    // =====================================================================
-    //  Steuerung von außen
-    // =====================================================================
-
-    fun tap() { tapPending = true }
-
-    fun onPause() {
-        if (state == State.PLAYING) paused = true
+    init {
+        world.listener = this
+        world.reduced = save.lowGfx
     }
+
+    // ===================================================================== Von außen
 
     fun resize(w: Int, h: Int) {
         if (w <= 0 || h <= 0) return
-        scale = w / WORLD_W
-        worldH = h / scale
-        buildStarfield()
+        scale = w / W
+        H = h / scale
+        world.resize(H)
         if (!ready) {
-            resetWorld()
+            world.reset(0)
             ready = true
         }
+        layout()
     }
 
-    // =====================================================================
-    //  Welt aufbauen
-    // =====================================================================
+    fun onPause() {
+        if (screen == Screen.PLAYING && !world.won) go(Screen.PAUSED)
+        sound.pauseAll()
+    }
 
-    private fun buildStarfield() {
-        val rnd = Random(7)
-        for (l in 0 until 3) {
-            val n = 40 + l * 10
-            val arr = FloatArray(n * 2)
-            for (i in 0 until n) {
-                arr[i * 2] = rnd.nextFloat() * WORLD_W
-                arr[i * 2 + 1] = rnd.nextFloat() * worldH
-            }
-            layerPts[l] = arr
+    fun onResume() {
+        sound.resumeAll()
+    }
+
+    fun release() = sound.release()
+
+    /** Zurück-Taste. false = App verlassen. */
+    fun onBack(): Boolean {
+        if (dialog != D_NONE) {
+            if (dialog == D_DAILY) claimDaily() else closeDialog()
+            return true
         }
-    }
-
-    private fun resetWorld() {
-        for (p in planets) p.active = false
-        for (s in stars) s.active = false
-        for (p in particles) p.life = 0f
-        camY = 0f
-        score = 0
-        runStars = 0
-        genCount = 0
-        newRecord = false
-        shake = 0f
-        popT = 0f
-        bestStr = "Rekord: $best"
-
-        val first = planets[0]
-        setupPlanet(first, WORLD_W / 2f, worldH * 0.70f, 95f, 0f)
-        lastGenX = first.x
-        lastGenY = first.y
-        genCount = 1
-        fillPlanets()
-
-        current = first
-        lastPlanet = null
-        angle = -PI.toFloat() / 2f
-        orbitTarget = first.r + ORBIT_GAP
-        orbitR = orbitTarget
-        dir = 1f
-        plX = first.x + cos(angle) * orbitR
-        plY = first.y + sin(angle) * orbitR
-        trailCount = 0
-        camY = first.y - worldH * 0.70f
-    }
-
-    private fun setupPlanet(p: Planet, x: Float, y: Float, r: Float, amp: Float) {
-        p.baseX = x; p.x = x; p.y = y; p.r = r
-        p.amp = amp
-        p.speed = 0.6f + Random.nextFloat() * 0.8f
-        p.phase = Random.nextFloat() * 6.28f
-        p.colorIdx = Random.nextInt(PALETTE.size)
-        p.active = true
-    }
-
-    private fun fillPlanets() {
-        var guard = 0
-        while (guard++ < MAX_PLANETS && spawnNext()) { }
-    }
-
-    /** Setzt den nächsten Planeten oberhalb des letzten. */
-    private fun spawnNext(): Boolean {
-        var p: Planet? = null
-        for (q in planets) if (!q.active) { p = q; break }
-        if (p == null) return false
-
-        val d = min(1f, genCount / 40f)              // Schwierigkeit 0..1
-        val r = (80f - 30f * d) + Random.nextFloat() * (35f - 5f * d)
-        val gap = 400f + 120f * d + Random.nextFloat() * 160f
-        var amp = 0f
-        if (genCount >= 8 && Random.nextFloat() < 0.25f + 0.45f * d) {
-            amp = 60f + Random.nextFloat() * 120f * (0.5f + d)
+        when (screen) {
+            Screen.MENU -> return false
+            Screen.PLAYING -> if (!world.won) go(Screen.PAUSED)
+            Screen.PAUSED -> go(Screen.PLAYING)
+            Screen.GAMEOVER, Screen.LEVELDONE -> leaveRun()
+            Screen.MAP, Screen.SHOP, Screen.SETTINGS, Screen.STATS -> go(Screen.MENU)
         }
-        val maxAmp = WORLD_W / 2f - r - 80f
-        if (amp > maxAmp) amp = max(0f, maxAmp)
-        val margin = r + 70f + amp
-        val x = margin + Random.nextFloat() * (WORLD_W - 2f * margin)
-        val y = lastGenY - gap
-
-        setupPlanet(p, x, y, r, amp)
-
-        // Stern zwischen den Planeten
-        if (Random.nextFloat() < 0.65f) {
-            for (s in stars) if (!s.active) {
-                s.x = ((lastGenX + x) / 2f + (Random.nextFloat() - 0.5f) * 240f).coerceIn(60f, WORLD_W - 60f)
-                s.y = (lastGenY + y) / 2f
-                s.spin = Random.nextFloat() * 6f
-                s.active = true
-                break
-            }
-        }
-        lastGenX = x
-        lastGenY = y
-        genCount++
+        sound.play(Sound.CLICK)
         return true
     }
 
-    // =====================================================================
-    //  Update
-    // =====================================================================
+    // ===================================================================== Layout
+
+    private fun layout() {
+        val cx = W / 2f
+        // Menü
+        val my = H * 0.38f
+        bLevels.set(cx - 300f, my, 600f, 150f)
+        bEndless.set(cx - 300f, my + 175f, 600f, 125f)
+        bShop.set(cx - 300f, my + 325f, 290f, 120f)
+        bStats.set(cx + 10f, my + 325f, 290f, 120f)
+        bSettings.set(cx - 300f, my + 470f, 600f, 120f)
+        // Allgemein
+        bBack.set(40f, 50f, 120f, 120f)
+        bPause.set(40f, 50f, 120f, 120f)
+        // Pause
+        val py = H * 0.42f
+        bResume.set(cx - 280f, py, 560f, 140f)
+        bRestart.set(cx - 280f, py + 170f, 560f, 125f)
+        bQuit.set(cx - 280f, py + 320f, 560f, 125f)
+        // Game Over
+        val gy = H * 0.58f
+        bRevive.set(cx - 280f, gy, 560f, 135f)
+        bAgain.set(cx - 280f, gy + 160f, 560f, 135f)
+        bLeave.set(cx - 280f, gy + 320f, 560f, 120f)
+        // Level geschafft
+        bNext.set(cx - 300f, H * 0.62f, 600f, 140f)
+        bToMap.set(cx - 300f, H * 0.62f + 170f, 600f, 125f)
+        // Shop
+        bTab0.set(40f, 210f, 296f, 96f)
+        bTab1.set(352f, 210f, 296f, 96f)
+        bTab2.set(664f, 210f, 296f, 96f)
+        bBuyRevive.set(cx - 260f, 820f, 520f, 130f)
+        // Einstellungen
+        for (i in 0 until 5) bRow[i].set(40f, 260f + i * 140f, 920f, 115f)
+        bReset.set(80f, 260f + 5 * 140f + 40f, 840f, 115f)
+    }
+
+    // ===================================================================== Ablauf
+
+    private fun go(s: Screen) {
+        screen = s
+        screenTime = 0f
+        pressed = null
+        dragging = false
+        when (s) {
+            Screen.STATS -> buildStats()
+            Screen.MAP -> {
+                val cur = min(save.levelDone + 1, Levels.COUNT)
+                mapScroll = clampMap(mapU(cur) - H / 2f + 450f)
+            }
+            Screen.SHOP -> shopScroll = 0f
+            else -> {}
+        }
+    }
+
+    private fun startRun(level: Int) {
+        world.reduced = save.lowGfx
+        world.reset(level)
+        runLevel = level
+        runTime = 0f
+        cStars = 0; cBonus = 0; cCaptures = 0; cPerfects = 0
+        runCounted = false; runEarned = 0; newRecord = false
+        winTimer = 0f
+        levelStr = if (level > 0) "LEVEL $level" else ""
+        progVal = -1
+        go(Screen.PLAYING)
+    }
+
+    /** Lauf beenden und zurück (Karte oder Menü). */
+    private fun leaveRun() {
+        world.reset(0)
+        go(if (runLevel > 0) Screen.MAP else Screen.MENU)
+    }
+
+    /** Überträgt Sterne und Statistik des Laufs in den Speicherstand (nur die Änderung). */
+    private fun commitRun() {
+        val bonus = if (runLevel == 0) world.score / 5 else 0
+        val add = (world.runStars - cStars) + (bonus - cBonus)
+        save.stars += add
+        save.starsCollected += world.runStars - cStars
+        save.planets += world.captures - cCaptures
+        save.perfects += world.perfects - cPerfects
+        if (world.bestStreak > save.bestStreak) save.bestStreak = world.bestStreak
+        if (runLevel == 0 && world.score > save.best) { save.best = world.score; newRecord = true }
+        save.playTime += runTime; runTime = 0f
+        if (!runCounted) { save.games++; runCounted = true }
+        cStars = world.runStars; cBonus = bonus; cCaptures = world.captures; cPerfects = world.perfects
+        runEarned += add
+        save.flush()
+    }
+
+    // ===================================================================== World-Ereignisse
+
+    override fun onLaunch() {
+        sound.play(Sound.LAUNCH, 1f, 0.6f)
+    }
+
+    override fun onCapture(perfect: Boolean, streak: Int) {
+        sound.play(Sound.CAPTURE, 1f + 0.1f * min(streak, 6))
+        if (perfect) sound.play(Sound.PERFECT, 1f, 0.8f)
+        sound.vibrate(15)
+    }
+
+    override fun onStar() {
+        sound.play(Sound.STAR)
+    }
+
+    override fun onDeath() {
+        sound.play(Sound.DEATH)
+        sound.vibrate(160)
+        commitRun()
+        earnedStr = "+$runEarned"
+        bestStr = "Rekord: ${save.best}"
+        reviveStr = "WIEDERBELEBEN (${save.revives})"
+        bRevive.label = reviveStr
+        bLeave.label = if (runLevel > 0) "ZUR KARTE" else "MENÜ"
+        go(Screen.GAMEOVER)
+    }
+
+    override fun onGoal() {
+        sound.play(Sound.WIN)
+        sound.vibrate(80)
+        commitRun()
+        firstClear = runLevel > save.levelDone
+        levelReward = if (firstClear) Levels.reward(runLevel) else 0
+        if (firstClear) {
+            save.levelDone = runLevel
+            save.stars += levelReward
+            save.flush()
+        }
+        runEarned += levelReward
+        earnedStr = "+$runEarned"
+        winTimer = 1.3f
+    }
+
+    // ===================================================================== Update
 
     fun update(dt: Float) {
         if (!ready) return
-
-        // FPS messen
         fpsAcc += dt; fpsFrames++
         if (fpsAcc >= 0.5f) {
             fpsShown = (fpsFrames / fpsAcc + 0.5f).toInt()
             fpsAcc = 0f; fpsFrames = 0
         }
-
-        val tap = tapPending
-        tapPending = false
-
-        if (paused) {
-            if (tap) paused = false
-            return
-        }
-
         time += dt
-        stateTime += dt
+        screenTime += dt
+        musicTimer -= dt
+        if (musicTimer <= 0f) { musicTimer = 0.5f; sound.syncMusic() }
+        if (toastT > 0f) toastT -= dt
 
-        when (state) {
-            State.MENU -> if (tap) {
-                state = State.PLAYING; stateTime = 0f
-                launch()
-            }
-            State.PLAYING -> if (tap && current != null) launch()
-            State.DEAD -> if (tap && stateTime > 0.6f) {
-                resetWorld()
-                state = State.PLAYING; stateTime = 0f
-            }
-        }
-
-        // Planeten bewegen
-        for (p in planets) if (p.active && p.amp > 0f) {
-            p.x = p.baseX + sin(time * p.speed + p.phase) * p.amp
-        }
-
-        // Physik in kleinen Schritten (genaue Fangzone, auch bei 30 FPS)
-        if (state != State.DEAD) {
-            val steps = max(1, ceil(dt / (1f / 240f)).toInt())
-            val h = dt / steps
-            for (i in 0 until steps) {
-                if (!stepPlayer(h)) break
-            }
-            // Spur
-            trailX[trailHead] = plX; trailY[trailHead] = plY
-            trailHead = (trailHead + 1) % TRAIL
-            if (trailCount < TRAIL) trailCount++
-        }
-
-        // Sterne drehen + einsammeln
-        for (s in stars) if (s.active) {
-            s.spin += dt * 2f
-            if (state != State.DEAD) {
-                val dx = s.x - plX; val dy = s.y - plY
-                if (dx * dx + dy * dy < 55f * 55f) {
-                    s.active = false
-                    runStars++
-                    burst(s.x, s.y, STAR_COLOR, 12, 260f)
-                    onHaptic?.invoke(false)
+        when (screen) {
+            Screen.PAUSED -> {}
+            Screen.PLAYING -> {
+                world.update(dt, true)
+                runTime += dt
+                if (winTimer > 0f) {
+                    winTimer -= dt
+                    if (winTimer <= 0f) go(Screen.LEVELDONE)
                 }
             }
-            if (s.y > camY + worldH + 200f) s.active = false
+            else -> world.update(dt, false)
         }
 
-        // Kamera
-        val anchor = current ?: lastPlanet
-        var target = camY
-        if (anchor != null) target = anchor.y - worldH * 0.70f
-        if (current == null && state == State.PLAYING) target = min(target, plY - worldH * 0.40f)
-        camY += (target - camY) * min(1f, dt * 3.5f)
-
-        // Alte Planeten unten recyceln
-        for (p in planets) if (p.active && p !== current && p !== lastPlanet && p.y > camY + worldH + 300f) {
-            p.active = false
-        }
-        fillPlanets()
-
-        // Partikel
-        for (p in particles) if (p.life > 0f) {
-            p.life -= dt
-            p.x += p.vx * dt; p.y += p.vy * dt
-            p.vx *= 0.96f; p.vy *= 0.96f
-        }
-
-        if (shake > 0f) shake = max(0f, shake - dt * 2.5f)
-        if (popT > 0f) { popT -= dt; popY -= dt * 60f }
+        if (screen == Screen.MENU && dialog == D_NONE) checkPopups()
     }
 
-    /** Ein Physik-Schritt. Gibt false zurück, wenn der Spieler gestorben ist. */
-    private fun stepPlayer(h: Float): Boolean {
-        val c = current
-        if (c != null) {
-            orbitR += (orbitTarget - orbitR) * min(1f, h * 5f)
-            angle += dir * ORBIT_SPEED / orbitR * h
-            if (angle > 6.2832f) angle -= 6.2832f
-            if (angle < -6.2832f) angle += 6.2832f
-            plX = c.x + cos(angle) * orbitR
-            plY = c.y + sin(angle) * orbitR
-            return true
-        }
-
-        if (state != State.PLAYING) return true
-        flyTime += h
-        var ax = 0f
-        var ay = 0f
-        for (p in planets) {
-            if (!p.active || p === lastPlanet) continue
-            val dx = p.x - plX
-            val dy = p.y - plY
-            val d2 = dx * dx + dy * dy
-            val d = sqrt(d2)
-            if (d < p.r + CAPTURE) {
-                capture(p, d)
-                return true
-            }
-            if (d < 750f) {
-                val k = p.r / 100f
-                val a = GRAVITY * k * k / d2
-                ax += dx / d * a
-                ay += dy / d * a
+    private fun checkPopups() {
+        if (!newsChecked) {
+            newsChecked = true
+            if (save.lastVersion < VERSION_CODE) {
+                val fresh = save.games == 0 && save.best == 0
+                save.lastVersion = VERSION_CODE
+                save.flush()
+                if (!fresh) {
+                    openDialog(D_NEWS, "Neu in Version $VERSION_NAME", NEWS, "SUPER", null)
+                    return
+                }
             }
         }
-        vx += ax * h
-        vy += ay * h
-        val sp = sqrt(vx * vx + vy * vy)
-        if (sp > 0.001f) { vx = vx / sp * FLY_SPEED; vy = vy / sp * FLY_SPEED }
-        plX += vx * h
-        plY += vy * h
-
-        if (plX < -60f || plX > WORLD_W + 60f ||
-            plY > camY + worldH + 80f || plY < camY - worldH * 0.6f ||
-            flyTime > 2.6f
-        ) {
-            die()
-            return false
-        }
-        return true
-    }
-
-    private fun launch() {
-        val c = current ?: return
-        // Tangente der Kreisbahn
-        vx = -sin(angle) * dir * FLY_SPEED
-        vy = cos(angle) * dir * FLY_SPEED
-        lastPlanet = c
-        current = null
-        flyTime = 0f
-    }
-
-    private fun capture(p: Planet, d: Float) {
-        val rx = plX - p.x
-        val ry = plY - p.y
-        current = p
-        angle = atan2(ry, rx)
-        orbitR = d
-        orbitTarget = p.r + ORBIT_GAP
-        val cross = rx * vy - ry * vx
-        dir = if (cross >= 0f) 1f else -1f
-
-        val perfect = d < p.r + 72f
-        score += if (perfect) 2 else 1
-        if (perfect) { popT = 0.9f; popX = plX; popY = plY - 40f }
-        burst(plX, plY, PALETTE[p.colorIdx], if (perfect) 22 else 12, if (perfect) 380f else 260f)
-        onHaptic?.invoke(false)
-    }
-
-    private fun die() {
-        state = State.DEAD
-        stateTime = 0f
-        shake = 1f
-        burst(plX, plY, PLAYER_COLOR, 36, 520f)
-        onHaptic?.invoke(true)
-        if (score > best) {
-            best = score
-            newRecord = true
-        }
-        totalStars += runStars
-        prefs.edit().putInt("best", best).putInt("stars", totalStars).apply()
-        bestStr = "Rekord: $best"
-    }
-
-    private fun burst(x: Float, y: Float, color: Int, n: Int, speed: Float) {
-        var made = 0
-        for (p in particles) {
-            if (made >= n) break
-            if (p.life > 0f) continue
-            val a = Random.nextFloat() * 6.2832f
-            val s = speed * (0.3f + Random.nextFloat() * 0.7f)
-            p.x = x; p.y = y
-            p.vx = cos(a) * s; p.vy = sin(a) * s
-            p.maxLife = 0.4f + Random.nextFloat() * 0.5f
-            p.life = p.maxLife
-            p.size = 4f + Random.nextFloat() * 6f
-            p.color = color
-            made++
+        val today = today()
+        if (today > save.lastDay && screenTime > 0.4f) {
+            pendingDay = today
+            pendingStreak = if (today == save.lastDay + 1) save.dayStreak + 1 else 1
+            pendingBonus = 15 + 5 * min(pendingStreak - 1, 7)
+            openDialog(
+                D_DAILY, "Täglicher Bonus",
+                arrayOf("Tag $pendingStreak in Folge", "+$pendingBonus Sterne"), "ABHOLEN", null
+            )
         }
     }
 
-    // =====================================================================
-    //  Zeichnen
-    // =====================================================================
+    private fun today(): Long {
+        val now = System.currentTimeMillis()
+        return (now + TimeZone.getDefault().getOffset(now)) / 86_400_000L
+    }
+
+    // ===================================================================== Eingabe
+
+    fun onTouch(action: Int, px: Float, py: Float) {
+        if (!ready) return
+        val x = px / scale
+        val y = py / scale
+        when (action) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = x; downY = y; dragging = false
+                pressed = null
+                if (dialog != D_NONE) { pressed = hit(dlgBtns, x, y); return }
+                if (screen == Screen.PLAYING) {
+                    if (bPause.hit(x, y)) { pressed = bPause; return }
+                    world.launch()
+                    return
+                }
+                if ((screen == Screen.GAMEOVER || screen == Screen.LEVELDONE) && screenTime < 0.5f) return
+                scrollStart = if (screen == Screen.MAP) mapScroll else shopScroll
+                pressed = hit(activeButtons(), x, y)
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (dialog == D_NONE && screen == Screen.PLAYING) world.launch()
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (dialog != D_NONE) return
+                if (screen != Screen.SHOP && screen != Screen.MAP) return
+                if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
+                if (dragging) {
+                    if (screen == Screen.MAP) mapScroll = clampMap(scrollStart + (y - downY))
+                    else shopScroll = clampShop(scrollStart - (y - downY))
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                val p = pressed
+                pressed = null
+                if (p != null) {
+                    if (p.hit(x, y)) onButton(p.id)
+                    return
+                }
+                if (dialog != D_NONE || dragging) return
+                if (screen == Screen.SHOP) shopTap(x, y)
+                else if (screen == Screen.MAP) mapTap(x, y)
+            }
+            MotionEvent.ACTION_CANCEL -> { pressed = null; dragging = false }
+        }
+    }
+
+    private fun hit(btns: Array<Btn>, x: Float, y: Float): Btn? {
+        for (b in btns) if (b.hit(x, y)) return b
+        return null
+    }
+
+    private fun activeButtons(): Array<Btn> = when (screen) {
+        Screen.MENU -> menuBtns
+        Screen.PLAYING -> playBtns
+        Screen.PAUSED -> pauseBtns
+        Screen.GAMEOVER -> { bRevive.visible = save.revives > 0; overBtns }
+        Screen.LEVELDONE -> { bNext.visible = runLevel < Levels.COUNT; doneBtns }
+        Screen.SHOP -> { bBuyRevive.visible = shopTab == 2; shopBtns }
+        Screen.SETTINGS -> setBtns
+        Screen.MAP, Screen.STATS -> backBtns
+    }
+
+    private fun onButton(id: Int) {
+        sound.play(Sound.CLICK)
+        when (id) {
+            bLevels.id -> go(Screen.MAP)
+            bEndless.id -> startRun(0)
+            bShop.id -> go(Screen.SHOP)
+            bStats.id -> go(Screen.STATS)
+            bSettings.id -> go(Screen.SETTINGS)
+            bBack.id -> go(Screen.MENU)
+            bPause.id -> go(Screen.PAUSED)
+            bResume.id -> go(Screen.PLAYING)
+            bRestart.id -> { commitRun(); startRun(runLevel) }
+            bQuit.id -> { commitRun(); leaveRun() }
+            bRevive.id -> doRevive()
+            bAgain.id -> startRun(runLevel)
+            bLeave.id -> leaveRun()
+            bNext.id -> startRun(min(runLevel + 1, Levels.COUNT))
+            bToMap.id -> { world.reset(0); go(Screen.MAP) }
+            bTab0.id -> { shopTab = 0; shopScroll = 0f }
+            bTab1.id -> { shopTab = 1; shopScroll = 0f }
+            bTab2.id -> { shopTab = 2; shopScroll = 0f }
+            bBuyRevive.id -> askBuy(2, 0)
+            bRow[0].id -> { save.sound = !save.sound; save.flush() }
+            bRow[1].id -> { save.music = !save.music; save.flush(); sound.syncMusic() }
+            bRow[2].id -> { save.vibration = !save.vibration; save.flush(); sound.vibrate(40) }
+            bRow[3].id -> { save.showFps = !save.showFps; save.flush() }
+            bRow[4].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bReset.id -> openDialog(
+                D_RESET, "Wirklich zurücksetzen?",
+                arrayOf("Sterne, Skins, Level und Statistik", "werden gelöscht."), "LÖSCHEN", "ABBRECHEN"
+            )
+            bDlgA.id -> dialogAnswer(true)
+            bDlgB.id -> dialogAnswer(false)
+        }
+    }
+
+    private fun doRevive() {
+        if (save.revives <= 0) return
+        if (!world.revive()) return
+        save.revives--
+        save.flush()
+        sound.play(Sound.REVIVE)
+        sound.vibrate(60)
+        go(Screen.PLAYING)
+    }
+
+    // ===================================================================== Dialoge
+
+    private fun openDialog(kind: Int, title: String, lines: Array<String>, a: String, b: String?) {
+        dialog = kind
+        dlgTitle = title
+        dlgLines = lines
+        dlgTwo = b != null
+        bDlgA.label = a
+        bDlgB.label = b ?: ""
+        dlgH = 150f + lines.size * 62f + 190f
+        dlgTop = (H - dlgH) / 2f
+        val by = dlgTop + dlgH - 165f
+        if (dlgTwo) {
+            bDlgA.set(110f, by, 375f, 120f)
+            bDlgB.set(515f, by, 375f, 120f)
+            bDlgB.visible = true
+        } else {
+            bDlgA.set(210f, by, 580f, 120f)
+            bDlgB.visible = false
+        }
+        pressed = null
+    }
+
+    private fun closeDialog() { dialog = D_NONE; pressed = null }
+
+    private fun dialogAnswer(yes: Boolean) {
+        val kind = dialog
+        closeDialog()
+        when (kind) {
+            D_BUY -> if (yes) buy(pendingTab, pendingItem)
+            D_RESET -> if (yes) {
+                save.resetProgress()
+                showToast("Fortschritt gelöscht")
+            }
+            D_DAILY -> claimDaily()
+            else -> {}
+        }
+    }
+
+    private fun claimDaily() {
+        closeDialog()
+        save.lastDay = pendingDay
+        save.dayStreak = pendingStreak
+        save.stars += pendingBonus
+        save.flush()
+        sound.play(Sound.BONUS)
+        showToast("+$pendingBonus Sterne!")
+    }
+
+    private fun showToast(msg: String) { toast = msg; toastT = 2.2f }
+
+    // ===================================================================== Shop
+
+    private val cardW = (920f - 48f) / 3f
+    private val cardH = 340f
+    private val gridTop = 340f
+
+    private fun shopCount() = when (shopTab) { 0 -> Skins.skins.size; 1 -> Skins.trails.size; else -> 0 }
+
+    private fun clampShop(v: Float): Float {
+        val rows = (shopCount() + 2) / 3
+        val content = gridTop + rows * (cardH + 24f) + 60f
+        return v.coerceIn(0f, max(0f, content - H))
+    }
+
+    private fun shopTap(x: Float, y: Float) {
+        if (shopTab == 2 || y < gridTop - 10f) return
+        val yy = y + shopScroll - gridTop
+        val col = ((x - 40f) / (cardW + 24f)).toInt()
+        val row = (yy / (cardH + 24f)).toInt()
+        if (col !in 0..2 || yy < 0f) return
+        val lx = x - 40f - col * (cardW + 24f)
+        val ly = yy - row * (cardH + 24f)
+        if (lx > cardW || ly > cardH) return
+        val i = row * 3 + col
+        if (i >= shopCount()) return
+        if (shopTab == 0) {
+            if (save.ownsSkin(i)) { save.skin = i; save.flush(); sound.play(Sound.CLICK) }
+            else askBuy(0, i)
+        } else {
+            if (save.ownsTrail(i)) { save.trail = i; save.flush(); sound.play(Sound.CLICK) }
+            else askBuy(1, i)
+        }
+    }
+
+    private fun priceOf(tab: Int, i: Int) = when (tab) {
+        0 -> Skins.skins[i].price
+        1 -> Skins.trails[i].price
+        else -> Skins.REVIVE_PRICE
+    }
+
+    private fun nameOf(tab: Int, i: Int) = when (tab) {
+        0 -> Skins.skins[i].name
+        1 -> "Spur „${Skins.trails[i].name}“"
+        else -> "Wiederbelebung"
+    }
+
+    private fun askBuy(tab: Int, i: Int) {
+        if (tab == 2 && save.revives >= Skins.REVIVE_MAX) {
+            sound.play(Sound.ERROR); showToast("Maximal ${Skins.REVIVE_MAX} Wiederbelebungen"); return
+        }
+        val price = priceOf(tab, i)
+        if (save.stars < price) {
+            sound.play(Sound.ERROR)
+            showToast("Dir fehlen noch ${price - save.stars} Sterne")
+            return
+        }
+        pendingTab = tab; pendingItem = i
+        openDialog(D_BUY, "Kaufen?", arrayOf(nameOf(tab, i), "für $price Sterne"), "KAUFEN", "ABBRECHEN")
+    }
+
+    private fun buy(tab: Int, i: Int) {
+        val price = priceOf(tab, i)
+        if (save.stars < price) return
+        save.stars -= price
+        when (tab) {
+            0 -> { save.ownedSkins = save.ownedSkins or (1 shl i); save.skin = i }
+            1 -> { save.ownedTrails = save.ownedTrails or (1 shl i); save.trail = i }
+            else -> save.revives = min(Skins.REVIVE_MAX, save.revives + 1)
+        }
+        save.flush()
+        sound.play(Sound.BUY)
+        sound.vibrate(30)
+        showToast(if (tab == 2) "Wiederbelebung gekauft!" else "Freigeschaltet!")
+    }
+
+    // ===================================================================== Level-Karte
+
+    /** Höhe eines Levels auf der Karte (von unten gezählt). */
+    private fun mapU(level: Int) = (level - 1) * 170f + Levels.section(level) * 300f
+    private fun bodyU(s: Int) = if (s == 0) -320f else mapU(s * 10) + 245f
+    private fun mapX(level: Int) = W / 2f + sin(level * 0.9f) * 250f
+    private fun mapScreenY(u: Float) = H - 450f - u + mapScroll
+
+    private fun clampMap(v: Float): Float {
+        val top = bodyU(5) + 260f
+        return v.coerceIn(0f, max(0f, top + 750f - H))
+    }
+
+    private fun mapTap(x: Float, y: Float) {
+        if (y < 200f) return
+        for (i in 1..Levels.COUNT) {
+            val nx = mapX(i); val ny = mapScreenY(mapU(i))
+            val dx = x - nx; val dy = y - ny
+            if (dx * dx + dy * dy < 75f * 75f) {
+                if (i <= save.levelDone + 1) {
+                    sound.play(Sound.CLICK)
+                    startRun(i)
+                } else {
+                    sound.play(Sound.ERROR)
+                    showToast("Schaffe zuerst Level ${save.levelDone + 1}")
+                }
+                return
+            }
+        }
+    }
+
+    // ===================================================================== Statistik
+
+    private fun buildStats() {
+        val mins = (save.playTime / 60f).toInt()
+        statLabels = arrayOf(
+            "Rekord (Endlos)", "Level geschafft", "Spiele", "Planeten erreicht",
+            "Perfekte Landungen", "Beste Perfekt-Serie", "Sterne gesammelt", "Spielzeit"
+        )
+        statValues = arrayOf(
+            save.best.toString(), "${save.levelDone} / ${Levels.COUNT}", save.games.toString(),
+            save.planets.toString(), save.perfects.toString(), save.bestStreak.toString(),
+            save.starsCollected.toString(), if (mins >= 60) "${mins / 60} h ${mins % 60} min" else "$mins min"
+        )
+    }
+
+    // ===================================================================== Zeichnen
 
     fun draw(c: Canvas) {
-        c.drawColor(BG)
+        c.drawColor(Gfx.BG)
         if (!ready) return
-
         c.save()
         c.scale(scale, scale)
 
-        drawStarfield(c)
+        if (screen != Screen.MAP) world.draw(c, save.skin, save.trail)
 
-        var sx = 0f; var sy = 0f
-        if (shake > 0f) {
-            sx = (Random.nextFloat() - 0.5f) * 28f * shake
-            sy = (Random.nextFloat() - 0.5f) * 28f * shake
+        when (screen) {
+            Screen.MENU -> drawMenu(c)
+            Screen.MAP -> drawMap(c)
+            Screen.PLAYING -> drawHud(c)
+            Screen.PAUSED -> { drawHud(c); drawPause(c) }
+            Screen.GAMEOVER -> drawGameOver(c)
+            Screen.LEVELDONE -> drawLevelDone(c)
+            Screen.SHOP -> drawShop(c)
+            Screen.SETTINGS -> drawSettings(c)
+            Screen.STATS -> drawStats(c)
         }
-        c.save()
-        c.translate(sx, -camY + sy)
 
-        drawPlanets(c)
-        drawStars(c)
-        if (state != State.DEAD) {
-            drawTrail(c)
-            drawAim(c)
-            drawPlayer(c)
+        if (save.showFps) {
+            if (fpsShown != fpsVal) { fpsVal = fpsShown; fpsStr = "$fpsShown FPS" }
+            gfx.text(c, fpsStr, 30f, H - 36f, 30f, Color.WHITE, false, Paint.Align.LEFT, 120)
         }
-        drawParticles(c)
-        drawPop(c)
-
-        c.restore()
-        drawHud(c)
+        if (dialog != D_NONE) drawDialog(c)
+        if (toastT > 0f) drawToast(c)
         c.restore()
     }
 
-    private fun drawStarfield(c: Canvas) {
-        for (l in 0 until 3) {
-            var off = (-camY * layerDepth[l]) % worldH
-            if (off < 0f) off += worldH
-            c.save()
-            c.translate(0f, off)
-            c.drawPoints(layerPts[l], starfieldPaint[l])
-            c.translate(0f, -worldH)
-            c.drawPoints(layerPts[l], starfieldPaint[l])
-            c.restore()
-        }
+    private fun dim(c: Canvas, alpha: Int) {
+        gfx.fill.color = Gfx.BG; gfx.fill.alpha = alpha
+        c.drawRect(0f, 0f, W, H, gfx.fill)
     }
 
-    private fun drawPlanets(c: Canvas) {
-        val top = camY - 300f
-        val bottom = camY + worldH + 300f
-        for (p in planets) {
-            if (!p.active || p.y < top || p.y > bottom) continue
-            val col = PALETTE[p.colorIdx]
+    private fun drawStarsCounter(c: Canvas, value: Int) {
+        if (value != starsVal) { starsVal = value; starsStr = value.toString() }
+        val tw = gfx.textWidth(starsStr, 46f)
+        val right = W - 40f
+        gfx.starShape(c, right - tw - 34f, 108f, 22f, 0f, Gfx.GOLD)
+        gfx.text(c, starsStr, right, 124f, 46f, Color.WHITE, align = Paint.Align.RIGHT)
+    }
 
-            // Glow
-            val g = p.r * 2.3f
-            rect.set(p.x - g, p.y - g, p.x + g, p.y + g)
-            c.drawBitmap(planetGlow[p.colorIdx], null, rect, bmpPaint)
-
-            // Fangzone bzw. Umlaufbahn
-            stroke.color = col
-            if (p === current) {
-                stroke.alpha = 70; stroke.strokeWidth = 3f
-                c.drawCircle(p.x, p.y, orbitTarget, stroke)
-            } else if (p !== lastPlanet) {
-                stroke.alpha = 40; stroke.strokeWidth = 2f
-                c.drawCircle(p.x, p.y, p.r + CAPTURE, stroke)
+    private fun drawBtn(c: Canvas, b: Btn) {
+        if (!b.visible) return
+        val p = b === pressed
+        val ins = if (p) 6f else 0f
+        val l = b.x + ins; val t = b.y + ins; val r = b.x + b.w - ins; val bt = b.y + b.h - ins
+        val cy = b.y + b.h / 2f
+        when (b.style) {
+            S_PRIMARY, S_GREEN -> {
+                val col = if (b.style == S_GREEN) Gfx.GREEN else Gfx.ACCENT
+                gfx.roundRect(c, l, t, r, bt, b.h / 2f, col, if (p) 200 else 255)
+                gfx.text(c, b.label, b.x + b.w / 2f, cy + b.h * 0.13f, b.h * 0.34f, Gfx.BG)
             }
-
-            // Körper
-            fill.color = col
-            c.drawCircle(p.x, p.y, p.r, fill)
-            // Schatten unten rechts
-            fill.color = Color.BLACK; fill.alpha = 55
-            c.drawCircle(p.x + p.r * 0.18f, p.y + p.r * 0.18f, p.r * 0.82f, fill)
-            fill.color = col; fill.alpha = 255
-            c.drawCircle(p.x - p.r * 0.06f, p.y - p.r * 0.06f, p.r * 0.80f, fill)
-            // Glanzpunkt
-            fill.color = Color.WHITE; fill.alpha = 70
-            c.drawCircle(p.x - p.r * 0.35f, p.y - p.r * 0.35f, p.r * 0.22f, fill)
-            fill.alpha = 255
+            S_SECONDARY -> {
+                gfx.roundRect(c, l, t, r, bt, b.h / 2f, Gfx.PANEL2, if (p) 255 else 235)
+                gfx.strokeRoundRect(c, l, t, r, bt, b.h / 2f, Color.WHITE, 2f, 40)
+                gfx.text(c, b.label, b.x + b.w / 2f, cy + b.h * 0.12f, b.h * 0.3f, Color.WHITE)
+            }
+            S_DANGER -> {
+                gfx.roundRect(c, l, t, r, bt, b.h / 2f, Gfx.RED, if (p) 170 else 210)
+                gfx.text(c, b.label, b.x + b.w / 2f, cy + b.h * 0.11f, b.h * 0.28f, Color.WHITE)
+            }
+            S_PAUSE -> {
+                gfx.roundRect(c, l, t, r, bt, 30f, Gfx.PANEL, 200)
+                val cx = b.x + b.w / 2f
+                gfx.roundRect(c, cx - 22f, cy - 28f, cx - 8f, cy + 28f, 5f, Color.WHITE)
+                gfx.roundRect(c, cx + 8f, cy - 28f, cx + 22f, cy + 28f, 5f, Color.WHITE)
+            }
+            S_BACK -> {
+                gfx.roundRect(c, l, t, r, bt, 30f, Gfx.PANEL2, 230)
+                val cx = b.x + b.w / 2f
+                gfx.line.color = Color.WHITE; gfx.line.alpha = 255; gfx.line.strokeWidth = 9f
+                c.drawLine(cx + 10f, cy - 26f, cx - 16f, cy, gfx.line)
+                c.drawLine(cx - 16f, cy, cx + 10f, cy + 26f, gfx.line)
+            }
+            S_TAB -> {
+                val sel = (b === bTab0 && shopTab == 0) || (b === bTab1 && shopTab == 1) || (b === bTab2 && shopTab == 2)
+                gfx.roundRect(c, l, t, r, bt, b.h / 2f, if (sel) Gfx.ACCENT else Gfx.PANEL2, 255)
+                gfx.text(c, b.label, b.x + b.w / 2f, cy + 13f, 36f, if (sel) Gfx.BG else Color.WHITE)
+            }
         }
     }
 
-    private fun drawStars(c: Canvas) {
-        for (s in stars) {
-            if (!s.active) continue
-            if (s.y < camY - 100f || s.y > camY + worldH + 100f) continue
-            rect.set(s.x - 60f, s.y - 60f, s.x + 60f, s.y + 60f)
-            c.drawBitmap(starGlow, null, rect, bmpPaint)
-            val pulse = 22f + sin(time * 5f + s.spin) * 3f
-            c.save()
-            c.translate(s.x, s.y)
-            c.rotate(s.spin * 57.3f)
-            c.scale(pulse, pulse)
-            fill.color = STAR_COLOR
-            c.drawPath(starPath, fill)
-            c.restore()
+    private fun header(c: Canvas, title: String) {
+        dim(c, 235)
+        drawBtn(c, bBack)
+        gfx.text(c, title, W / 2f, 135f, 62f, Color.WHITE)
+    }
+
+    // ---------------------------------------------------------------- Menü
+
+    private fun drawMenu(c: Canvas) {
+        drawStarsCounter(c, save.stars)
+        val ty = H * 0.17f
+        gfx.text(c, "ORBIT", W / 2f, ty, 190f, Color.WHITE)
+        gfx.text(c, "P L A N E T   J U M P", W / 2f, ty + 75f, 38f, Gfx.ACCENT)
+        if (save.best > 0 || save.levelDone > 0) {
+            gfx.text(c, "Level ${save.levelDone} / ${Levels.COUNT}   ·   Rekord ${save.best}", W / 2f, ty + 150f, 36f, Gfx.DIM, false)
         }
+        for (b in menuBtns) drawBtn(c, b)
+        gfx.text(c, "v$VERSION_NAME · Engelcode", W / 2f, H - 40f, 28f, Gfx.DIM, false, alpha = 160)
     }
 
-    private fun drawTrail(c: Canvas) {
-        if (trailCount < 2) return
-        val start = (trailHead - trailCount + TRAIL) % TRAIL
-        var px = trailX[start]
-        var py = trailY[start]
-        for (i in 1 until trailCount) {
-            val idx = (start + i) % TRAIL
-            val f = i.toFloat() / trailCount
-            trailPaint.alpha = (f * 150f).toInt()
-            trailPaint.strokeWidth = 3f + f * 13f
-            c.drawLine(px, py, trailX[idx], trailY[idx], trailPaint)
-            px = trailX[idx]; py = trailY[idx]
-        }
-    }
-
-    private fun drawAim(c: Canvas) {
-        if (current == null) return
-        val tx = -sin(angle) * dir
-        val ty = cos(angle) * dir
-        fill.color = Color.WHITE
-        for (i in 1..6) {
-            fill.alpha = 150 - i * 22
-            val d = 30f + i * 26f
-            c.drawCircle(plX + tx * d, plY + ty * d, 5f - i * 0.4f, fill)
-        }
-        fill.alpha = 255
-    }
-
-    private fun drawPlayer(c: Canvas) {
-        rect.set(plX - 55f, plY - 55f, plX + 55f, plY + 55f)
-        c.drawBitmap(playerGlow, null, rect, bmpPaint)
-        fill.color = PLAYER_COLOR
-        c.drawCircle(plX, plY, 14f, fill)
-    }
-
-    private fun drawParticles(c: Canvas) {
-        for (p in particles) {
-            if (p.life <= 0f) continue
-            val f = p.life / p.maxLife
-            fill.color = p.color
-            fill.alpha = (f * 255f).toInt()
-            c.drawCircle(p.x, p.y, p.size * (0.4f + 0.6f * f), fill)
-        }
-        fill.alpha = 255
-    }
-
-    private fun drawPop(c: Canvas) {
-        if (popT <= 0f) return
-        textPaint.textSize = 54f
-        textPaint.color = STAR_COLOR
-        textPaint.alpha = (min(1f, popT / 0.4f) * 255f).toInt()
-        c.drawText("PERFEKT!", popX, popY, textPaint)
-        textPaint.color = Color.WHITE
-        textPaint.alpha = 255
-    }
+    // ---------------------------------------------------------------- Spiel-HUD
 
     private fun drawHud(c: Canvas) {
-        val cx = WORLD_W / 2f
-
-        // FPS (Testanzeige)
-        if (fpsShown != fpsStrVal) { fpsStrVal = fpsShown; fpsStr = "$fpsShown FPS" }
-        smallText.textAlign = Paint.Align.LEFT
-        smallText.textSize = 30f
-        smallText.alpha = 110
-        c.drawText(fpsStr, 30f, 60f, smallText)
-        smallText.textAlign = Paint.Align.CENTER
-        smallText.alpha = 255
-
-        // Sterne oben rechts
-        val starsNow = totalStars + if (state == State.DEAD) 0 else runStars
-        if (starsNow != starsStrVal) { starsStrVal = starsNow; starsStr = starsNow.toString() }
-        c.save()
-        c.translate(WORLD_W - 150f, 52f)
-        c.scale(18f, 18f)
-        fill.color = STAR_COLOR
-        c.drawPath(starPath, fill)
-        c.restore()
-        smallText.textAlign = Paint.Align.LEFT
-        smallText.textSize = 40f
-        c.drawText(starsStr, WORLD_W - 120f, 66f, smallText)
-        smallText.textAlign = Paint.Align.CENTER
-
-        when (state) {
-            State.MENU -> {
-                textPaint.textSize = 170f
-                textPaint.alpha = 255
-                c.drawText("ORBIT", cx, worldH * 0.28f, textPaint)
-                smallText.textSize = 46f
-                smallText.alpha = (170 + 85 * sin(time * 3f)).toInt().coerceIn(0, 255)
-                c.drawText("Tippe, um abzuspringen", cx, worldH * 0.28f + 100f, smallText)
-                smallText.alpha = 180
-                smallText.textSize = 40f
-                c.drawText(bestStr, cx, worldH * 0.28f + 170f, smallText)
-                smallText.alpha = 255
-            }
-            State.PLAYING -> {
-                if (score != scoreStrVal) { scoreStrVal = score; scoreStr = score.toString() }
-                textPaint.textSize = 120f
-                textPaint.alpha = 230
-                c.drawText(scoreStr, cx, 200f, textPaint)
-                textPaint.alpha = 255
-            }
-            State.DEAD -> {
-                val f = min(1f, stateTime / 0.35f)
-                overlayPaint.alpha = (170 * f).toInt()
-                c.drawRect(0f, 0f, WORLD_W, worldH, overlayPaint)
-                if (score != scoreStrVal) { scoreStrVal = score; scoreStr = score.toString() }
-                val y = worldH * 0.36f
-                smallText.textSize = 50f
-                smallText.alpha = (255 * f).toInt()
-                c.drawText("Verloren im All", cx, y - 150f, smallText)
-                textPaint.textSize = 200f
-                textPaint.alpha = (255 * f).toInt()
-                c.drawText(scoreStr, cx, y + 40f, textPaint)
-                smallText.textSize = 44f
-                if (newRecord) {
-                    smallText.color = STAR_COLOR
-                    c.drawText("Neuer Rekord!", cx, y + 130f, smallText)
-                    smallText.color = Color.WHITE
-                } else {
-                    c.drawText(bestStr, cx, y + 130f, smallText)
-                }
-                if (stateTime > 0.6f) {
-                    smallText.alpha = (170 + 85 * sin(time * 3f)).toInt().coerceIn(0, 255)
-                    c.drawText("Tippen für Neustart", cx, y + 260f, smallText)
-                }
-                smallText.alpha = 255
-                textPaint.alpha = 255
-            }
+        drawBtn(c, bPause)
+        drawStarsCounter(c, save.stars + world.runStars - cStars)
+        if (runLevel > 0) {
+            val prog = min(world.progress, world.target)
+            if (prog != progVal) { progVal = prog; progStr = "$prog / ${world.target}" }
+            gfx.text(c, levelStr, W / 2f, 92f, 34f, Gfx.DIM)
+            val bw = 420f; val bx = W / 2f - bw / 2f
+            gfx.roundRect(c, bx, 115f, bx + bw, 133f, 9f, Gfx.PANEL2, 230)
+            gfx.roundRect(c, bx, 115f, bx + bw * prog / max(1, world.target), 133f, 9f, Gfx.GREEN)
+            gfx.text(c, progStr, W / 2f, 215f, 72f, Color.WHITE, alpha = 230)
+        } else {
+            if (world.score != scoreVal) { scoreVal = world.score; scoreStr = world.score.toString() }
+            gfx.text(c, scoreStr, W / 2f, 200f, 120f, Color.WHITE, alpha = 230)
         }
-
-        if (paused) {
-            c.drawRect(0f, 0f, WORLD_W, worldH, overlayPaint.apply { alpha = 170 })
-            textPaint.textSize = 90f
-            c.drawText("Pause", cx, worldH * 0.45f, textPaint)
-            smallText.textSize = 44f
-            c.drawText("Tippen zum Weiterspielen", cx, worldH * 0.45f + 90f, smallText)
+        if (save.games == 0 && world.captures == 0 && world.orbiting && runLevel <= 1) {
+            val a = (170 + 85 * sin(time * 3f)).toInt().coerceIn(0, 255)
+            gfx.text(c, "Tippe, wenn die Punkte", W / 2f, H * 0.33f, 44f, Color.WHITE, false, alpha = a)
+            gfx.text(c, "zum nächsten Planeten zeigen", W / 2f, H * 0.33f + 60f, 44f, Color.WHITE, false, alpha = a)
         }
     }
 
-    // =====================================================================
-    //  Hilfen
-    // =====================================================================
+    private fun drawPause(c: Canvas) {
+        dim(c, 200)
+        gfx.text(c, "Pause", W / 2f, H * 0.32f, 110f, Color.WHITE)
+        for (b in pauseBtns) drawBtn(c, b)
+    }
 
-    private fun makeGlow(color: Int, alpha: Int): Bitmap {
-        val size = 128
-        val b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val cv = Canvas(b)
-        val r = Color.red(color); val g = Color.green(color); val bl = Color.blue(color)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        p.shader = RadialGradient(
-            size / 2f, size / 2f, size / 2f,
-            intArrayOf(Color.argb(alpha, r, g, bl), Color.argb(alpha / 3, r, g, bl), Color.argb(0, r, g, bl)),
-            floatArrayOf(0f, 0.45f, 1f),
-            Shader.TileMode.CLAMP
-        )
-        cv.drawCircle(size / 2f, size / 2f, size / 2f, p)
-        return b
+    // ---------------------------------------------------------------- Game Over / Level geschafft
+
+    private fun drawGameOver(c: Canvas) {
+        val f = min(1f, screenTime / 0.35f)
+        dim(c, (190 * f).toInt())
+        val a = (255 * f).toInt()
+        val y = H * 0.2f
+        gfx.text(c, if (runLevel > 0) "Level $runLevel verloren" else "Verloren im All", W / 2f, y, 52f, Color.WHITE, false, alpha = a)
+        if (runLevel > 0) {
+            gfx.text(c, progStr, W / 2f, y + 200f, 150f, Color.WHITE, alpha = a)
+            gfx.text(c, "Planeten geschafft", W / 2f, y + 270f, 40f, Gfx.DIM, false, alpha = a)
+        } else {
+            if (world.score != scoreVal) { scoreVal = world.score; scoreStr = world.score.toString() }
+            gfx.text(c, scoreStr, W / 2f, y + 210f, 200f, Color.WHITE, alpha = a)
+            if (newRecord) gfx.text(c, "Neuer Rekord!", W / 2f, y + 290f, 46f, Gfx.GOLD, alpha = a)
+            else gfx.text(c, bestStr, W / 2f, y + 290f, 42f, Gfx.DIM, false, alpha = a)
+        }
+        // verdiente Sterne
+        val tw = gfx.textWidth(earnedStr, 56f)
+        gfx.starShape(c, W / 2f - tw / 2f - 30f, y + 368f, 24f, 0f, Gfx.GOLD, a)
+        gfx.text(c, earnedStr, W / 2f + 15f, y + 388f, 56f, Gfx.GOLD, alpha = a)
+
+        if (screenTime > 0.5f) {
+            bRevive.visible = save.revives > 0
+            for (b in overBtns) drawBtn(c, b)
+        }
+    }
+
+    private fun drawLevelDone(c: Canvas) {
+        val f = min(1f, screenTime / 0.35f)
+        dim(c, (190 * f).toInt())
+        val a = (255 * f).toInt()
+        val y = H * 0.2f
+        val body = Levels.goalBody(runLevel)
+        if (body != 0) {
+            gfx.drawBody(c, body, W / 2f, y + 60f, 110f, time, save.lowGfx)
+            gfx.text(c, "Du hast den ${Levels.bodyNames[body]} erreicht!", W / 2f, y + 260f, 42f, Gfx.GREEN, alpha = a)
+        } else {
+            gfx.text(c, "GESCHAFFT!", W / 2f, y + 120f, 120f, Gfx.GREEN, alpha = a)
+        }
+        gfx.text(c, levelStr, W / 2f, y + 340f, 50f, Color.WHITE, alpha = a)
+        val tw = gfx.textWidth(earnedStr, 60f)
+        gfx.starShape(c, W / 2f - tw / 2f - 32f, y + 418f, 26f, time * 40f, Gfx.GOLD, a)
+        gfx.text(c, earnedStr, W / 2f + 15f, y + 440f, 60f, Gfx.GOLD, alpha = a)
+        if (!firstClear) gfx.text(c, "(Belohnung nur beim ersten Mal)", W / 2f, y + 500f, 32f, Gfx.DIM, false, alpha = a)
+        if (runLevel >= Levels.COUNT) {
+            gfx.text(c, "Weitere Level kommen bald!", W / 2f, H * 0.58f, 40f, Gfx.ACCENT, false, alpha = a)
+        }
+        if (screenTime > 0.5f) {
+            bNext.visible = runLevel < Levels.COUNT
+            for (b in doneBtns) drawBtn(c, b)
+        }
+    }
+
+    // ---------------------------------------------------------------- Level-Karte
+
+    private fun drawMap(c: Canvas) {
+        // Sternenhimmel bleibt von der Welt (ohne Spieler) – einfacher Hintergrund
+        c.drawColor(Gfx.BG)
+        val cur = min(save.levelDone + 1, Levels.COUNT)
+
+        // Verbindungslinien
+        for (i in 1 until Levels.COUNT) {
+            val y1 = mapScreenY(mapU(i)); val y2 = mapScreenY(mapU(i + 1))
+            if (max(y1, y2) < 150f || min(y1, y2) > H + 80f) continue
+            dottedLine(c, mapX(i), y1, mapX(i + 1), y2, if (i < cur) Gfx.ACCENT else Gfx.DIM, if (i < cur) 200 else 90)
+        }
+        // Himmelskörper
+        for (s in 0..5) {
+            val by = mapScreenY(bodyU(s))
+            if (by < -300f || by > H + 300f) continue
+            val body = s + 1
+            val r = if (s == 0) 120f else 100f
+            gfx.drawBody(c, body, W / 2f, by, r, time, save.lowGfx)
+            val reached = s == 0 || save.levelDone >= s * 10
+            gfx.text(c, Levels.bodyNames[body], W / 2f, by + r + 64f, 44f, if (reached) Color.WHITE else Gfx.DIM)
+        }
+        // Level-Punkte
+        for (i in 1..Levels.COUNT) {
+            val ny = mapScreenY(mapU(i))
+            if (ny < 120f || ny > H + 80f) continue
+            val nx = mapX(i)
+            val big = i % 10 == 0
+            val r = if (big) 60f else 50f
+            when {
+                i <= save.levelDone -> {
+                    gfx.circle(c, nx, ny, r, Gfx.ACCENT)
+                    gfx.text(c, levelNum[i], nx, ny + 15f, 42f, Gfx.BG)
+                }
+                i == cur -> {
+                    gfx.ring(c, nx, ny, r + 14f + sin(time * 4f) * 6f, Gfx.GOLD, 5f, 180)
+                    gfx.circle(c, nx, ny, r, Gfx.GOLD)
+                    gfx.text(c, levelNum[i], nx, ny + 15f, 42f, Gfx.BG)
+                }
+                else -> {
+                    gfx.circle(c, nx, ny, r, Gfx.PANEL2)
+                    gfx.ring(c, nx, ny, r, Color.WHITE, 2f, 40)
+                    gfx.text(c, levelNum[i], nx, ny + 15f, 40f, Gfx.DIM)
+                }
+            }
+        }
+        // Kopfzeile
+        gfx.roundRect(c, -20f, -20f, W + 20f, 205f, 0f, Gfx.BG, 235)
+        drawBtn(c, bBack)
+        gfx.text(c, "REISE", W / 2f, 135f, 62f, Color.WHITE)
+        drawStarsCounter(c, save.stars)
+    }
+
+    private fun dottedLine(c: Canvas, x1: Float, y1: Float, x2: Float, y2: Float, col: Int, alpha: Int) {
+        val n = 7
+        for (k in 1 until n) {
+            val f = k / n.toFloat()
+            gfx.circle(c, x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, 6f, col, alpha)
+        }
+    }
+
+    // ---------------------------------------------------------------- Shop
+
+    private fun drawShop(c: Canvas) {
+        dim(c, 235)
+        bBuyRevive.visible = shopTab == 2
+        if (shopTab == 2) {
+            drawExtras(c)
+        } else {
+            c.save()
+            c.clipRect(0f, gridTop - 20f, W, H)
+            val n = shopCount()
+            for (i in 0 until n) {
+                val col = i % 3; val row = i / 3
+                val x = 40f + col * (cardW + 24f)
+                val y = gridTop + row * (cardH + 24f) - shopScroll
+                if (y > H || y + cardH < gridTop - 20f) continue
+                drawCard(c, i, x, y)
+            }
+            c.restore()
+        }
+        gfx.roundRect(c, -20f, -20f, W + 20f, gridTop - 20f, 0f, Gfx.BG, 250)
+        drawBtn(c, bBack)
+        gfx.text(c, "SHOP", W / 2f, 135f, 62f, Color.WHITE)
+        drawStarsCounter(c, save.stars)
+        drawBtn(c, bTab0); drawBtn(c, bTab1); drawBtn(c, bTab2)
+    }
+
+    private fun drawCard(c: Canvas, i: Int, x: Float, y: Float) {
+        val skinsTab = shopTab == 0
+        val owned = if (skinsTab) save.ownsSkin(i) else save.ownsTrail(i)
+        val selected = if (skinsTab) save.skin == i else save.trail == i
+        gfx.roundRect(c, x, y, x + cardW, y + cardH, 34f, Gfx.PANEL)
+        if (selected) gfx.strokeRoundRect(c, x, y, x + cardW, y + cardH, 34f, Gfx.GREEN, 5f)
+        val cx = x + cardW / 2f
+        val py = y + 125f
+        if (skinsTab) {
+            gfx.drawSkin(c, i, cx, py, 2.2f, time, save.lowGfx)
+            gfx.text(c, Skins.skins[i].name, cx, y + 252f, 34f, Color.WHITE)
+        } else {
+            for (k in 0 until 24) {
+                prevX[k] = cx - 105f + k * (210f / 23f)
+                prevY[k] = py + sin(k * 0.35f + time * 4f) * 28f
+            }
+            gfx.drawTrail(c, i, prevX, prevY, 0, 24, 24, gfx.skinColor(save.skin, time), time)
+            gfx.drawSkin(c, save.skin, prevX[23], prevY[23], 1f, time, true)
+            gfx.text(c, Skins.trails[i].name, cx, y + 252f, 34f, Color.WHITE)
+        }
+        when {
+            selected -> gfx.text(c, "AKTIV", cx, y + 310f, 32f, Gfx.GREEN)
+            owned -> gfx.text(c, "Auswählen", cx, y + 310f, 32f, Gfx.DIM, false)
+            else -> {
+                val price = if (skinsTab) skinPrice[i] else trailPrice[i]
+                val afford = save.stars >= (if (skinsTab) Skins.skins[i].price else Skins.trails[i].price)
+                val tw = gfx.textWidth(price, 36f)
+                gfx.starShape(c, cx - tw / 2f - 20f, y + 298f, 16f, 0f, Gfx.GOLD)
+                gfx.text(c, price, cx + 12f, y + 311f, 36f, if (afford) Gfx.GOLD else Gfx.DIM)
+            }
+        }
+    }
+
+    private fun drawExtras(c: Canvas) {
+        val x = 40f; val y = gridTop; val w = 920f; val h = 660f
+        gfx.roundRect(c, x, y, x + w, y + h, 40f, Gfx.PANEL)
+        val cx = W / 2f
+        // Symbol: grünes Herz-Plus
+        gfx.circle(c, cx, y + 140f, 80f, Gfx.GREEN, 60)
+        gfx.circle(c, cx, y + 140f, 62f, Gfx.GREEN)
+        gfx.roundRect(c, cx - 12f, y + 100f, cx + 12f, y + 180f, 6f, Color.WHITE)
+        gfx.roundRect(c, cx - 40f, y + 128f, cx + 40f, y + 152f, 6f, Color.WHITE)
+        gfx.text(c, "Wiederbelebung", cx, y + 290f, 52f, Color.WHITE)
+        gfx.text(c, "Nach einem Absturz auf dem", cx, y + 355f, 36f, Gfx.DIM, false)
+        gfx.text(c, "letzten Planeten weiterspielen.", cx, y + 400f, 36f, Gfx.DIM, false)
+        // Anzeige x/3
+        for (k in 0 until Skins.REVIVE_MAX) {
+            val dx = cx + (k - 1) * 70f
+            if (k < save.revives) gfx.circle(c, dx, y + 455f, 22f, Gfx.GREEN)
+            else gfx.ring(c, dx, y + 455f, 22f, Gfx.DIM, 4f)
+        }
+        bBuyRevive.set(cx - 260f, y + 500f, 520f, 125f)
+        bBuyRevive.label = if (save.revives >= Skins.REVIVE_MAX) "VOLL (3/3)" else "KAUFEN  ·  ${Skins.REVIVE_PRICE}"
+        drawBtn(c, bBuyRevive)
+        if (save.revives < Skins.REVIVE_MAX) {
+            val tw = gfx.textWidth(bBuyRevive.label, bBuyRevive.h * 0.34f)
+            gfx.starShape(c, cx + tw / 2f + 30f, bBuyRevive.y + bBuyRevive.h / 2f, 20f, 0f, Gfx.BG)
+        }
+    }
+
+    // ---------------------------------------------------------------- Einstellungen
+
+    private fun drawSettings(c: Canvas) {
+        header(c, "EINSTELLUNGEN")
+        val labels = SETTING_LABELS
+        for (i in 0 until 5) {
+            val b = bRow[i]
+            gfx.roundRect(c, b.x, b.y, b.x + b.w, b.y + b.h, 34f, if (b === pressed) Gfx.PANEL2 else Gfx.PANEL)
+            gfx.text(c, labels[i], b.x + 40f, b.y + b.h / 2f + 15f, 42f, Color.WHITE, false, Paint.Align.LEFT)
+            if (i == 4) {
+                val v = if (save.lowGfx) "Sparsam" else "Hoch"
+                gfx.roundRect(c, b.x + b.w - 260f, b.y + 25f, b.x + b.w - 30f, b.y + b.h - 25f, 33f, Gfx.PANEL2)
+                gfx.text(c, v, b.x + b.w - 145f, b.y + b.h / 2f + 13f, 36f, Gfx.ACCENT)
+            } else {
+                val on = when (i) { 0 -> save.sound; 1 -> save.music; 2 -> save.vibration; else -> save.showFps }
+                toggle(c, b.x + b.w - 180f, b.y + b.h / 2f, on)
+            }
+        }
+        drawBtn(c, bReset)
+        gfx.text(c, "Grafik „Sparsam“ = noch flüssiger auf sehr alten Handys", W / 2f, bReset.y + bReset.h + 80f, 30f, Gfx.DIM, false)
+        gfx.text(c, "Orbit v$VERSION_NAME · Engelcode", W / 2f, H - 40f, 28f, Gfx.DIM, false, alpha = 160)
+    }
+
+    private val SETTING_LABELS = arrayOf("Soundeffekte", "Musik", "Vibration", "FPS-Anzeige", "Grafik")
+
+    private fun toggle(c: Canvas, x: Float, cy: Float, on: Boolean) {
+        gfx.roundRect(c, x, cy - 36f, x + 140f, cy + 36f, 36f, if (on) Gfx.ACCENT else Gfx.PANEL2)
+        gfx.circle(c, if (on) x + 104f else x + 36f, cy, 28f, Color.WHITE)
+    }
+
+    // ---------------------------------------------------------------- Statistik
+
+    private fun drawStats(c: Canvas) {
+        header(c, "STATISTIK")
+        for (i in statLabels.indices) {
+            val y = 260f + i * 125f
+            gfx.roundRect(c, 40f, y, 960f, y + 105f, 30f, Gfx.PANEL)
+            gfx.text(c, statLabels[i], 80f, y + 66f, 40f, Gfx.DIM, false, Paint.Align.LEFT)
+            gfx.text(c, statValues[i], 920f, y + 68f, 46f, Color.WHITE, align = Paint.Align.RIGHT)
+        }
+    }
+
+    // ---------------------------------------------------------------- Dialog & Toast
+
+    private fun drawDialog(c: Canvas) {
+        dim(c, 190)
+        gfx.roundRect(c, 70f, dlgTop, 930f, dlgTop + dlgH, 44f, Gfx.PANEL)
+        gfx.strokeRoundRect(c, 70f, dlgTop, 930f, dlgTop + dlgH, 44f, Gfx.ACCENT, 3f, 120)
+        gfx.text(c, dlgTitle, W / 2f, dlgTop + 105f, 54f, Color.WHITE)
+        val news = dialog == D_NEWS
+        for (i in dlgLines.indices) {
+            val ly = dlgTop + 180f + i * 62f
+            if (news) gfx.text(c, dlgLines[i], 120f, ly, 36f, Color.WHITE, false, Paint.Align.LEFT)
+            else gfx.text(c, dlgLines[i], W / 2f, ly, 44f, if (i == dlgLines.size - 1 && dialog == D_DAILY) Gfx.GOLD else Color.WHITE, dialog == D_DAILY)
+        }
+        drawBtn(c, bDlgA)
+        if (dlgTwo) drawBtn(c, bDlgB)
+    }
+
+    private fun drawToast(c: Canvas) {
+        val a = (min(1f, toastT / 0.4f) * 255f).toInt()
+        val tw = gfx.textWidth(toast, 40f, false) + 80f
+        val y = H * 0.86f
+        gfx.roundRect(c, W / 2f - tw / 2f, y - 60f, W / 2f + tw / 2f, y + 30f, 45f, Gfx.PANEL2, a)
+        gfx.text(c, toast, W / 2f, y, 40f, Color.WHITE, false, alpha = a)
     }
 }

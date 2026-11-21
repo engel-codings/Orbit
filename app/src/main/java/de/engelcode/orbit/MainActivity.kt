@@ -32,6 +32,17 @@ class MainActivity : Activity() {
         if (hasFocus) hideSystemUi()
     }
 
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (!gameView.onBack()) super.onBackPressed()
+    }
+
+    override fun onDestroy() {
+        gameView.release()
+        super.onDestroy()
+    }
+
     @Suppress("DEPRECATION")
     private fun hideSystemUi() {
         window.decorView.systemUiVisibility = (

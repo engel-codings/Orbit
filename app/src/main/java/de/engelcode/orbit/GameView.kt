@@ -3,7 +3,6 @@ package de.engelcode.orbit
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -19,26 +18,29 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
     @Volatile private var running = false
     private var thread: Thread? = null
 
-    private val lightHaptic = Runnable { performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
-    private val strongHaptic = Runnable { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
-
     init {
         holder.addCallback(this)
         isFocusable = true
-        game.onHaptic = { strong -> post(if (strong) strongHaptic else lightHaptic) }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {}
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        synchronized(game) { game.resize(width, height) }
+        synchronized(game) {
+            game.resize(width, height)
+            game.onResume()
+        }
         startLoop()
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         stopLoop()
-        game.onPause()
+        synchronized(game) { game.onPause() }
     }
+
+    fun onBack(): Boolean = synchronized(game) { game.onBack() }
+
+    fun release() = game.release()
 
     private fun startLoop() {
         if (running) return
@@ -69,7 +71,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             val now = System.nanoTime()
             var dt = (now - last) / 1_000_000_000f
             last = now
-            if (dt > 0.05f) dt = 0.05f   // nach Rucklern nicht "springen"
+            if (dt > 0.05f) dt = 0.05f
 
             val canvas = try {
                 if (Build.VERSION.SDK_INT >= 26) holder.lockHardwareCanvas() else holder.lockCanvas()
@@ -94,7 +96,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val a = event.actionMasked
-        if (a == MotionEvent.ACTION_DOWN || a == MotionEvent.ACTION_POINTER_DOWN) game.tap()
+        val i = event.actionIndex
+        synchronized(game) { game.onTouch(a, event.getX(i), event.getY(i)) }
         return true
     }
 }
