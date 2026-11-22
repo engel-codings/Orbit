@@ -16,6 +16,8 @@ object Achievements {
     private const val DAYS = 9
     private const val POWERUPS = 10
     private const val TIME = 11
+    private const val CHALLENGES = 12
+    private const val SPINS = 13
 
     class Ach(val title: String, val desc: String, val kind: Int, val goal: Int, val reward: Int)
 
@@ -41,7 +43,15 @@ object Achievements {
         Ach("Modebewusst", "Besitze 5 Skins", SKINS, 5, 80),
         Ach("Stammgast", "7 Tage in Folge gespielt", DAYS, 7, 150),
         Ach("Power!", "Sammle 25 Power-ups", POWERUPS, 25, 80),
-        Ach("Ausdauer", "Spiele insgesamt 2 Stunden", TIME, 120, 120)
+        Ach("Ausdauer", "Spiele insgesamt 2 Stunden", TIME, 120, 120),
+        Ach("Galaktisch", "Schaffe Level 120", LEVEL, 120, 300),
+        Ach("Am Anfang", "Schaffe Level 150", LEVEL, 150, 800),
+        Ach("Kronen-Kaiser", "Sammle 350 Kronen", CROWNS, 350, 500),
+        Ach("Herausforderer", "Schaffe 5 Tages-Challenges", CHALLENGES, 5, 150),
+        Ach("Glückspilz", "Drehe 10-mal am Glücksrad", SPINS, 10, 100),
+        Ach("Sammler", "Besitze 15 Skins", SKINS, 15, 300),
+        Ach("Admiral", "Erreiche 1000 Planeten", PLANETS, 1000, 250),
+        Ach("Power-Profi", "Sammle 100 Power-ups", POWERUPS, 100, 200)
     )
 
     fun value(a: Ach, s: Save): Int = when (a.kind) {
@@ -56,6 +66,8 @@ object Achievements {
         SKINS -> s.skinCount()
         DAYS -> s.bestDayStreak
         POWERUPS -> s.powerups
+        CHALLENGES -> s.challengesDone
+        SPINS -> s.spins
         else -> (s.playTime / 60f).toInt()
     }
 

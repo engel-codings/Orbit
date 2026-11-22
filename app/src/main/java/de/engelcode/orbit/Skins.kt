@@ -19,6 +19,14 @@ object Skins {
     const val EYE = 12
     const val GALAXY = 13
     const val CROWN = 14
+    const val MOON = 15
+    const val FIREBALL = 16
+    const val SNOWFLAKE = 17
+    const val ROCKET = 18
+    const val CUBE = 19
+    const val SATELLITE = 20
+    const val PULSAR = 21
+    const val BIGBANG = 22
 
     // Spur-Stile
     const val T_LINE = 0
@@ -32,6 +40,10 @@ object Skins {
     const val T_DOUBLE = 8
     const val T_STARDUST = 9
     const val T_MATRIX = 10
+    const val T_HEARTS = 11
+    const val T_COMET = 12
+    const val T_PIXEL = 13
+    const val T_GALAXY = 14
 
     /**
      * reqLevel / reqCrowns: muss zusätzlich zum Preis erreicht sein.
@@ -72,7 +84,15 @@ object Skins {
         Skin("Diamant", 5000, c(0xFFFFFFFF), c(0xFFBDE8FF), HEX, reqCrowns = 180),
         Skin("Goldstern", 6000, c(0xFFFFD700), c(0xFFFFC300), STAR, reqLevel = 90),
         Skin("Kronjuwel", 0, c(0xFFFFD166), c(0xFFFFB703), CROWN, reqCrowns = 270),
-        Skin("Andromeda", 0, c(0xFFF15BB5), c(0xFF9B5DE5), GALAXY, c(0xFFFFD166), reqLevel = 100)
+        Skin("Andromeda", 0, c(0xFFF15BB5), c(0xFF9B5DE5), GALAXY, c(0xFFFFD166), reqLevel = 100),
+        Skin("Mondsichel", 2200, c(0xFFFFF3C4), c(0xFFFFE08A), MOON, reqLevel = 55),
+        Skin("Feuerball", 2800, c(0xFFFF7A00), c(0xFFFF3D00), FIREBALL, c(0xFFFFD166), reqLevel = 65),
+        Skin("Schneeflocke", 3200, c(0xFFE0F7FF), c(0xFF7FD8FF), SNOWFLAKE, reqCrowns = 150),
+        Skin("Rakete", 3800, c(0xFFECEFF1), c(0xFFFF7A00), ROCKET, c(0xFFFF4D6D), reqLevel = 85),
+        Skin("Würfel", 4200, c(0xFF4CC9F0), c(0xFF7B61FF), CUBE, c(0xFFB388FF), reqCrowns = 210),
+        Skin("Satellit", 5500, c(0xFFCFD8DC), c(0xFF4C8DFF), SATELLITE, c(0xFF4C8DFF), reqLevel = 110),
+        Skin("Pulsar", 7000, c(0xFFFFFFFF), c(0xFF7FE7FF), PULSAR, c(0xFF7FE7FF), reqLevel = 120),
+        Skin("Urknall", 0, c(0xFFFFFFFF), c(0xFFFFD166), BIGBANG, reqLevel = 150)
     )
 
     val trails = arrayOf(
@@ -87,7 +107,11 @@ object Skins {
         Trail("Sternenstaub", 1500, 0, T_STARDUST, reqLevel = 35),
         Trail("Regenbogen", 2000, 0, T_RAINBOW, reqLevel = 45),
         Trail("Matrix", 2500, c(0xFF2EE59D), T_MATRIX, reqCrowns = 100),
-        Trail("Gold", 4000, 0, T_GOLD, reqLevel = 75)
+        Trail("Gold", 4000, 0, T_GOLD, reqLevel = 75),
+        Trail("Herzen", 1800, c(0xFFFF5C8A), T_HEARTS, reqLevel = 60),
+        Trail("Kometenschweif", 2200, c(0xFF7FE7FF), T_COMET, reqCrowns = 160),
+        Trail("Pixel", 3000, 0, T_PIXEL, reqLevel = 95),
+        Trail("Galaxie", 5000, c(0xFFB388FF), T_GALAXY, reqLevel = 130)
     )
 
     const val REVIVE_PRICE = 150

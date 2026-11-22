@@ -12,7 +12,7 @@ adb shell am start -n de.engelcode.orbit/.MainActivity
 sleep 9
 shot 01_bonus
 tap 360 895; sleep 2.5;  shot 02_menu
-tap 360 720; sleep 2;    shot 03_karte
+tap 360 688; sleep 2;    shot 03_karte
 tap 501 1276; sleep 2;   shot 04_level1
 tap 68 83; sleep 1.2;    shot 05_pause
 tap 360 722; sleep 0.8
@@ -31,7 +31,11 @@ tap 608 1434; sleep 1.5; shot 13_optionen
 back; sleep 1.5
 tap 443 1434; sleep 1.5; shot 14_statistik
 back; sleep 1.5
-tap 360 997; sleep 1.5
-tap 360 1000; sleep 0.4; shot 15_endlos
+tap 486 1060; sleep 1.5; shot 15_gluecksrad
+tap 360 1025; sleep 1.2; shot 16_dreht
+sleep 3.5;               shot 17_gewinn
+back; sleep 1.5
+tap 234 1060; sleep 1.5; shot 18_challenge
+tap 360 1000; sleep 0.4; shot 19_challenge_flug
 adb logcat -d -s AndroidRuntime:E > shots/crashlog.txt || true
 ls -la shots

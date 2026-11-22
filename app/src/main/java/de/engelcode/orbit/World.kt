@@ -78,6 +78,7 @@ class World(private val gfx: Gfx) {
 
     var listener: Listener? = null
     var reduced = false
+    var shakeOn = true
 
     var worldH = 1800f; private set
     var camY = 0f; private set
@@ -166,9 +167,13 @@ class World(private val gfx: Gfx) {
     }
 
     /** level = 0 → Endlos-Modus, sonst Level 1..50. */
-    fun reset(level: Int) {
+    fun reset(level: Int, seed: Long = 0L) {
         this.level = level
-        rng = if (level > 0) Random(Levels.seed(level)) else Random(System.nanoTime())
+        rng = when {
+            level > 0 -> Random(Levels.seed(level))
+            seed != 0L -> Random(seed)
+            else -> Random(System.nanoTime())
+        }
         target = if (level > 0) Levels.planetCount(level) else 0
         for (p in planets) p.active = false
         for (s in stars) s.active = false
@@ -570,7 +575,7 @@ class World(private val gfx: Gfx) {
     fun draw(c: Canvas, skin: Int, trail: Int) {
         drawBackground(c)
         var sx = 0f; var sy = 0f
-        if (shake > 0f) {
+        if (shake > 0f && shakeOn) {
             sx = (Random.nextFloat() - 0.5f) * 28f * shake
             sy = (Random.nextFloat() - 0.5f) * 28f * shake
         }

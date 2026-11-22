@@ -3,12 +3,12 @@ package de.engelcode.orbit
 import kotlin.math.min
 
 /**
- * Die Level-Reise: von der Erde bis zur Andromeda-Galaxie (100 Level).
+ * Die Level-Reise: von der Erde bis zum Urknall (150 Level).
  * Jedes Level ist eine feste Strecke zwischen Planeten (immer gleich aufgebaut).
  */
 object Levels {
 
-    const val COUNT = 100
+    const val COUNT = 150
 
     // Himmelskörper
     const val B_NONE = 0
@@ -23,13 +23,19 @@ object Levels {
     const val B_PLUTO = 9
     const val B_COMET = 10
     const val B_ANDROMEDA = 11
+    const val B_PULSAR = 12
+    const val B_NEBULA = 13
+    const val B_QUASAR = 14
+    const val B_BLACKHOLE = 15
+    const val B_BIGBANG = 16
 
     val bodyNames = arrayOf(
         "", "ERDE", "MOND", "MARS", "ASTEROIDENGÜRTEL", "JUPITER", "SATURN",
-        "URANUS", "NEPTUN", "PLUTO", "KOMET", "ANDROMEDA"
+        "URANUS", "NEPTUN", "PLUTO", "KOMET", "ANDROMEDA",
+        "PULSAR", "ORIONNEBEL", "QUASAR", "SAGITTARIUS A*", "URKNALL"
     )
 
-    /** Abschnitt 0..9 (je 10 Level). */
+    /** Abschnitt 0..14 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10
 
     fun startBody(level: Int) = section(level) + 1
@@ -38,9 +44,9 @@ object Levels {
     fun goalBody(level: Int) = if (level % 10 == 0) section(level) + 2 else B_NONE
 
     /** Anzahl der Planeten bis zum Ziel. */
-    fun planetCount(level: Int) = 5 + (level - 1) / 3
+    fun planetCount(level: Int) = min(5 + (level - 1) / 3, 40)
 
-    fun difficulty(level: Int) = min(1f, (level - 1) / 85f)
+    fun difficulty(level: Int) = min(1.3f, (level - 1) / 85f)
 
     fun seed(level: Int) = level * 7919 + 13
 

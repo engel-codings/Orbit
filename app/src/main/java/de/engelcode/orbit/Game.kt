@@ -20,8 +20,8 @@ import kotlin.math.sin
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 3
-        const val VERSION_NAME = "0.3.0"
+        const val VERSION_CODE = 4
+        const val VERSION_NAME = "0.4.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -42,19 +42,32 @@ class Game(context: Context) : World.Listener {
         private const val D_NEWS = 4
 
         private val NEWS = arrayOf(
-            "• 100 Level: bis zur Andromeda-Galaxie",
-            "• Kronen (1–3) für jedes Level",
-            "• 24 Skins und 12 Spuren",
-            "• 22 Erfolge mit Belohnungen",
-            "• Power-ups: Schild und Magnet",
-            "• Neue Gefahr: Meteoriten",
-            "• Komplett neues Design",
-            "• Sterne sind jetzt wertvoller"
+            "• 150 Level: bis zum Urknall",
+            "• Glücksrad: täglich gratis drehen",
+            "• Tages-Challenge mit Belohnung",
+            "• 32 Skins und 16 Spuren",
+            "• Piloten-Ränge: Kadett bis Legende",
+            "• 30 Erfolge",
+            "• Bildschirmwackeln abschaltbar"
         )
+        private const val CHALLENGE_GOAL = 15
+        private const val CHALLENGE_REWARD = 60
+        private const val SPIN_PRICE = 75
+
+        // Glücksrad: 0 = Sterne, 1 = Wiederbelebung, 2 = Start-Schild
+        private val WHEEL_KIND = intArrayOf(0, 0, 1, 0, 0, 2, 0, 0)
+        private val WHEEL_VAL = intArrayOf(20, 50, 1, 10, 100, 1, 30, 15)
+        private val WHEEL_WEIGHT = intArrayOf(20, 10, 8, 22, 4, 10, 14, 12)
+        private val WHEEL_COL = intArrayOf(
+            0xFF7B61FF.toInt(), 0xFF4CC9F0.toInt(), 0xFF2EE59D.toInt(), 0xFFF15BB5.toInt(),
+            0xFFFFD166.toInt(), 0xFF5CC8FF.toInt(), 0xFFFF9F1C.toInt(), 0xFF9B5DE5.toInt()
+        )
+        private val RANK_NAMES = arrayOf("Kadett", "Pilot", "Kapitän", "Kommandant", "Admiral", "Legende")
+        private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
         private val TAB_NAMES = arrayOf("SKINS", "SPUREN", "EXTRAS")
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -95,20 +108,24 @@ class Game(context: Context) : World.Listener {
     private val bNext = Btn(15, "NÄCHSTES LEVEL", S_PRIMARY)
     private val bToMap = Btn(16, "ZUR KARTE", S_GLASS)
     private val bTab = Array(3) { Btn(17 + it, TAB_NAMES[it], S_INVISIBLE) }
-    private val bRow = Array(5) { Btn(20 + it, "", S_INVISIBLE) }
+    private val bRow = Array(6) { Btn(40 + it, "", S_INVISIBLE) }
     private val bReset = Btn(30, "FORTSCHRITT ZURÜCKSETZEN", S_DANGER)
     private val bDlgA = Btn(31, "OK", S_PRIMARY)
     private val bDlgB = Btn(32, "ABBRECHEN", S_GLASS)
     private val bBuyRevive = Btn(33, "KAUFEN", S_GOLD)
     private val bBuyShield = Btn(34, "KAUFEN", S_GOLD)
+    private val bChallenge = Btn(35, "CHALLENGE", S_GLASS, Gfx.I_TARGET)
+    private val bWheel = Btn(36, "GLÜCKSRAD", S_GLASS, Gfx.I_WHEEL)
+    private val bSpin = Btn(37, "GRATIS DREHEN", S_GOLD)
 
-    private val menuBtns = arrayOf(bPlay, bEndless, bShop, bAch, bStats, bSettings)
+    private val menuBtns = arrayOf(bPlay, bEndless, bChallenge, bWheel, bShop, bAch, bStats, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bReset)
+    private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
 
@@ -186,11 +203,30 @@ class Game(context: Context) : World.Listener {
     private val achRewardStr = Array(Achievements.list.size) { Achievements.list[it].reward.toString() }
     private val achProgStr = Array(Achievements.list.size) { "" }
     private var achBadge = 0
+    private var rankStr = ""
+    private var rankIdx = 0
+
+    // ---- Tages-Challenge
+    private var challengeRun = false
+    private var challengeStr = ""
+    private var challengeVal = -1
+
+    // ---- Glücksrad
+    private var wheelAngle = 0f
+    private var spinning = false
+    private var spinT = 0f
+    private var spinFrom = 0f
+    private var spinTo = 0f
+    private var spinPrize = 0
+    private var spinTick = 0
+    private val wheelLabel = Array(8) { if (WHEEL_KIND[it] == 0) WHEEL_VAL[it].toString() else "" }
+    private val pointerPath = android.graphics.Path().apply { moveTo(-34f, 0f); lineTo(34f, 0f); lineTo(0f, 58f); close() }
     private var musicTimer = 0f
 
     init {
         world.listener = this
         world.reduced = save.lowGfx
+        world.shakeOn = save.shake
     }
 
     private fun reqText(lv: Int, cr: Int) = when {
@@ -255,13 +291,17 @@ class Game(context: Context) : World.Listener {
         }
     }
 
-    private fun playCY() = H * 0.45f
+    private fun playCY() = H * 0.43f
+    private fun wheelCY() = H * 0.42f
 
     private fun layout() {
         val cx = W / 2f
         val pcy = playCY()
         place(bPlay, cx - 160f, pcy - 160f, 320f, 320f)
         place(bEndless, cx - 240f, pcy + 330f, 480f, 110f)
+        place(bChallenge, cx - 340f, pcy + 465f, 330f, 105f)
+        place(bWheel, cx + 10f, pcy + 465f, 330f, 105f)
+        place(bSpin, cx - 290f, wheelCY() + 420f, 580f, 140f)
         val ny = H - 300f
         val xs = floatArrayOf(155f, 385f, 615f, 845f)
         val nav = arrayOf(bShop, bAch, bStats, bSettings)
@@ -279,8 +319,8 @@ class Game(context: Context) : World.Listener {
         place(bNext, cx - 300f, H * 0.66f, 600f, 140f)
         place(bToMap, cx - 300f, H * 0.66f + 165f, 600f, 125f)
         for (i in 0 until 3) place(bTab[i], 50f + i * 300f, 215f, 300f, 92f)
-        for (i in 0 until 5) place(bRow[i], 40f, 260f + i * 140f, 920f, 118f)
-        place(bReset, 80f, 260f + 5 * 140f + 40f, 840f, 115f)
+        for (i in 0 until 6) place(bRow[i], 40f, 250f + i * 132f, 920f, 112f)
+        place(bReset, 80f, 250f + 6 * 132f + 30f, 840f, 110f)
     }
 
     // ===================================================================== Ablauf
@@ -308,11 +348,18 @@ class Game(context: Context) : World.Listener {
         nextStr = "LEVEL $next"
         bEndless.label = if (save.best > 0) "ENDLOS  ·  ${save.best}" else "ENDLOS"
         achBadge = Achievements.claimableCount(save)
+        var r = 0
+        for (i in RANK_AT.indices) if (save.planets >= RANK_AT[i]) r = i
+        rankIdx = r
+        rankStr = if (r < RANK_AT.size - 1) "Rang: ${RANK_NAMES[r]}  ·  ${save.planets} / ${RANK_AT[r + 1]}" else "Rang: ${RANK_NAMES[r]}"
     }
 
-    private fun startRun(level: Int) {
+    private fun startRun(level: Int, seed: Long = 0L) {
         world.reduced = save.lowGfx
-        world.reset(level)
+        world.shakeOn = save.shake
+        world.reset(level, seed)
+        challengeRun = seed != 0L
+        challengeVal = -1
         runLevel = level
         runTime = 0f
         cStars = 0; cBonus = 0; cCaptures = 0; cPerfects = 0
@@ -332,6 +379,68 @@ class Game(context: Context) : World.Listener {
     private fun leaveRun() {
         world.reset(0)
         go(if (runLevel > 0) Screen.MAP else Screen.MENU)
+    }
+
+    // ===================================================================== Glücksrad
+
+    private fun freeSpin() = save.wheelDay != today()
+
+    private fun startSpin() {
+        if (spinning) return
+        val free = freeSpin()
+        if (!free) {
+            if (save.stars < SPIN_PRICE) {
+                sound.play(Sound.ERROR)
+                showToast("Dir fehlen noch ${SPIN_PRICE - save.stars} Sterne")
+                return
+            }
+            save.stars -= SPIN_PRICE
+        } else save.wheelDay = today()
+        // Gewinn auswürfeln (gewichtet)
+        var total = 0
+        for (w in WHEEL_WEIGHT) total += w
+        var roll = (Math.random() * total).toInt()
+        var prize = 0
+        for (i in WHEEL_WEIGHT.indices) { roll -= WHEEL_WEIGHT[i]; if (roll < 0) { prize = i; break } }
+        spinPrize = prize
+        // Gewinn sofort gutschreiben (sicher, falls man den Bildschirm verlässt)
+        when (WHEEL_KIND[prize]) {
+            0 -> save.stars += WHEEL_VAL[prize]
+            1 -> if (save.revives < Skins.REVIVE_MAX) save.revives++ else save.stars += 40
+            else -> if (save.shieldStarts < Skins.SHIELD_MAX) save.shieldStarts++ else save.stars += 30
+        }
+        save.spins++
+        save.flush()
+        val cur = ((wheelAngle % 360f) + 360f) % 360f
+        val desired = ((-prize * 45f) % 360f + 360f) % 360f
+        var delta = desired - cur
+        if (delta < 0f) delta += 360f
+        spinFrom = wheelAngle
+        spinTo = wheelAngle + 360f * 5f + delta + ((Math.random() - 0.5) * 28.0).toFloat()
+        spinT = 0f
+        spinTick = ((wheelAngle + 22.5f) / 45f).toInt()
+        spinning = true
+    }
+
+    private fun updateWheel(dt: Float) {
+        if (!spinning) return
+        spinT += dt
+        val d = 3.6f
+        val f = min(1f, spinT / d)
+        val e = 1f - (1f - f) * (1f - f) * (1f - f)
+        wheelAngle = spinFrom + (spinTo - spinFrom) * e
+        val tick = ((wheelAngle + 22.5f) / 45f).toInt()
+        if (tick != spinTick) { spinTick = tick; sound.play(Sound.CLICK, 1.2f, 0.6f) }
+        if (f >= 1f) {
+            spinning = false
+            sound.play(Sound.BONUS)
+            sound.vibrate(50)
+            showToast(when (WHEEL_KIND[spinPrize]) {
+                0 -> "Gewonnen: ${WHEEL_VAL[spinPrize]} Sterne!"
+                1 -> "Gewonnen: 1 Wiederbelebung!"
+                else -> "Gewonnen: 1 Start-Schild!"
+            })
+        }
     }
 
     private fun commitRun() {
@@ -428,6 +537,15 @@ class Game(context: Context) : World.Listener {
             Screen.PLAYING -> {
                 world.update(dt, true)
                 runTime += dt
+                if (challengeRun && world.captures >= CHALLENGE_GOAL && save.challengeDay != today()) {
+                    save.challengeDay = today()
+                    save.challengesDone++
+                    save.stars += CHALLENGE_REWARD
+                    save.flush()
+                    sound.play(Sound.WIN)
+                    sound.vibrate(60)
+                    showToast("Challenge geschafft! +$CHALLENGE_REWARD Sterne")
+                }
                 if (winTimer > 0f) {
                     winTimer -= dt
                     if (winTimer <= 0f) go(Screen.LEVELDONE)
@@ -437,6 +555,10 @@ class Game(context: Context) : World.Listener {
                 world.update(dt, false)
                 val shown = ((screenTime - 0.35f) / 0.3f).toInt().coerceIn(0, crownsWon)
                 if (shown > crownSounds) { crownSounds = shown; sound.play(Sound.CROWN, 0.9f + shown * 0.1f) }
+            }
+            Screen.WHEEL -> {
+                world.update(dt, false)
+                updateWheel(dt)
             }
             else -> world.update(dt, false)
         }
@@ -544,6 +666,7 @@ class Game(context: Context) : World.Listener {
         Screen.SHOP -> { bBuyRevive.visible = shopTab == 2; bBuyShield.visible = shopTab == 2; shopBtns }
         Screen.SETTINGS -> setBtns
         Screen.MAP, Screen.STATS, Screen.ACHIEVE -> backBtns
+        Screen.WHEEL -> wheelBtns
     }
 
     private fun onButton(id: Int) {
@@ -573,8 +696,12 @@ class Game(context: Context) : World.Listener {
             bRow[0].id -> { save.sound = !save.sound; save.flush() }
             bRow[1].id -> { save.music = !save.music; save.flush(); sound.syncMusic() }
             bRow[2].id -> { save.vibration = !save.vibration; save.flush(); sound.vibrate(40) }
-            bRow[3].id -> { save.showFps = !save.showFps; save.flush() }
-            bRow[4].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bRow[3].id -> { save.shake = !save.shake; world.shakeOn = save.shake; save.flush() }
+            bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
+            bRow[5].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bChallenge.id -> startRun(0, today() * 7919L + 17L)
+            bWheel.id -> go(Screen.WHEEL)
+            bSpin.id -> startSpin()
             bReset.id -> openDialog(
                 D_RESET, "Wirklich zurücksetzen?",
                 arrayOf("Sterne, Skins, Level, Kronen", "und Erfolge werden gelöscht."), "LÖSCHEN", "ABBRECHEN"
@@ -742,7 +869,7 @@ class Game(context: Context) : World.Listener {
     private fun mapScreenY(u: Float) = H - 450f - u + mapScroll
 
     private fun clampMap(v: Float): Float {
-        val top = bodyU(10) + 280f
+        val top = bodyU(Levels.COUNT / 10) + 280f
         return v.coerceIn(0f, max(0f, top + 750f - H))
     }
 
@@ -797,13 +924,13 @@ class Game(context: Context) : World.Listener {
         statLabels = arrayOf(
             "Level geschafft", "Kronen", "Rekord (Endlos)", "Spiele", "Planeten erreicht",
             "Perfekte Landungen", "Beste Perfekt-Serie", "Sterne gesammelt", "Power-ups",
-            "Wiederbelebungen", "Spielzeit"
+            "Wiederbelebungen", "Tages-Challenges", "Glücksrad", "Spielzeit"
         )
         statValues = arrayOf(
             "${save.levelDone} / ${Levels.COUNT}", "${save.totalCrowns} / ${Levels.COUNT * 3}",
             save.best.toString(), save.games.toString(), save.planets.toString(), save.perfects.toString(),
             save.bestStreak.toString(), save.starsCollected.toString(), save.powerups.toString(),
-            save.revivesUsed.toString(), if (mins >= 60) "${mins / 60} h ${mins % 60} min" else "$mins min"
+            save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(), if (mins >= 60) "${mins / 60} h ${mins % 60} min" else "$mins min"
         )
     }
 
@@ -831,6 +958,7 @@ class Game(context: Context) : World.Listener {
             Screen.SETTINGS -> drawSettings(c)
             Screen.STATS -> drawStats(c)
             Screen.ACHIEVE -> drawAch(c)
+            Screen.WHEEL -> drawWheel(c)
         }
 
         if (save.showFps) {
@@ -928,6 +1056,7 @@ class Game(context: Context) : World.Listener {
         if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, ty - 60f, 420f, 150)
         gfx.text(c, "ORBIT", cx, ty, 200f, Color.WHITE)
         gfx.spaced(c, "PLANET JUMP", cx, ty + 70f, 36f, Gfx.ACCENT, 0.5f)
+        gfx.text(c, rankStr, cx, ty + 130f, 30f, Gfx.DIM, false)
 
         val pcy = playCY()
         val pulse = sin(time * 3f)
@@ -946,6 +1075,10 @@ class Game(context: Context) : World.Listener {
 
         gfx.text(c, nextStr, cx, pcy + 290f, 46f, Color.WHITE)
         drawBtn(c, bEndless)
+        drawBtn(c, bChallenge); drawBtn(c, bWheel)
+        if (save.challengeDay != today()) gfx.circle(c, bChallenge.x + bChallenge.w - 14f, bChallenge.y + 14f, 14f, Gfx.RED)
+        else gfx.icon(c, Gfx.I_CHECK, bChallenge.x + bChallenge.w - 18f, bChallenge.y + 18f, 14f, Gfx.GREEN)
+        if (freeSpin()) gfx.circle(c, bWheel.x + bWheel.w - 14f, bWheel.y + 14f, 14f, Gfx.RED)
 
         drawBtn(c, bShop); drawBtn(c, bAch); drawBtn(c, bStats); drawBtn(c, bSettings)
         if (achBadge > 0) {
@@ -974,6 +1107,17 @@ class Game(context: Context) : World.Listener {
         } else {
             if (world.score != scoreVal) { scoreVal = world.score; scoreStr = world.score.toString() }
             gfx.text(c, scoreStr, cx, 205f, 130f, Color.WHITE, alpha = 235)
+            if (challengeRun) {
+                val v = min(world.captures, CHALLENGE_GOAL)
+                if (v != challengeVal) {
+                    challengeVal = v
+                    challengeStr = if (save.challengeDay == today() && v >= CHALLENGE_GOAL) "CHALLENGE GESCHAFFT" else "CHALLENGE  $v / $CHALLENGE_GOAL"
+                }
+                val done = save.challengeDay == today()
+                val tw = gfx.textWidth(challengeStr, 30f)
+                gfx.glass(c, cx - tw / 2f - 50f, 240f, cx + tw / 2f + 50f, 310f, 35f, border = if (done) Gfx.GREEN else Gfx.GOLD)
+                gfx.text(c, challengeStr, cx, 286f, 30f, if (done) Gfx.GREEN else Gfx.GOLD)
+            }
         }
         var iy = 230f
         if (world.shield) {
@@ -1011,7 +1155,7 @@ class Game(context: Context) : World.Listener {
         val top = H * 0.14f
         gfx.glass(c, 70f, top, 930f, top + 560f, 50f, a)
         val cx = W / 2f
-        gfx.text(c, if (runLevel > 0) "LEVEL $runLevel VERLOREN" else "VERLOREN IM ALL", cx, top + 95f, 44f, Gfx.RED, alpha = a)
+        gfx.text(c, if (runLevel > 0) "LEVEL $runLevel VERLOREN" else if (challengeRun) "TAGES-CHALLENGE" else "VERLOREN IM ALL", cx, top + 95f, 44f, Gfx.RED, alpha = a)
         if (runLevel > 0) {
             gfx.text(c, progStr, cx, top + 280f, 150f, Color.WHITE, alpha = a)
             gfx.text(c, "Planeten geschafft", cx, top + 345f, 38f, Gfx.DIM, false, alpha = a)
@@ -1094,7 +1238,7 @@ class Game(context: Context) : World.Listener {
                     if (done) 7f else 5f, if (done) Gfx.ACCENT else Gfx.DIM, if (done) 210 else 80)
             }
         }
-        for (s in 0..10) {
+        for (s in 0..(Levels.COUNT / 10)) {
             val by = mapScreenY(bodyU(s))
             if (by < -300f || by > H + 300f) continue
             val body = s + 1
@@ -1295,23 +1439,23 @@ class Game(context: Context) : World.Listener {
 
     // ---------------------------------------------------------------- Einstellungen
 
-    private val settingLabels = arrayOf("Soundeffekte", "Musik", "Vibration", "FPS-Anzeige", "Grafik")
-    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SPEED, Gfx.I_EYE)
+    private val settingLabels = arrayOf("Soundeffekte", "Musik", "Vibration", "Bildschirmwackeln", "FPS-Anzeige", "Grafik")
+    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE)
 
     private fun drawSettings(c: Canvas) {
         header(c, "OPTIONEN")
-        for (i in 0 until 5) {
+        for (i in 0 until 6) {
             val b = bRow[i]
             gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
             gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 38f, Gfx.PANEL2)
             gfx.icon(c, settingIcons[i], b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
             gfx.text(c, settingLabels[i], b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT)
-            if (i == 4) {
+            if (i == 5) {
                 val v = if (save.lowGfx) "Sparsam" else "Hoch"
                 gfx.roundRect(c, b.x + b.w - 260f, b.y + 26f, b.x + b.w - 30f, b.y + b.h - 26f, 33f, Gfx.PANEL2)
                 gfx.text(c, v, b.x + b.w - 145f, b.y + b.h / 2f + 12f, 34f, Gfx.ACCENT)
             } else {
-                val on = when (i) { 0 -> save.sound; 1 -> save.music; 2 -> save.vibration; else -> save.showFps }
+                val on = when (i) { 0 -> save.sound; 1 -> save.music; 2 -> save.vibration; 3 -> save.shake; else -> save.showFps }
                 toggle(c, b.x + b.w - 175f, b.y + b.h / 2f, on)
             }
         }
@@ -1330,11 +1474,69 @@ class Game(context: Context) : World.Listener {
     private fun drawStats(c: Canvas) {
         header(c, "STATISTIK")
         for (i in statLabels.indices) {
-            val y = 245f + i * 118f
-            gfx.glass(c, 40f, y, 960f, y + 100f, 32f)
-            gfx.text(c, statLabels[i], 80f, y + 64f, 38f, Gfx.DIM, false, Paint.Align.LEFT)
-            gfx.text(c, statValues[i], 920f, y + 66f, 44f, Color.WHITE, align = Paint.Align.RIGHT)
+            val y = 235f + i * 108f
+            gfx.glass(c, 40f, y, 960f, y + 92f, 30f)
+            gfx.text(c, statLabels[i], 80f, y + 60f, 36f, Gfx.DIM, false, Paint.Align.LEFT)
+            gfx.text(c, statValues[i], 920f, y + 62f, 42f, Color.WHITE, align = Paint.Align.RIGHT)
         }
+    }
+
+    // ---------------------------------------------------------------- Glücksrad
+
+    private fun drawWheel(c: Canvas) {
+        header(c, "GLÜCKSRAD")
+        starPill(c, save.stars)
+        val cx = W / 2f
+        val cy = wheelCY()
+        val r = 360f
+        if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[2], cx, cy, r * 1.6f, 200)
+        gfx.circle(c, cx, cy, r + 26f, Gfx.PANEL)
+        gfx.rect.set(cx - r, cy - r, cx + r, cy + r)
+        for (i in 0 until 8) {
+            gfx.fill.color = WHEEL_COL[i]; gfx.fill.alpha = 255
+            c.drawArc(gfx.rect, wheelAngle + i * 45f - 90f - 22.5f, 45f, true, gfx.fill)
+        }
+        gfx.circle(c, cx, cy, r, Color.BLACK, 40)
+        for (i in 0 until 8) {
+            c.save()
+            c.translate(cx, cy)
+            c.rotate(wheelAngle + i * 45f)
+            when (WHEEL_KIND[i]) {
+                0 -> {
+                    gfx.text(c, wheelLabel[i], 0f, -r * 0.62f, 64f, Color.WHITE)
+                    gfx.starShape(c, 0f, -r * 0.42f, 22f, 0f, Color.WHITE)
+                }
+                1 -> gfx.icon(c, Gfx.I_PLUS, 0f, -r * 0.6f, 40f, Color.WHITE)
+                else -> gfx.icon(c, Gfx.I_SHIELD, 0f, -r * 0.6f, 42f, Color.WHITE)
+            }
+            c.restore()
+        }
+        // Lichter am Rand
+        for (k in 0 until 24) {
+            val a = k * 0.2618f
+            val on = ((time * 6f).toInt() + k) % 2 == 0
+            gfx.circle(c, cx + cos(a) * (r + 13f), cy + sin(a) * (r + 13f), 7f, if (on) Gfx.GOLD else Color.WHITE, if (on) 255 else 90)
+        }
+        gfx.circle(c, cx, cy, 70f, Gfx.PANEL)
+        gfx.ring(c, cx, cy, 70f, Gfx.GOLD, 6f)
+        gfx.starShape(c, cx, cy, 34f, time * 30f, Gfx.GOLD)
+        // Zeiger oben
+        c.save()
+        c.translate(cx, cy - r - 40f)
+        gfx.fill.color = Color.WHITE; gfx.fill.alpha = 255
+        c.drawPath(pointerPath, gfx.fill)
+        c.restore()
+
+        bSpin.label = if (freeSpin()) "GRATIS DREHEN" else "DREHEN  ·  $SPIN_PRICE"
+        bSpin.visible = !spinning
+        if (!spinning) {
+            drawBtn(c, bSpin)
+            if (!freeSpin()) {
+                val tw = gfx.textWidth(bSpin.label, bSpin.h * 0.3f)
+                gfx.starShape(c, cx + tw / 2f + 28f, bSpin.y + bSpin.h / 2f, 18f, 0f, Gfx.BG)
+            }
+        }
+        gfx.text(c, if (freeSpin()) "1x täglich gratis" else "Nächste Gratis-Drehung: morgen", cx, bSpin.y + bSpin.h + 70f, 32f, Gfx.DIM, false)
     }
 
     // ---------------------------------------------------------------- Dialog & Toast

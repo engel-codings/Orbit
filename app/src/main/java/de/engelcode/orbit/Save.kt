@@ -26,6 +26,7 @@ class Save(context: Context) {
     var vibration = p.getBoolean("vibration", true)
     var showFps = p.getBoolean("showFps", true)
     var lowGfx = p.getBoolean("lowGfx", false)
+    var shake = p.getBoolean("shake", true)
 
     // Statistik
     var games = p.getInt("games", 0)
@@ -37,6 +38,10 @@ class Save(context: Context) {
     var powerups = p.getInt("powerups", 0)
     var revivesUsed = p.getInt("revivesUsed", 0)
     var bestDayStreak = p.getInt("bestDayStreak", 0)
+    var challengesDone = p.getInt("challengesDone", 0)
+    var spins = p.getInt("spins", 0)
+    var challengeDay = p.getLong("challengeDay", 0L)
+    var wheelDay = p.getLong("wheelDay", 0L)
 
     // Täglicher Bonus / Versionen
     var lastDay = p.getLong("lastDay", 0L)
@@ -89,7 +94,9 @@ class Save(context: Context) {
             .putInt("achClaimed", achClaimed)
             .putBoolean("sound", sound).putBoolean("music", music)
             .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
-            .putBoolean("lowGfx", lowGfx)
+            .putBoolean("lowGfx", lowGfx).putBoolean("shake", shake)
+            .putInt("challengesDone", challengesDone).putInt("spins", spins)
+            .putLong("challengeDay", challengeDay).putLong("wheelDay", wheelDay)
             .putInt("games", games).putInt("planets", planets)
             .putInt("perfects", perfects).putInt("bestStreak", bestStreak)
             .putInt("starsCollected", starsCollected).putFloat("playTime", playTime)
@@ -109,6 +116,7 @@ class Save(context: Context) {
         achClaimed = 0
         games = 0; planets = 0; perfects = 0; bestStreak = 0
         starsCollected = 0; playTime = 0f; powerups = 0; revivesUsed = 0; bestDayStreak = 0
+        challengesDone = 0; spins = 0; challengeDay = 0L; wheelDay = 0L
         lastDay = 0L; dayStreak = 0
         flush()
     }
