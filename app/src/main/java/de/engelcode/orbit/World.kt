@@ -25,6 +25,8 @@ class World(private val gfx: Gfx) {
         fun onStar()
         fun onDeath()
         fun onGoal()
+        fun onPowerup(type: Int)
+        fun onShieldBreak()
     }
 
     companion object {
@@ -39,6 +41,11 @@ class World(private val gfx: Gfx) {
         const val MAX_STARS = 7
         const val MAX_HOLES = 3
         const val MAX_PARTICLES = 140
+        const val MAX_POWER = 3
+        const val MAX_METEORS = 4
+        const val P_SHIELD = 0
+        const val P_MAGNET = 1
+        const val MAGNET_TIME = 10f
         const val TRAIL = 24
 
         const val T_NORMAL = 0
@@ -62,6 +69,8 @@ class World(private val gfx: Gfx) {
 
     private class Star { var x = 0f; var y = 0f; var spin = 0f; var active = false }
     private class Hole { var x = 0f; var y = 0f; var spin = 0f; var active = false }
+    private class Power { var x = 0f; var y = 0f; var spin = 0f; var type = 0; var active = false }
+    private class Meteor { var x = 0f; var y = 0f; var vx = 0f; var r = 0f; var spin = 0f; var active = false }
     private class Particle {
         var x = 0f; var y = 0f; var vx = 0f; var vy = 0f
         var life = 0f; var maxLife = 1f; var size = 0f; var color = 0
@@ -79,6 +88,12 @@ class World(private val gfx: Gfx) {
     private val stars = Array(MAX_STARS) { Star() }
     private val holes = Array(MAX_HOLES) { Hole() }
     private val particles = Array(MAX_PARTICLES) { Particle() }
+    private val powers = Array(MAX_POWER) { Power() }
+    private val meteors = Array(MAX_METEORS) { Meteor() }
+
+    var shield = false
+    var magnetT = 0f; private set
+    var powerupsTaken = 0; private set
 
     // Modus
     var level = 0; private set          // 0 = Endlos
@@ -158,7 +173,10 @@ class World(private val gfx: Gfx) {
         for (p in planets) p.active = false
         for (s in stars) s.active = false
         for (h in holes) h.active = false
+        for (p in powers) p.active = false
+        for (m in meteors) m.active = false
         for (p in particles) p.life = 0f
+        shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
         dead = false; won = false
         shake = 0f; popT = 0f
@@ -212,7 +230,7 @@ class World(private val gfx: Gfx) {
         val d = if (level > 0) Levels.difficulty(level) else min(1f, genCount / 40f)
 
         var type = T_NORMAL
-        val typesOn = if (level > 0) level >= 6 else genCount >= 6
+        val typesOn = if (level > 0) level >= Levels.TYPES_FROM else genCount >= 6
         if (typesOn && !isGoal) {
             val rr = rng.nextFloat()
             if (rr < 0.14f) type = T_ICE else if (rr < 0.24f) type = T_GIANT
@@ -222,7 +240,7 @@ class World(private val gfx: Gfx) {
         val gap = 400f + 120f * d + rng.nextFloat() * 160f
 
         var amp = 0f
-        val moveOn = if (level > 0) level >= 4 && genCount >= 2 else genCount >= 8
+        val moveOn = if (level > 0) level >= Levels.MOVING_FROM && genCount >= 2 else genCount >= 8
         if (moveOn && !isGoal && type != T_GIANT && rng.nextFloat() < 0.25f + 0.45f * d) {
             amp = 60f + rng.nextFloat() * 120f * (0.5f + d)
         }
@@ -243,7 +261,7 @@ class World(private val gfx: Gfx) {
 
         // Schwarzes Loch
         var holeX = -9999f; var holeY = -9999f
-        val holesOn = if (level > 0) level >= 12 else genCount >= 14
+        val holesOn = if (level > 0) level >= Levels.HOLES_FROM else genCount >= 14
         if (holesOn && !isGoal && rng.nextFloat() < 0.15f + 0.2f * d) {
             val mx = (lastGenX + x) / 2f; val my = (lastGenY + y) / 2f
             val side = if (mx < W / 2f) 1f else -1f
@@ -258,13 +276,35 @@ class World(private val gfx: Gfx) {
             }
         }
 
-        // Stern dazwischen
-        if (rng.nextFloat() < 0.65f) {
+        // Stern oder Power-up dazwischen
+        var sx = ((lastGenX + x) / 2f + (rng.nextFloat() - 0.5f) * 240f).coerceIn(60f, W - 60f)
+        val sy = (lastGenY + y) / 2f
+        if (dist(sx, sy, holeX, holeY) < 160f) sx = (lastGenX + x) / 2f
+        val powerOn = if (level > 0) level >= Levels.POWERUPS_FROM else genCount >= 5
+        val roll = rng.nextFloat()
+        if (powerOn && !isGoal && roll < 0.07f) {
+            for (pw in powers) if (!pw.active) {
+                pw.x = sx; pw.y = sy; pw.spin = 0f; pw.active = true
+                pw.type = if (rng.nextFloat() < 0.5f) P_SHIELD else P_MAGNET
+                break
+            }
+        } else if (roll < 0.47f) {
             for (s in stars) if (!s.active) {
-                var sx = ((lastGenX + x) / 2f + (rng.nextFloat() - 0.5f) * 240f).coerceIn(60f, W - 60f)
-                val sy = (lastGenY + y) / 2f
-                if (dist(sx, sy, holeX, holeY) < 160f) sx = (lastGenX + x) / 2f
                 s.x = sx; s.y = sy; s.spin = rng.nextFloat() * 6f; s.active = true
+                break
+            }
+        }
+
+        // Meteorit
+        val metOn = if (level > 0) level >= Levels.METEORS_FROM else genCount >= 20
+        if (metOn && !isGoal && rng.nextFloat() < 0.12f + 0.2f * d) {
+            for (m in meteors) if (!m.active) {
+                m.x = rng.nextFloat() * W
+                m.y = (lastGenY + y) / 2f + (rng.nextFloat() - 0.5f) * 160f
+                m.vx = (if (rng.nextFloat() < 0.5f) -1f else 1f) * (220f + rng.nextFloat() * 180f * (0.5f + d))
+                m.r = 26f + rng.nextFloat() * 10f
+                m.spin = 0f
+                m.active = true
                 break
             }
         }
@@ -295,6 +335,12 @@ class World(private val gfx: Gfx) {
 
     /** Wiederbeleben auf dem zuletzt besuchten Planeten. */
     fun revive(): Boolean {
+        if (!respawn()) return false
+        burst(plX, plY, Gfx.GREEN, 26, 380f)
+        return true
+    }
+
+    private fun respawn(): Boolean {
         val p = lastPlanet ?: current ?: return false
         if (!p.active) return false
         dead = false
@@ -307,7 +353,6 @@ class World(private val gfx: Gfx) {
         flyTime = 0f
         streak = 0
         trailCount = 0
-        burst(plX, plY, Gfx.GREEN, 26, 380f)
         return true
     }
 
@@ -329,8 +374,14 @@ class World(private val gfx: Gfx) {
             if (trailCount < TRAIL) trailCount++
         }
 
+        if (magnetT > 0f) magnetT -= dt
         for (s in stars) if (s.active) {
             s.spin += dt * 2f
+            if (magnetT > 0f && playing && !dead) {
+                val dx = plX - s.x; val dy = plY - s.y
+                val d = sqrt(dx * dx + dy * dy)
+                if (d < 420f && d > 1f) { s.x += dx / d * 900f * dt; s.y += dy / d * 900f * dt }
+            }
             if (playing && !dead) {
                 val dx = s.x - plX; val dy = s.y - plY
                 if (dx * dx + dy * dy < 55f * 55f) {
@@ -345,6 +396,27 @@ class World(private val gfx: Gfx) {
         for (h in holes) if (h.active) {
             h.spin += dt * 2.5f
             if (h.y > camY + worldH + 300f) h.active = false
+        }
+        for (pw in powers) if (pw.active) {
+            pw.spin += dt
+            if (playing && !dead) {
+                val dx = pw.x - plX; val dy = pw.y - plY
+                if (dx * dx + dy * dy < 65f * 65f) {
+                    pw.active = false
+                    powerupsTaken++
+                    if (pw.type == P_SHIELD) shield = true else magnetT = MAGNET_TIME
+                    burst(pw.x, pw.y, if (pw.type == P_SHIELD) Gfx.SHIELD else Gfx.RED, 18, 320f)
+                    listener?.onPowerup(pw.type)
+                }
+            }
+            if (pw.y > camY + worldH + 200f) pw.active = false
+        }
+        for (m in meteors) if (m.active) {
+            m.x += m.vx * dt
+            m.spin += dt * 3f
+            if (m.x > W + 120f) m.x = -120f
+            if (m.x < -120f) m.x = W + 120f
+            if (m.y > camY + worldH + 300f) m.active = false
         }
 
         // Kamera
@@ -407,6 +479,12 @@ class World(private val gfx: Gfx) {
                 ax += dx / d * a; ay += dy / d * a
             }
         }
+        for (m in meteors) {
+            if (!m.active) continue
+            val dx = m.x - plX; val dy = m.y - plY
+            val rr = m.r + 12f
+            if (dx * dx + dy * dy < rr * rr) { die(); return false }
+        }
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
         if (sp > 0.001f) { vx = vx / sp * FLY_SPEED; vy = vy / sp * FLY_SPEED }
@@ -454,6 +532,15 @@ class World(private val gfx: Gfx) {
     }
 
     private fun die() {
+        if (shield) {
+            shield = false
+            burst(plX, plY, Gfx.SHIELD, 30, 450f)
+            if (respawn()) {
+                burst(plX, plY, Gfx.SHIELD, 20, 300f)
+                listener?.onShieldBreak()
+                return
+            }
+        }
         dead = true
         shake = 1f
         burst(plX, plY, Color.WHITE, 36, 520f)
@@ -481,7 +568,7 @@ class World(private val gfx: Gfx) {
     // ===================================================================== Zeichnen
 
     fun draw(c: Canvas, skin: Int, trail: Int) {
-        drawStarfield(c)
+        drawBackground(c)
         var sx = 0f; var sy = 0f
         if (shake > 0f) {
             sx = (Random.nextFloat() - 0.5f) * 28f * shake
@@ -507,7 +594,7 @@ class World(private val gfx: Gfx) {
                 if (!reduced) gfx.glow(c, gfx.goalGlow, p.x, p.y, p.r * 2.6f)
             }
             if (p.body != 0) gfx.drawBody(c, p.body, p.x, p.y, p.r, time, reduced)
-            else gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, time, reduced)
+            else gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
             if (p.goal) drawGoalMarker(c, p)
         }
 
@@ -517,11 +604,38 @@ class World(private val gfx: Gfx) {
             gfx.starShape(c, s.x, s.y, 22f + sin(time * 5f + s.spin) * 3f, s.spin * 57.3f, Gfx.GOLD)
         }
 
+        for (pw in powers) {
+            if (!pw.active || pw.y < top || pw.y > bottom) continue
+            val col = if (pw.type == P_SHIELD) Gfx.SHIELD else Gfx.RED
+            if (!reduced) gfx.glow(c, if (pw.type == P_SHIELD) gfx.shieldGlow else gfx.fireGlow, pw.x, pw.y, 85f)
+            val bob = sin(time * 3f + pw.spin) * 6f
+            gfx.circle(c, pw.x, pw.y + bob, 38f, Gfx.PANEL, 230)
+            gfx.ring(c, pw.x, pw.y + bob, 38f, col, 4f)
+            gfx.icon(c, if (pw.type == P_SHIELD) Gfx.I_SHIELD else Gfx.I_MAGNET, pw.x, pw.y + bob, 20f, col)
+        }
+        for (m in meteors) {
+            if (!m.active || m.y < top || m.y > bottom) continue
+            val dirX = if (m.vx > 0f) -1f else 1f
+            if (!reduced) gfx.glow(c, gfx.fireGlow, m.x + dirX * m.r * 0.8f, m.y, m.r * 3f)
+            for (k in 1..4) gfx.circle(c, m.x + dirX * k * m.r * 0.55f, m.y, m.r * (1f - k * 0.18f), 0xFFFF7A00.toInt(), 150 - k * 30)
+            gfx.circle(c, m.x, m.y, m.r, 0xFF6D5D4F.toInt())
+            gfx.circle(c, m.x + cos(m.spin) * m.r * 0.4f, m.y + sin(m.spin) * m.r * 0.4f, m.r * 0.25f, 0xFF4E4237.toInt())
+            gfx.circle(c, m.x - cos(m.spin + 2f) * m.r * 0.45f, m.y - sin(m.spin + 2f) * m.r * 0.45f, m.r * 0.18f, 0xFF4E4237.toInt())
+        }
+
         if (!dead) {
             val start = (trailHead - trailCount + TRAIL) % TRAIL
             gfx.drawTrail(c, trail, trailX, trailY, start, trailCount, TRAIL, gfx.skinColor(skin, time), time)
             if (current != null && !won) drawAim(c)
             gfx.drawSkin(c, skin, plX, plY, 1f, time, reduced)
+            if (shield) {
+                gfx.ring(c, plX, plY, 34f + sin(time * 5f) * 2f, Gfx.SHIELD, 4f, 200)
+                gfx.circle(c, plX, plY, 34f, Gfx.SHIELD, 40)
+            }
+            if (magnetT > 0f) {
+                val a = (magnetT.coerceAtMost(1f) * 120f).toInt()
+                gfx.ring(c, plX, plY, 60f + (time * 120f) % 60f, Gfx.RED, 3f, a)
+            }
         }
 
         for (p in particles) {
@@ -534,6 +648,23 @@ class World(private val gfx: Gfx) {
             gfx.text(c, popStr, popX, popY, 54f, Gfx.GOLD, alpha = (min(1f, popT / 0.4f) * 255f).toInt())
         }
         c.restore()
+    }
+
+    private val nebX = floatArrayOf(150f, 820f, 300f, 760f)
+    private val nebY = floatArrayOf(0.2f, 0.65f, 1.15f, 1.6f)
+
+    /** Sternenhimmel + Nebel (auch für Menüs). */
+    fun drawBackground(c: Canvas) {
+        if (!reduced) {
+            val band = worldH * 2f
+            for (i in 0 until 4) {
+                var y = (nebY[i] * worldH - camY * 0.03f) % band
+                if (y < 0f) y += band
+                y -= worldH * 0.4f
+                gfx.glow(c, gfx.nebula[i], nebX[i], y, 720f)
+            }
+        }
+        drawStarfield(c)
     }
 
     private fun drawStarfield(c: Canvas) {

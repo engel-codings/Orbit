@@ -31,6 +31,9 @@ object Synth {
         Sound.BONUS -> bonus()
         Sound.WIN -> win()
         Sound.REVIVE -> revive()
+        Sound.POWER -> power()
+        Sound.CROWN -> crown()
+        Sound.SHIELD -> shield()
         else -> music()
     }
 
@@ -79,6 +82,39 @@ object Synth {
     private fun bonus() = notes(0.9, doubleArrayOf(784.0, 988.0, 1175.0, 1568.0, 1976.0), 0.08, 7.0, 0.24)
     private fun win() = notes(1.3, doubleArrayOf(523.0, 659.0, 784.0, 1047.0, 1319.0, 1568.0), 0.1, 4.5, 0.2, 0.2)
     private fun revive() = notes(0.7, doubleArrayOf(392.0, 523.0, 659.0, 784.0), 0.07, 6.0, 0.25, 0.15)
+
+    private fun power(): FloatArray {
+        val d = 0.45; val b = buf(d); var ph = 0.0
+        for (i in b.indices) {
+            val t = i / SR.toDouble(); val k = t / d
+            ph += TAU * (500 + 1500 * k * k) / SR
+            val trem = 0.75 + 0.25 * sin(TAU * 18 * t)
+            b[i] = ((sin(ph) + 0.3 * sin(2 * ph)) * trem * (1 - k) * att(t) * 0.35).toFloat()
+        }
+        return b
+    }
+
+    private fun crown(): FloatArray {
+        val b = buf(0.9)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val s = sin(TAU * 1568 * t) * 0.5 + sin(TAU * 2093 * t) * 0.3 + sin(TAU * 3136 * t) * 0.15
+            b[i] = (s * exp(-t * 5) * att(t, 0.002) * 0.5).toFloat()
+        }
+        return b
+    }
+
+    private fun shield(): FloatArray {
+        val b = buf(0.5); var lp = 0.0
+        val rnd = java.util.Random(3)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            lp += ((rnd.nextDouble() * 2 - 1) - lp) * 0.5
+            val s = sin(TAU * 2637 * t) * 0.4 + sin(TAU * 3520 * t) * 0.25 + lp * 0.4 * exp(-t * 20)
+            b[i] = (s * exp(-t * 7) * att(t, 0.002) * 0.45).toFloat()
+        }
+        return b
+    }
 
     private fun star(): FloatArray {
         val b = buf(0.32)

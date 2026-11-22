@@ -23,9 +23,12 @@ class Sound(context: Context, private val save: Save) {
         const val BONUS = 8
         const val WIN = 9
         const val REVIVE = 10
-        const val MUSIC = 11
-        const val COUNT = 12
-        private const val FILE_VERSION = 1
+        const val POWER = 11
+        const val CROWN = 12
+        const val SHIELD = 13
+        const val MUSIC = 14
+        const val COUNT = 15
+        private const val FILE_VERSION = 2
         private const val MUSIC_VOL = 0.35f
     }
 
