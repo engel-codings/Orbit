@@ -12,7 +12,9 @@ class Save(context: Context) {
     var stars = p.getInt("stars", 0)
     var skin = p.getInt("skin", 0)
     var trail = p.getInt("trail", 0)
-    var ownedSkins = p.getInt("ownedSkins", 1)
+    var ownedSkins: Long = if (p.contains("ownedSkinsL")) p.getLong("ownedSkinsL", 1L)
+        else (p.getInt("ownedSkins", 1).toLong() and 0xFFFFFFFFL)
+    var lang = p.getInt("lang", -1)   // -1 = Systemsprache
     var ownedTrails = p.getInt("ownedTrails", 1)
     var revives = p.getInt("revives", 0)
     var shieldStarts = p.getInt("shieldStarts", 0)
@@ -78,9 +80,9 @@ class Save(context: Context) {
         return n - old
     }
 
-    fun ownsSkin(i: Int) = ownedSkins and (1 shl i) != 0
+    fun ownsSkin(i: Int) = ownedSkins and (1L shl i) != 0L
     fun ownsTrail(i: Int) = ownedTrails and (1 shl i) != 0
-    fun skinCount() = Integer.bitCount(ownedSkins)
+    fun skinCount() = java.lang.Long.bitCount(ownedSkins)
 
     fun flush() {
         val sb = StringBuilder(Levels.COUNT)
@@ -88,7 +90,8 @@ class Save(context: Context) {
         p.edit()
             .putInt("best", best).putInt("stars", stars)
             .putInt("skin", skin).putInt("trail", trail)
-            .putInt("ownedSkins", ownedSkins).putInt("ownedTrails", ownedTrails)
+            .putLong("ownedSkinsL", ownedSkins).putInt("ownedTrails", ownedTrails)
+            .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())
             .putInt("achClaimed", achClaimed)
@@ -110,7 +113,7 @@ class Save(context: Context) {
     /** Setzt alles außer den Einstellungen zurück. */
     fun resetProgress() {
         best = 0; stars = 0; skin = 0; trail = 0
-        ownedSkins = 1; ownedTrails = 1; revives = 0; shieldStarts = 0; levelDone = 0
+        ownedSkins = 1L; ownedTrails = 1; revives = 0; shieldStarts = 0; levelDone = 0
         for (i in crowns.indices) crowns[i] = 0
         recount()
         achClaimed = 0

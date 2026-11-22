@@ -3,12 +3,12 @@ package de.engelcode.orbit
 import kotlin.math.min
 
 /**
- * Die Level-Reise: von der Erde bis zum Urknall (150 Level).
+ * Die Level-Reise: von der Erde bis zum Urknall (150 Level) und weiter in die Spiegelwelt (bis 200).
  * Jedes Level ist eine feste Strecke zwischen Planeten (immer gleich aufgebaut).
  */
 object Levels {
 
-    const val COUNT = 150
+    const val COUNT = 200
 
     // Himmelskörper
     const val B_NONE = 0
@@ -28,14 +28,44 @@ object Levels {
     const val B_QUASAR = 14
     const val B_BLACKHOLE = 15
     const val B_BIGBANG = 16
+    const val B_CRYSTAL = 17
+    const val B_NEONSTAR = 18
+    const val B_MIRROR = 19
+    const val B_VORTEX = 20
+    const val B_GATE = 21
 
-    val bodyNames = arrayOf(
-        "", "ERDE", "MOND", "MARS", "ASTEROIDENGÜRTEL", "JUPITER", "SATURN",
-        "URANUS", "NEPTUN", "PLUTO", "KOMET", "ANDROMEDA",
-        "PULSAR", "ORIONNEBEL", "QUASAR", "SAGITTARIUS A*", "URKNALL"
+    private val bodyNames = arrayOf(
+        arrayOf("", "", ""),
+        arrayOf("ERDE", "EARTH", "ЗЕМЛЯ"),
+        arrayOf("MOND", "MOON", "ЛУНА"),
+        arrayOf("MARS", "MARS", "МАРС"),
+        arrayOf("ASTEROIDENGÜRTEL", "ASTEROID BELT", "ПОЯС АСТЕРОИДОВ"),
+        arrayOf("JUPITER", "JUPITER", "ЮПИТЕР"),
+        arrayOf("SATURN", "SATURN", "САТУРН"),
+        arrayOf("URANUS", "URANUS", "УРАН"),
+        arrayOf("NEPTUN", "NEPTUNE", "НЕПТУН"),
+        arrayOf("PLUTO", "PLUTO", "ПЛУТОН"),
+        arrayOf("KOMET", "COMET", "КОМЕТА"),
+        arrayOf("ANDROMEDA", "ANDROMEDA", "АНДРОМЕДА"),
+        arrayOf("PULSAR", "PULSAR", "ПУЛЬСАР"),
+        arrayOf("ORIONNEBEL", "ORION NEBULA", "ТУМАННОСТЬ ОРИОНА"),
+        arrayOf("QUASAR", "QUASAR", "КВАЗАР"),
+        arrayOf("SAGITTARIUS A*", "SAGITTARIUS A*", "СТРЕЛЕЦ A*"),
+        arrayOf("URKNALL", "BIG BANG", "БОЛЬШОЙ ВЗРЫВ"),
+        arrayOf("KRISTALLWELT", "CRYSTAL WORLD", "КРИСТАЛЬНЫЙ МИР"),
+        arrayOf("NEONSTERN", "NEON STAR", "НЕОНОВАЯ ЗВЕЗДА"),
+        arrayOf("SPIEGELPLANET", "MIRROR PLANET", "ЗЕРКАЛЬНАЯ ПЛАНЕТА"),
+        arrayOf("ZEITSTRUDEL", "TIME VORTEX", "ВИХРЬ ВРЕМЕНИ"),
+        arrayOf("DIMENSIONSTOR", "DIMENSION GATE", "ВРАТА ИЗМЕРЕНИЙ")
     )
 
-    /** Abschnitt 0..14 (je 10 Level). */
+    fun bodyName(b: Int): String = bodyNames[b][L.cur]
+
+    /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200). */
+    fun dimension(level: Int) = if (level > 150) 2 else 1
+    const val DIM2_FROM = 151
+
+    /** Abschnitt 0..19 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10
 
     fun startBody(level: Int) = section(level) + 1
@@ -51,7 +81,7 @@ object Levels {
     fun seed(level: Int) = level * 7919 + 13
 
     /** Belohnung beim ersten Schaffen. */
-    fun reward(level: Int) = 3 + level / 4 + if (level % 10 == 0) 25 else 0
+    fun reward(level: Int) = 5 + level / 2 + if (level % 10 == 0) 30 else 0
 
     /** Perfekte Landungen für die 3. Krone. */
     fun perfectGoal(level: Int) = (planetCount(level) * 2 + 4) / 5

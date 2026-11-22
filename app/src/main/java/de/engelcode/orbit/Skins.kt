@@ -27,6 +27,8 @@ object Skins {
     const val SATELLITE = 20
     const val PULSAR = 21
     const val BIGBANG = 22
+    const val PRISM = 23
+    const val MIRROR = 24
 
     // Spur-Stile
     const val T_LINE = 0
@@ -49,73 +51,81 @@ object Skins {
      * reqLevel / reqCrowns: muss zusätzlich zum Preis erreicht sein.
      */
     class Skin(
-        val name: String, val price: Int, val color: Int, val glow: Int, val style: Int,
+        private val names: Array<String>, val price: Int, val color: Int, val glow: Int, val style: Int,
         val color2: Int = color, val reqLevel: Int = 0, val reqCrowns: Int = 0
-    )
+    ) {
+        val name: String get() = names[L.cur]
+    }
 
     class Trail(
-        val name: String, val price: Int, val color: Int, val style: Int,
+        private val names: Array<String>, val price: Int, val color: Int, val style: Int,
         val reqLevel: Int = 0, val reqCrowns: Int = 0
-    )
+    ) {
+        val name: String get() = names[L.cur]
+    }
+
+    private fun n(de: String, en: String, ru: String) = arrayOf(de, en, ru)
 
     private fun c(v: Long) = v.toInt()
 
     val skins = arrayOf(
-        Skin("Komet", 0, c(0xFFE8FBFF), c(0xFF7FE7FF), PLAIN),
-        Skin("Sonne", 150, c(0xFFFFD166), c(0xFFFFB703), PULSE),
-        Skin("Rubin", 300, c(0xFFFF4D6D), c(0xFFFF4D6D), DIAMOND),
-        Skin("Smaragd", 300, c(0xFF2EE59D), c(0xFF2EE59D), DIAMOND),
-        Skin("Saphir", 350, c(0xFF4C8DFF), c(0xFF4C8DFF), DIAMOND),
-        Skin("Saturn", 500, c(0xFFF4A261), c(0xFFF4A261), RING, c(0xFFFFE5B4), reqLevel = 10),
-        Skin("Neon", 600, c(0xFFF15BB5), c(0xFFF15BB5), STAR),
-        Skin("Herz", 700, c(0xFFFF5C8A), c(0xFFFF5C8A), HEART),
-        Skin("Eiskristall", 800, c(0xFFBDE8FF), c(0xFF7FD8FF), HEX, reqLevel = 15),
-        Skin("Atom", 1000, c(0xFF7FE7FF), c(0xFF4CC9F0), ATOM, c(0xFFB388FF), reqLevel = 20),
-        Skin("Ufo", 1200, c(0xFFB0BEC5), c(0xFF9BE564), SAUCER, c(0xFF9BE564), reqCrowns = 30),
-        Skin("Zwilling", 1400, c(0xFFFFD166), c(0xFFFFD166), TWIN, c(0xFF4CC9F0), reqLevel = 30),
-        Skin("Plasma", 1600, c(0xFFB388FF), c(0xFF9B5DE5), PULSE, reqLevel = 35),
-        Skin("Lava", 1800, c(0xFFFF7A00), c(0xFFFF3D00), HEX, reqLevel = 40),
-        Skin("Auge", 2000, c(0xFFFFFFFF), c(0xFF2EC4B6), EYE, c(0xFF2EC4B6), reqCrowns = 60),
-        Skin("Regenbogen", 2500, c(0xFFFFFFFF), c(0xFFFFFFFF), RAINBOW, reqLevel = 50),
-        Skin("Schw. Loch", 3000, c(0xFF9B5DE5), c(0xFF7B2CBF), HOLE, reqLevel = 60),
-        Skin("Neutronen", 3500, c(0xFFE0F7FF), c(0xFF00E5FF), ATOM, c(0xFF00E5FF), reqCrowns = 120),
-        Skin("Galaxie", 4000, c(0xFFB388FF), c(0xFF7B2CBF), GALAXY, c(0xFF4CC9F0), reqLevel = 70),
-        Skin("Phönix", 4500, c(0xFFFF7A00), c(0xFFFFB703), STAR, reqLevel = 80),
-        Skin("Diamant", 5000, c(0xFFFFFFFF), c(0xFFBDE8FF), HEX, reqCrowns = 180),
-        Skin("Goldstern", 6000, c(0xFFFFD700), c(0xFFFFC300), STAR, reqLevel = 90),
-        Skin("Kronjuwel", 0, c(0xFFFFD166), c(0xFFFFB703), CROWN, reqCrowns = 270),
-        Skin("Andromeda", 0, c(0xFFF15BB5), c(0xFF9B5DE5), GALAXY, c(0xFFFFD166), reqLevel = 100),
-        Skin("Mondsichel", 2200, c(0xFFFFF3C4), c(0xFFFFE08A), MOON, reqLevel = 55),
-        Skin("Feuerball", 2800, c(0xFFFF7A00), c(0xFFFF3D00), FIREBALL, c(0xFFFFD166), reqLevel = 65),
-        Skin("Schneeflocke", 3200, c(0xFFE0F7FF), c(0xFF7FD8FF), SNOWFLAKE, reqCrowns = 150),
-        Skin("Rakete", 3800, c(0xFFECEFF1), c(0xFFFF7A00), ROCKET, c(0xFFFF4D6D), reqLevel = 85),
-        Skin("Würfel", 4200, c(0xFF4CC9F0), c(0xFF7B61FF), CUBE, c(0xFFB388FF), reqCrowns = 210),
-        Skin("Satellit", 5500, c(0xFFCFD8DC), c(0xFF4C8DFF), SATELLITE, c(0xFF4C8DFF), reqLevel = 110),
-        Skin("Pulsar", 7000, c(0xFFFFFFFF), c(0xFF7FE7FF), PULSAR, c(0xFF7FE7FF), reqLevel = 120),
-        Skin("Urknall", 0, c(0xFFFFFFFF), c(0xFFFFD166), BIGBANG, reqLevel = 150)
+        Skin(n("Komet", "Comet", "Комета"), 0, c(0xFFE8FBFF), c(0xFF7FE7FF), PLAIN),
+        Skin(n("Sonne", "Sun", "Солнце"), 120, c(0xFFFFD166), c(0xFFFFB703), PULSE),
+        Skin(n("Rubin", "Ruby", "Рубин"), 250, c(0xFFFF4D6D), c(0xFFFF4D6D), DIAMOND),
+        Skin(n("Smaragd", "Emerald", "Изумруд"), 250, c(0xFF2EE59D), c(0xFF2EE59D), DIAMOND),
+        Skin(n("Saphir", "Sapphire", "Сапфир"), 300, c(0xFF4C8DFF), c(0xFF4C8DFF), DIAMOND),
+        Skin(n("Saturn", "Saturn", "Сатурн"), 400, c(0xFFF4A261), c(0xFFF4A261), RING, c(0xFFFFE5B4), reqLevel = 10),
+        Skin(n("Neon", "Neon", "Неон"), 500, c(0xFFF15BB5), c(0xFFF15BB5), STAR),
+        Skin(n("Herz", "Heart", "Сердце"), 600, c(0xFFFF5C8A), c(0xFFFF5C8A), HEART),
+        Skin(n("Eiskristall", "Ice crystal", "Ледяной кристалл"), 700, c(0xFFBDE8FF), c(0xFF7FD8FF), HEX, reqLevel = 15),
+        Skin(n("Atom", "Atom", "Атом"), 900, c(0xFF7FE7FF), c(0xFF4CC9F0), ATOM, c(0xFFB388FF), reqLevel = 20),
+        Skin(n("Ufo", "UFO", "НЛО"), 1100, c(0xFFB0BEC5), c(0xFF9BE564), SAUCER, c(0xFF9BE564), reqCrowns = 30),
+        Skin(n("Zwilling", "Twins", "Близнецы"), 1300, c(0xFFFFD166), c(0xFFFFD166), TWIN, c(0xFF4CC9F0), reqLevel = 30),
+        Skin(n("Plasma", "Plasma", "Плазма"), 1500, c(0xFFB388FF), c(0xFF9B5DE5), PULSE, reqLevel = 35),
+        Skin(n("Lava", "Lava", "Лава"), 1700, c(0xFFFF7A00), c(0xFFFF3D00), HEX, reqLevel = 40),
+        Skin(n("Auge", "Eye", "Глаз"), 1900, c(0xFFFFFFFF), c(0xFF2EC4B6), EYE, c(0xFF2EC4B6), reqCrowns = 60),
+        Skin(n("Regenbogen", "Rainbow", "Радуга"), 2300, c(0xFFFFFFFF), c(0xFFFFFFFF), RAINBOW, reqLevel = 50),
+        Skin(n("Schw. Loch", "Black hole", "Чёрная дыра"), 2800, c(0xFF9B5DE5), c(0xFF7B2CBF), HOLE, reqLevel = 60),
+        Skin(n("Neutronen", "Neutron", "Нейтрон"), 3200, c(0xFFE0F7FF), c(0xFF00E5FF), ATOM, c(0xFF00E5FF), reqCrowns = 120),
+        Skin(n("Galaxie", "Galaxy", "Галактика"), 3600, c(0xFFB388FF), c(0xFF7B2CBF), GALAXY, c(0xFF4CC9F0), reqLevel = 70),
+        Skin(n("Phönix", "Phoenix", "Феникс"), 4200, c(0xFFFF7A00), c(0xFFFFB703), STAR, reqLevel = 80),
+        Skin(n("Diamant", "Diamond", "Алмаз"), 4800, c(0xFFFFFFFF), c(0xFFBDE8FF), HEX, reqCrowns = 180),
+        Skin(n("Goldstern", "Gold star", "Золотая звезда"), 5500, c(0xFFFFD700), c(0xFFFFC300), STAR, reqLevel = 90),
+        Skin(n("Kronjuwel", "Crown jewel", "Корона"), 0, c(0xFFFFD166), c(0xFFFFB703), CROWN, reqCrowns = 270),
+        Skin(n("Andromeda", "Andromeda", "Андромеда"), 0, c(0xFFF15BB5), c(0xFF9B5DE5), GALAXY, c(0xFFFFD166), reqLevel = 100),
+        Skin(n("Mondsichel", "Crescent", "Полумесяц"), 2000, c(0xFFFFF3C4), c(0xFFFFE08A), MOON, reqLevel = 55),
+        Skin(n("Feuerball", "Fireball", "Огненный шар"), 2500, c(0xFFFF7A00), c(0xFFFF3D00), FIREBALL, c(0xFFFFD166), reqLevel = 65),
+        Skin(n("Schneeflocke", "Snowflake", "Снежинка"), 3000, c(0xFFE0F7FF), c(0xFF7FD8FF), SNOWFLAKE, reqCrowns = 150),
+        Skin(n("Rakete", "Rocket", "Ракета"), 3500, c(0xFFECEFF1), c(0xFFFF7A00), ROCKET, c(0xFFFF4D6D), reqLevel = 85),
+        Skin(n("Würfel", "Cube", "Куб"), 4000, c(0xFF4CC9F0), c(0xFF7B61FF), CUBE, c(0xFFB388FF), reqCrowns = 210),
+        Skin(n("Satellit", "Satellite", "Спутник"), 5000, c(0xFFCFD8DC), c(0xFF4C8DFF), SATELLITE, c(0xFF4C8DFF), reqLevel = 110),
+        Skin(n("Pulsar", "Pulsar", "Пульсар"), 6500, c(0xFFFFFFFF), c(0xFF7FE7FF), PULSAR, c(0xFF7FE7FF), reqLevel = 120),
+        Skin(n("Urknall", "Big Bang", "Большой взрыв"), 0, c(0xFFFFFFFF), c(0xFFFFD166), BIGBANG, reqLevel = 150),
+        Skin(n("Prisma", "Prism", "Призма"), 7500, c(0xFFFFFFFF), c(0xFFF15BB5), PRISM, c(0xFF4CC9F0), reqLevel = 170),
+        Skin(n("Spiegel", "Mirror", "Зеркало"), 0, c(0xFFE0F7FF), c(0xFF9BE564), MIRROR, c(0xFF7B61FF), reqLevel = 200)
     )
 
     val trails = arrayOf(
-        Trail("Standard", 0, 0, T_LINE),
-        Trail("Plasma", 200, c(0xFFB388FF), T_LINE),
-        Trail("Feuer", 400, 0, T_FIRE),
-        Trail("Funken", 500, 0, T_SPARK),
-        Trail("Geist", 700, c(0xFF7FE7FF), T_GHOST),
-        Trail("Blitz", 900, c(0xFFFFF176), T_ZIGZAG, reqLevel = 15),
-        Trail("Blasen", 1000, c(0xFF7FE7FF), T_BUBBLES, reqLevel = 25),
-        Trail("Doppel", 1200, c(0xFFF15BB5), T_DOUBLE, reqCrowns = 40),
-        Trail("Sternenstaub", 1500, 0, T_STARDUST, reqLevel = 35),
-        Trail("Regenbogen", 2000, 0, T_RAINBOW, reqLevel = 45),
-        Trail("Matrix", 2500, c(0xFF2EE59D), T_MATRIX, reqCrowns = 100),
-        Trail("Gold", 4000, 0, T_GOLD, reqLevel = 75),
-        Trail("Herzen", 1800, c(0xFFFF5C8A), T_HEARTS, reqLevel = 60),
-        Trail("Kometenschweif", 2200, c(0xFF7FE7FF), T_COMET, reqCrowns = 160),
-        Trail("Pixel", 3000, 0, T_PIXEL, reqLevel = 95),
-        Trail("Galaxie", 5000, c(0xFFB388FF), T_GALAXY, reqLevel = 130)
+        Trail(n("Standard", "Standard", "Стандарт"), 0, 0, T_LINE),
+        Trail(n("Plasma", "Plasma", "Плазма"), 150, c(0xFFB388FF), T_LINE),
+        Trail(n("Feuer", "Fire", "Огонь"), 300, 0, T_FIRE),
+        Trail(n("Funken", "Sparks", "Искры"), 400, 0, T_SPARK),
+        Trail(n("Geist", "Ghost", "Призрак"), 600, c(0xFF7FE7FF), T_GHOST),
+        Trail(n("Blitz", "Lightning", "Молния"), 800, c(0xFFFFF176), T_ZIGZAG, reqLevel = 15),
+        Trail(n("Blasen", "Bubbles", "Пузыри"), 900, c(0xFF7FE7FF), T_BUBBLES, reqLevel = 25),
+        Trail(n("Doppel", "Double", "Двойной"), 1000, c(0xFFF15BB5), T_DOUBLE, reqCrowns = 40),
+        Trail(n("Sternenstaub", "Stardust", "Звёздная пыль"), 1300, 0, T_STARDUST, reqLevel = 35),
+        Trail(n("Regenbogen", "Rainbow", "Радуга"), 1800, 0, T_RAINBOW, reqLevel = 45),
+        Trail(n("Matrix", "Matrix", "Матрица"), 2200, c(0xFF2EE59D), T_MATRIX, reqCrowns = 100),
+        Trail(n("Gold", "Gold", "Золото"), 3500, 0, T_GOLD, reqLevel = 75),
+        Trail(n("Herzen", "Hearts", "Сердечки"), 1600, c(0xFFFF5C8A), T_HEARTS, reqLevel = 60),
+        Trail(n("Kometenschweif", "Comet tail", "Хвост кометы"), 2000, c(0xFF7FE7FF), T_COMET, reqCrowns = 160),
+        Trail(n("Pixel", "Pixels", "Пиксели"), 2700, 0, T_PIXEL, reqLevel = 95),
+        Trail(n("Galaxie", "Galaxy", "Галактика"), 4500, c(0xFFB388FF), T_GALAXY, reqLevel = 130)
     )
 
-    const val REVIVE_PRICE = 150
+    const val REVIVE_PRICE = 120
     const val REVIVE_MAX = 3
-    const val SHIELD_PRICE = 80
+    const val SHIELD_PRICE = 60
     const val SHIELD_MAX = 5
 }

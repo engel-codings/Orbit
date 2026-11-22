@@ -56,7 +56,6 @@ class World(private val gfx: Gfx) {
             0, 0xFF4C9BE8.toInt(), 0xFFC9CED6.toInt(), 0xFFE07A4F.toInt(),
             0xFF9C8B78.toInt(), 0xFFE0B98A.toInt(), 0xFFEED9A6.toInt()
         )
-        private val POP = arrayOf("PERFEKT +2", "PERFEKT +3", "PERFEKT +4", "PERFEKT +5")
     }
 
     class Planet {
@@ -134,7 +133,8 @@ class World(private val gfx: Gfx) {
     private var popT = 0f
     private var popX = 0f
     private var popY = 0f
-    private var popStr = POP[0]
+    private var popStr = ""
+    var dim = 1; private set
 
     private val layerPts = Array(3) { FloatArray(0) }
     private val layerDepth = floatArrayOf(0.04f, 0.12f, 0.25f)
@@ -169,6 +169,7 @@ class World(private val gfx: Gfx) {
     /** level = 0 → Endlos-Modus, sonst Level 1..50. */
     fun reset(level: Int, seed: Long = 0L) {
         this.level = level
+        dim = if (level > 0) Levels.dimension(level) else 1
         rng = when {
             level > 0 -> Random(Levels.seed(level))
             seed != 0L -> Random(seed)
@@ -293,7 +294,7 @@ class World(private val gfx: Gfx) {
                 pw.type = if (rng.nextFloat() < 0.5f) P_SHIELD else P_MAGNET
                 break
             }
-        } else if (roll < 0.47f) {
+        } else if (roll < 0.67f) {
             for (s in stars) if (!s.active) {
                 s.x = sx; s.y = sy; s.spin = rng.nextFloat() * 6f; s.active = true
                 break
@@ -469,7 +470,7 @@ class World(private val gfx: Gfx) {
             if (d < p.r + CAPTURE) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2
+                val a = GRAVITY * k * k / d2 * (if (dim == 2) -0.55f else 1f)
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -523,7 +524,7 @@ class World(private val gfx: Gfx) {
         captures++
         if (perfect) {
             popT = 0.9f; popX = plX; popY = plY - 40f
-            popStr = POP[min(streak, 4) - 1]
+            popStr = L.f(L.PERFECT_POP, pts)
         }
         val col = if (p.body != 0) BODY_COLOR[p.body] else Gfx.PALETTE[p.colorIdx]
         burst(plX, plY, col, if (perfect) 22 else 12, if (perfect) 380f else 260f)
@@ -599,7 +600,10 @@ class World(private val gfx: Gfx) {
                 if (!reduced) gfx.glow(c, gfx.goalGlow, p.x, p.y, p.r * 2.6f)
             }
             if (p.body != 0) gfx.drawBody(c, p.body, p.x, p.y, p.r, time, reduced)
-            else gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
+            else {
+                gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
+                if (dim == 2) gfx.ring(c, p.x, p.y, p.r + 4f, Color.WHITE, 3f, 150 + (sin(time * 4f + p.phase) * 80f).toInt())
+            }
             if (p.goal) drawGoalMarker(c, p)
         }
 
@@ -666,7 +670,7 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, gfx.nebula[i], nebX[i], y, 720f)
+                gfx.glow(c, if (dim == 2) gfx.nebula2[i] else gfx.nebula[i], nebX[i], y, 720f)
             }
         }
         drawStarfield(c)
@@ -710,7 +714,7 @@ class World(private val gfx: Gfx) {
         gfx.fill.color = Gfx.GREEN; gfx.fill.alpha = 255
         c.drawPath(flagPath, gfx.fill)
         c.restore()
-        val label = if (p.body != 0) Levels.bodyNames[p.body] else "ZIEL"
+        val label = if (p.body != 0) Levels.bodyName(p.body) else L.t(L.GOAL)
         gfx.text(c, label, p.x, p.y + p.r + 70f, 44f, Gfx.GREEN)
     }
 

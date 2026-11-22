@@ -37,5 +37,23 @@ sleep 3.5;               shot 17_gewinn
 back; sleep 1.5
 tap 234 1060; sleep 1.5; shot 18_challenge
 tap 360 1000; sleep 0.4; shot 19_challenge_flug
+back; sleep 1; back; sleep 1.5
+# Sprachen testen: Optionen -> Sprache wechseln
+tap 608 1434; sleep 1.5
+tap 360 737; sleep 1.2;  shot 20_optionen_EN
+back; sleep 1.5;         shot 21_menu_EN
+tap 112 1434; sleep 1.5; shot 22_shop_EN
+back; sleep 1.5
+tap 608 1434; sleep 1.5
+tap 360 737; sleep 1.2;  shot 23_optionen_RU
+back; sleep 1.5;         shot 24_menu_RU
+tap 112 1434; sleep 1.5; shot 25_shop_RU
+back; sleep 1.5
+tap 277 1434; sleep 1.5; shot 26_erfolge_RU
+back; sleep 1.5
+tap 443 1434; sleep 1.5; shot 27_statistik_RU
+back; sleep 1.5
+tap 360 688; sleep 2;    shot 28_karte_RU
+tap 501 1276; sleep 2;   shot 29_level_RU
 adb logcat -d -s AndroidRuntime:E > shots/crashlog.txt || true
 ls -la shots

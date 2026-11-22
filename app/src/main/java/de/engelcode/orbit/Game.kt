@@ -20,8 +20,8 @@ import kotlin.math.sin
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 4
-        const val VERSION_NAME = "0.4.0"
+        const val VERSION_CODE = 5
+        const val VERSION_NAME = "0.5.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -41,18 +41,9 @@ class Game(context: Context) : World.Listener {
         private const val D_DAILY = 3
         private const val D_NEWS = 4
 
-        private val NEWS = arrayOf(
-            "• 150 Level: bis zum Urknall",
-            "• Glücksrad: täglich gratis drehen",
-            "• Tages-Challenge mit Belohnung",
-            "• 32 Skins und 16 Spuren",
-            "• Piloten-Ränge: Kadett bis Legende",
-            "• 30 Erfolge",
-            "• Bildschirmwackeln abschaltbar"
-        )
         private const val CHALLENGE_GOAL = 15
         private const val CHALLENGE_REWARD = 60
-        private const val SPIN_PRICE = 75
+        private const val SPIN_PRICE = 60
 
         // Glücksrad: 0 = Sterne, 1 = Wiederbelebung, 2 = Start-Schild
         private val WHEEL_KIND = intArrayOf(0, 0, 1, 0, 0, 2, 0, 0)
@@ -62,9 +53,7 @@ class Game(context: Context) : World.Listener {
             0xFF7B61FF.toInt(), 0xFF4CC9F0.toInt(), 0xFF2EE59D.toInt(), 0xFFF15BB5.toInt(),
             0xFFFFD166.toInt(), 0xFF5CC8FF.toInt(), 0xFFFF9F1C.toInt(), 0xFF9B5DE5.toInt()
         )
-        private val RANK_NAMES = arrayOf("Kadett", "Pilot", "Kapitän", "Kommandant", "Admiral", "Legende")
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
-        private val TAB_NAMES = arrayOf("SKINS", "SPUREN", "EXTRAS")
     }
 
     private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL }
@@ -92,31 +81,31 @@ class Game(context: Context) : World.Listener {
 
     // ---- Knöpfe
     private val bPlay = Btn(1, "", S_INVISIBLE)
-    private val bEndless = Btn(2, "ENDLOS", S_GLASS, Gfx.I_INFINITY)
-    private val bShop = Btn(3, "SHOP", S_ROUND, Gfx.I_SHOP)
-    private val bAch = Btn(4, "ERFOLGE", S_ROUND, Gfx.I_TROPHY)
-    private val bStats = Btn(5, "STATISTIK", S_ROUND, Gfx.I_CHART)
-    private val bSettings = Btn(6, "OPTIONEN", S_ROUND, Gfx.I_GEAR)
+    private val bEndless = Btn(2, "", S_GLASS, Gfx.I_INFINITY)
+    private val bShop = Btn(3, "", S_ROUND, Gfx.I_SHOP)
+    private val bAch = Btn(4, "", S_ROUND, Gfx.I_TROPHY)
+    private val bStats = Btn(5, "", S_ROUND, Gfx.I_CHART)
+    private val bSettings = Btn(6, "", S_ROUND, Gfx.I_GEAR)
     private val bBack = Btn(7, "", S_BACK)
     private val bPause = Btn(8, "", S_BACK)
-    private val bResume = Btn(9, "WEITER", S_PRIMARY)
-    private val bRestart = Btn(10, "NEUSTART", S_GLASS)
-    private val bQuit = Btn(11, "MENÜ", S_GLASS)
-    private val bRevive = Btn(12, "WIEDERBELEBEN", S_GREEN)
-    private val bAgain = Btn(13, "NOCHMAL", S_PRIMARY)
-    private val bLeave = Btn(14, "MENÜ", S_GLASS)
-    private val bNext = Btn(15, "NÄCHSTES LEVEL", S_PRIMARY)
-    private val bToMap = Btn(16, "ZUR KARTE", S_GLASS)
-    private val bTab = Array(3) { Btn(17 + it, TAB_NAMES[it], S_INVISIBLE) }
-    private val bRow = Array(6) { Btn(40 + it, "", S_INVISIBLE) }
-    private val bReset = Btn(30, "FORTSCHRITT ZURÜCKSETZEN", S_DANGER)
+    private val bResume = Btn(9, "", S_PRIMARY)
+    private val bRestart = Btn(10, "", S_GLASS)
+    private val bQuit = Btn(11, "", S_GLASS)
+    private val bRevive = Btn(12, "", S_GREEN)
+    private val bAgain = Btn(13, "", S_PRIMARY)
+    private val bLeave = Btn(14, "", S_GLASS)
+    private val bNext = Btn(15, "", S_PRIMARY)
+    private val bToMap = Btn(16, "", S_GLASS)
+    private val bTab = Array(3) { Btn(17 + it, "", S_INVISIBLE) }
+    private val bRow = Array(7) { Btn(40 + it, "", S_INVISIBLE) }
+    private val bReset = Btn(30, "", S_DANGER)
     private val bDlgA = Btn(31, "OK", S_PRIMARY)
-    private val bDlgB = Btn(32, "ABBRECHEN", S_GLASS)
-    private val bBuyRevive = Btn(33, "KAUFEN", S_GOLD)
-    private val bBuyShield = Btn(34, "KAUFEN", S_GOLD)
-    private val bChallenge = Btn(35, "CHALLENGE", S_GLASS, Gfx.I_TARGET)
-    private val bWheel = Btn(36, "GLÜCKSRAD", S_GLASS, Gfx.I_WHEEL)
-    private val bSpin = Btn(37, "GRATIS DREHEN", S_GOLD)
+    private val bDlgB = Btn(32, "", S_GLASS)
+    private val bBuyRevive = Btn(33, "", S_GOLD)
+    private val bBuyShield = Btn(34, "", S_GOLD)
+    private val bChallenge = Btn(35, "", S_GLASS, Gfx.I_TARGET)
+    private val bWheel = Btn(36, "", S_GLASS, Gfx.I_WHEEL)
+    private val bSpin = Btn(37, "", S_GOLD)
 
     private val menuBtns = arrayOf(bPlay, bEndless, bChallenge, bWheel, bShop, bAch, bStats, bSettings)
     private val playBtns = arrayOf(bPause)
@@ -124,7 +113,7 @@ class Game(context: Context) : World.Listener {
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bReset)
     private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
@@ -158,8 +147,8 @@ class Game(context: Context) : World.Listener {
     private var shopTab = 0
     private val skinPrice = Array(Skins.skins.size) { Skins.skins[it].price.toString() }
     private val trailPrice = Array(Skins.trails.size) { Skins.trails[it].price.toString() }
-    private val skinReq = Array(Skins.skins.size) { reqText(Skins.skins[it].reqLevel, Skins.skins[it].reqCrowns) }
-    private val trailReq = Array(Skins.trails.size) { reqText(Skins.trails[it].reqLevel, Skins.trails[it].reqCrowns) }
+    private val skinReq = Array(Skins.skins.size) { "" }
+    private val trailReq = Array(Skins.trails.size) { "" }
     private val prevX = FloatArray(24)
     private val prevY = FloatArray(24)
 
@@ -202,8 +191,11 @@ class Game(context: Context) : World.Listener {
     private val levelNum = Array(Levels.COUNT + 1) { it.toString() }
     private val achRewardStr = Array(Achievements.list.size) { Achievements.list[it].reward.toString() }
     private val achProgStr = Array(Achievements.list.size) { "" }
+    private val achDescStr = Array(Achievements.list.size) { "" }
+    private val achTitleStr = Array(Achievements.list.size) { "" }
     private var achBadge = 0
     private var rankStr = ""
+    private var dimTitle = ""
     private var rankIdx = 0
 
     // ---- Tages-Challenge
@@ -227,12 +219,29 @@ class Game(context: Context) : World.Listener {
         world.listener = this
         world.reduced = save.lowGfx
         world.shakeOn = save.shake
+        L.set(if (save.lang < 0) L.systemDefault() else save.lang)
+        applyTexts()
     }
 
     private fun reqText(lv: Int, cr: Int) = when {
-        lv > 0 -> "Ab Level $lv"
-        cr > 0 -> "$cr Kronen nötig"
+        lv > 0 -> L.f(L.REQ_LEVEL, lv)
+        cr > 0 -> L.f(L.REQ_CROWNS, cr, L.crowns(cr))
         else -> ""
+    }
+
+    /** Alle festen Texte in der aktuellen Sprache setzen. */
+    private fun applyTexts() {
+        gfx.applyLanguage(L.cur)
+        bShop.label = L.t(L.SHOP); bAch.label = L.t(L.ACHIEVEMENTS); bStats.label = L.t(L.STATS); bSettings.label = L.t(L.OPTIONS)
+        bChallenge.label = L.t(L.CHALLENGE); bWheel.label = L.t(L.WHEEL)
+        bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
+        bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
+        bReset.label = L.t(L.RESET_BTN)
+        for (i in 0 until 3) bTab[i].label = L.t(L.TABS[i])
+        for (i in skinReq.indices) skinReq[i] = reqText(Skins.skins[i].reqLevel, Skins.skins[i].reqCrowns)
+        for (i in trailReq.indices) trailReq[i] = reqText(Skins.trails[i].reqLevel, Skins.trails[i].reqCrowns)
+        starsVal = -1; crownVal = -1; scoreVal = -1; progVal = -1; challengeVal = -1
+        refreshMenuTexts()
     }
 
     // ===================================================================== Von außen
@@ -319,8 +328,8 @@ class Game(context: Context) : World.Listener {
         place(bNext, cx - 300f, H * 0.66f, 600f, 140f)
         place(bToMap, cx - 300f, H * 0.66f + 165f, 600f, 125f)
         for (i in 0 until 3) place(bTab[i], 50f + i * 300f, 215f, 300f, 92f)
-        for (i in 0 until 6) place(bRow[i], 40f, 250f + i * 132f, 920f, 112f)
-        place(bReset, 80f, 250f + 6 * 132f + 30f, 840f, 110f)
+        for (i in 0 until 7) place(bRow[i], 40f, 240f + i * 122f, 920f, 104f)
+        place(bReset, 80f, 240f + 7 * 122f + 24f, 840f, 106f)
     }
 
     // ===================================================================== Ablauf
@@ -345,13 +354,14 @@ class Game(context: Context) : World.Listener {
 
     private fun refreshMenuTexts() {
         val next = min(save.levelDone + 1, Levels.COUNT)
-        nextStr = "LEVEL $next"
-        bEndless.label = if (save.best > 0) "ENDLOS  ·  ${save.best}" else "ENDLOS"
+        nextStr = L.f(L.LEVEL_N, next)
+        dimTitle = L.f(L.DIMENSION, 2)
+        bEndless.label = if (save.best > 0) L.f(L.ENDLESS_BEST, save.best) else L.t(L.ENDLESS)
         achBadge = Achievements.claimableCount(save)
         var r = 0
         for (i in RANK_AT.indices) if (save.planets >= RANK_AT[i]) r = i
         rankIdx = r
-        rankStr = if (r < RANK_AT.size - 1) "Rang: ${RANK_NAMES[r]}  ·  ${save.planets} / ${RANK_AT[r + 1]}" else "Rang: ${RANK_NAMES[r]}"
+        rankStr = if (r < RANK_AT.size - 1) L.f(L.RANK, L.t(L.RANKS[r]), save.planets, RANK_AT[r + 1]) else L.f(L.RANK_MAX, L.t(L.RANKS[r]))
     }
 
     private fun startRun(level: Int, seed: Long = 0L) {
@@ -365,14 +375,15 @@ class Game(context: Context) : World.Listener {
         cStars = 0; cBonus = 0; cCaptures = 0; cPerfects = 0
         runCounted = false; runEarned = 0; runRevives = 0; newRecord = false
         winTimer = 0f
-        levelStr = if (level > 0) "LEVEL $level" else ""
+        levelStr = if (level > 0) L.f(L.LEVEL_N, level) else ""
         progVal = -1
         go(Screen.PLAYING)
+        if (level >= Levels.DIM2_FROM && Levels.dimension(level) == 2) showToast(L.t(L.DIM2_HINT))
         if (save.shieldStarts > 0) {
             save.shieldStarts--
             save.flush()
             world.shield = true
-            showToast("Start-Schild aktiv")
+            showToast(L.t(L.T_START_SHIELD))
         }
     }
 
@@ -391,7 +402,7 @@ class Game(context: Context) : World.Listener {
         if (!free) {
             if (save.stars < SPIN_PRICE) {
                 sound.play(Sound.ERROR)
-                showToast("Dir fehlen noch ${SPIN_PRICE - save.stars} Sterne")
+                showToast(L.f(L.T_MISSING, SPIN_PRICE - save.stars, L.stars(SPIN_PRICE - save.stars)))
                 return
             }
             save.stars -= SPIN_PRICE
@@ -436,15 +447,15 @@ class Game(context: Context) : World.Listener {
             sound.play(Sound.BONUS)
             sound.vibrate(50)
             showToast(when (WHEEL_KIND[spinPrize]) {
-                0 -> "Gewonnen: ${WHEEL_VAL[spinPrize]} Sterne!"
-                1 -> "Gewonnen: 1 Wiederbelebung!"
-                else -> "Gewonnen: 1 Start-Schild!"
+                0 -> L.f(L.T_WON_STARS, WHEEL_VAL[spinPrize], L.stars(WHEEL_VAL[spinPrize]))
+                1 -> L.t(L.T_WON_REVIVE)
+                else -> L.t(L.T_WON_SHIELD)
             })
         }
     }
 
     private fun commitRun() {
-        val bonus = if (runLevel == 0) world.score / 10 else 0
+        val bonus = if (runLevel == 0) world.score / 8 else 0
         val add = (world.runStars - cStars) + (bonus - cBonus)
         save.stars += add
         save.starsCollected += world.runStars - cStars
@@ -475,13 +486,13 @@ class Game(context: Context) : World.Listener {
         save.powerups++
         sound.play(Sound.POWER)
         sound.vibrate(30)
-        showToast(if (type == World.P_SHIELD) "Schild aktiv!" else "Sternen-Magnet!")
+        showToast(L.t(if (type == World.P_SHIELD) L.T_SHIELD else L.T_MAGNET))
     }
 
     override fun onShieldBreak() {
         sound.play(Sound.SHIELD)
         sound.vibrate(90)
-        showToast("Der Schild hat dich gerettet!")
+        showToast(L.t(L.T_SAVED))
     }
 
     override fun onDeath() {
@@ -489,9 +500,9 @@ class Game(context: Context) : World.Listener {
         sound.vibrate(160)
         commitRun()
         earnedStr = "+$runEarned"
-        bestStr = "Rekord: ${save.best}"
-        bRevive.label = "WIEDERBELEBEN  (${save.revives})"
-        bLeave.label = if (runLevel > 0) "ZUR KARTE" else "MENÜ"
+        bestStr = L.f(L.RECORD, save.best)
+        bRevive.label = L.f(L.REVIVE_BTN, save.revives)
+        bLeave.label = L.t(if (runLevel > 0) L.TO_MAP else L.MENU)
         go(Screen.GAMEOVER)
     }
 
@@ -509,7 +520,7 @@ class Game(context: Context) : World.Listener {
         perfOk = world.perfects >= goal
         crownsWon = 1 + (if (runRevives == 0) 1 else 0) + (if (perfOk) 1 else 0)
         crownsNew = save.setCrowns(runLevel, crownsWon)
-        perfStr = "${min(world.perfects, goal)} / $goal perfekte Landungen"
+        perfStr = L.f(L.CRIT_PERFECT, min(world.perfects, goal), goal)
         save.flush()
         runEarned += levelReward
         earnedStr = "+$runEarned"
@@ -544,7 +555,7 @@ class Game(context: Context) : World.Listener {
                     save.flush()
                     sound.play(Sound.WIN)
                     sound.vibrate(60)
-                    showToast("Challenge geschafft! +$CHALLENGE_REWARD Sterne")
+                    showToast(L.f(L.T_CHALLENGE, CHALLENGE_REWARD, L.stars(CHALLENGE_REWARD)))
                 }
                 if (winTimer > 0f) {
                     winTimer -= dt
@@ -581,7 +592,7 @@ class Game(context: Context) : World.Listener {
                 save.lastVersion = VERSION_CODE
                 save.flush()
                 if (!fresh) {
-                    openDialog(D_NEWS, "Neu in Version $VERSION_NAME", NEWS, "LOS GEHT'S", null)
+                    openDialog(D_NEWS, L.f(L.NEWS_TITLE, VERSION_NAME), Array(L.NEWS.size) { L.t(L.NEWS[it]) }, L.t(L.LETS_GO), null)
                     return
                 }
             }
@@ -590,8 +601,8 @@ class Game(context: Context) : World.Listener {
         if (today > save.lastDay && screenTime > 0.4f) {
             pendingDay = today
             pendingStreak = if (today == save.lastDay + 1) save.dayStreak + 1 else 1
-            pendingBonus = 10 + 3 * min(pendingStreak - 1, 7)
-            openDialog(D_DAILY, "Täglicher Bonus", arrayOf("Tag $pendingStreak in Folge", "+$pendingBonus Sterne"), "ABHOLEN", null)
+            pendingBonus = 15 + 5 * min(pendingStreak - 1, 7)
+            openDialog(D_DAILY, L.t(L.DAILY_TITLE), arrayOf(L.f(L.DAILY_DAY, pendingStreak), L.f(L.T_PLUS_STARS, pendingBonus, L.stars(pendingBonus)).removeSuffix("!")), L.t(L.CLAIM), null)
         }
     }
 
@@ -699,12 +710,19 @@ class Game(context: Context) : World.Listener {
             bRow[3].id -> { save.shake = !save.shake; world.shakeOn = save.shake; save.flush() }
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
             bRow[5].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bRow[6].id -> {
+                save.lang = (L.cur + 1) % 3
+                save.flush()
+                L.set(save.lang)
+                applyTexts()
+                buildStats(); buildAch()
+            }
             bChallenge.id -> startRun(0, today() * 7919L + 17L)
             bWheel.id -> go(Screen.WHEEL)
             bSpin.id -> startSpin()
             bReset.id -> openDialog(
-                D_RESET, "Wirklich zurücksetzen?",
-                arrayOf("Sterne, Skins, Level, Kronen", "und Erfolge werden gelöscht."), "LÖSCHEN", "ABBRECHEN"
+                D_RESET, L.t(L.RESET_TITLE),
+                arrayOf(L.t(L.RESET_LINE_1), L.t(L.RESET_LINE_2)), L.t(L.DELETE), L.t(L.CANCEL)
             )
             bDlgA.id -> dialogAnswer(true)
             bDlgB.id -> dialogAnswer(false)
@@ -753,7 +771,7 @@ class Game(context: Context) : World.Listener {
         closeDialog()
         when (kind) {
             D_BUY -> if (yes) buy(pendingTab, pendingItem)
-            D_RESET -> if (yes) { save.resetProgress(); refreshMenuTexts(); showToast("Fortschritt gelöscht") }
+            D_RESET -> if (yes) { save.resetProgress(); refreshMenuTexts(); showToast(L.t(L.T_RESET)) }
             D_DAILY -> claimDaily()
             else -> {}
         }
@@ -768,7 +786,7 @@ class Game(context: Context) : World.Listener {
         save.flush()
         refreshMenuTexts()
         sound.play(Sound.BONUS)
-        showToast("+$pendingBonus Sterne!")
+        showToast(L.f(L.T_PLUS_STARS, pendingBonus, L.stars(pendingBonus)))
     }
 
     private fun showToast(msg: String) { toast = msg; toastT = 2.2f }
@@ -816,10 +834,10 @@ class Game(context: Context) : World.Listener {
     }
 
     private fun nameOf(tab: Int, i: Int) = when (tab) {
-        0 -> "Skin „${Skins.skins[i].name}“"
-        1 -> "Spur „${Skins.trails[i].name}“"
-        2 -> "1 Wiederbelebung"
-        else -> "1 Start-Schild"
+        0 -> L.f(L.ITEM_SKIN, Skins.skins[i].name)
+        1 -> L.f(L.ITEM_TRAIL, Skins.trails[i].name)
+        2 -> L.t(L.ITEM_REVIVE)
+        else -> L.t(L.ITEM_SHIELD)
     }
 
     private fun askBuy(tab: Int, i: Int) {
@@ -828,21 +846,21 @@ class Game(context: Context) : World.Listener {
             val cr = if (tab == 0) Skins.skins[i].reqCrowns else Skins.trails[i].reqCrowns
             if (!reqMet(lv, cr)) {
                 sound.play(Sound.ERROR)
-                showToast(if (lv > 0) "Schaffe zuerst Level $lv" else "Du brauchst $cr Kronen")
+                showToast(if (lv > 0) L.f(L.T_LEVEL_FIRST, lv) else L.f(L.T_NEED_CROWNS, cr, L.crowns(cr)))
                 return
             }
         }
-        if (tab == 2 && save.revives >= Skins.REVIVE_MAX) { sound.play(Sound.ERROR); showToast("Maximal ${Skins.REVIVE_MAX} Wiederbelebungen"); return }
-        if (tab == 3 && save.shieldStarts >= Skins.SHIELD_MAX) { sound.play(Sound.ERROR); showToast("Maximal ${Skins.SHIELD_MAX} Start-Schilde"); return }
+        if (tab == 2 && save.revives >= Skins.REVIVE_MAX) { sound.play(Sound.ERROR); showToast(L.f(L.T_MAX_REVIVES, Skins.REVIVE_MAX)); return }
+        if (tab == 3 && save.shieldStarts >= Skins.SHIELD_MAX) { sound.play(Sound.ERROR); showToast(L.f(L.T_MAX_SHIELDS, Skins.SHIELD_MAX)); return }
         val price = priceOf(tab, i)
         if (price == 0) { buy(tab, i); return }
         if (save.stars < price) {
             sound.play(Sound.ERROR)
-            showToast("Dir fehlen noch ${price - save.stars} Sterne")
+            showToast(L.f(L.T_MISSING, price - save.stars, L.stars(price - save.stars)))
             return
         }
         pendingTab = tab; pendingItem = i
-        openDialog(D_BUY, "Kaufen?", arrayOf(nameOf(tab, i), "für $price Sterne"), "KAUFEN", "ABBRECHEN")
+        openDialog(D_BUY, L.t(L.BUY_TITLE), arrayOf(nameOf(tab, i), L.f(L.BUY_FOR, price, L.stars(price))), L.t(L.BUY), L.t(L.CANCEL))
     }
 
     private fun buy(tab: Int, i: Int) {
@@ -850,7 +868,7 @@ class Game(context: Context) : World.Listener {
         if (save.stars < price) return
         save.stars -= price
         when (tab) {
-            0 -> { save.ownedSkins = save.ownedSkins or (1 shl i); save.skin = i }
+            0 -> { save.ownedSkins = save.ownedSkins or (1L shl i); save.skin = i }
             1 -> { save.ownedTrails = save.ownedTrails or (1 shl i); save.trail = i }
             2 -> save.revives = min(Skins.REVIVE_MAX, save.revives + 1)
             else -> save.shieldStarts = min(Skins.SHIELD_MAX, save.shieldStarts + 1)
@@ -858,7 +876,7 @@ class Game(context: Context) : World.Listener {
         save.flush()
         sound.play(Sound.BUY)
         sound.vibrate(30)
-        showToast(if (tab >= 2) "Gekauft!" else "Freigeschaltet!")
+        showToast(L.t(if (tab >= 2) L.T_BOUGHT else L.T_UNLOCKED))
     }
 
     // ===================================================================== Level-Karte
@@ -879,7 +897,7 @@ class Game(context: Context) : World.Listener {
             val dx = x - mapX(i); val dy = y - mapScreenY(mapU(i))
             if (dx * dx + dy * dy < 75f * 75f) {
                 if (i <= save.levelDone + 1) { sound.play(Sound.CLICK); startRun(i) }
-                else { sound.play(Sound.ERROR); showToast("Schaffe zuerst Level ${save.levelDone + 1}") }
+                else { sound.play(Sound.ERROR); showToast(L.f(L.T_LEVEL_FIRST, save.levelDone + 1)) }
                 return
             }
         }
@@ -897,6 +915,8 @@ class Game(context: Context) : World.Listener {
             val a = Achievements.list[i]
             val v = min(Achievements.value(a, save), a.goal)
             achProgStr[i] = "$v / ${a.goal}"
+            achDescStr[i] = Achievements.desc(a)
+            achTitleStr[i] = a.title
         }
         achBadge = Achievements.claimableCount(save)
     }
@@ -913,7 +933,7 @@ class Game(context: Context) : World.Listener {
             buildAch()
             sound.play(Sound.BONUS)
             sound.vibrate(40)
-            showToast("+${a.reward} Sterne!")
+            showToast(L.f(L.T_PLUS_STARS, a.reward, L.stars(a.reward)))
         }
     }
 
@@ -921,16 +941,12 @@ class Game(context: Context) : World.Listener {
 
     private fun buildStats() {
         val mins = (save.playTime / 60f).toInt()
-        statLabels = arrayOf(
-            "Level geschafft", "Kronen", "Rekord (Endlos)", "Spiele", "Planeten erreicht",
-            "Perfekte Landungen", "Beste Perfekt-Serie", "Sterne gesammelt", "Power-ups",
-            "Wiederbelebungen", "Tages-Challenges", "Glücksrad", "Spielzeit"
-        )
+        statLabels = Array(L.STAT_LABELS.size) { L.t(L.STAT_LABELS[it]) }
         statValues = arrayOf(
             "${save.levelDone} / ${Levels.COUNT}", "${save.totalCrowns} / ${Levels.COUNT * 3}",
             save.best.toString(), save.games.toString(), save.planets.toString(), save.perfects.toString(),
             save.bestStreak.toString(), save.starsCollected.toString(), save.powerups.toString(),
-            save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(), if (mins >= 60) "${mins / 60} h ${mins % 60} min" else "$mins min"
+            save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(), if (mins >= 60) L.f(L.TIME_HM, mins / 60, mins % 60) else L.f(L.TIME_M, mins)
         )
     }
 
@@ -1004,15 +1020,15 @@ class Game(context: Context) : World.Listener {
                 if (sh != null) gfx.gradRoundRect(c, l, t, r, bt, (bt - t) / 2f, sh, if (p) 210 else 255)
                 gfx.roundRect(c, l + 14f, t + 5f, r - 14f, t + (bt - t) * 0.42f, (bt - t) / 4f, Color.WHITE, 30)
                 val tc = if (b.style == S_GOLD) Gfx.BG else Color.WHITE
-                gfx.text(c, b.label, cx, cy + b.h * 0.11f, b.h * 0.3f, tc)
+                gfx.text(c, b.label, cx, cy + b.h * 0.11f, b.h * 0.3f, tc, maxW = b.w - 60f)
             }
             S_GLASS -> {
                 gfx.glass(c, l, t, r, bt, (bt - t) / 2f)
                 if (b.icon >= 0) {
-                    val tw = gfx.textWidth(b.label, b.h * 0.3f)
+                    val tw = min(gfx.textWidth(b.label, b.h * 0.3f), b.w - 130f)
                     gfx.icon(c, b.icon, cx - tw / 2f - 34f, cy, b.h * 0.2f, Gfx.ACCENT)
-                    gfx.text(c, b.label, cx + 28f, cy + b.h * 0.11f, b.h * 0.3f, Color.WHITE)
-                } else gfx.text(c, b.label, cx, cy + b.h * 0.11f, b.h * 0.3f, Color.WHITE)
+                    gfx.text(c, b.label, cx + 28f, cy + b.h * 0.11f, b.h * 0.3f, Color.WHITE, maxW = b.w - 130f)
+                } else gfx.text(c, b.label, cx, cy + b.h * 0.11f, b.h * 0.3f, Color.WHITE, maxW = b.w - 60f)
             }
             S_ROUND -> {
                 val rr = b.w / 2f - 8f - ins
@@ -1020,7 +1036,7 @@ class Game(context: Context) : World.Listener {
                 gfx.circle(c, cx, ry, rr, Gfx.PANEL, 225)
                 gfx.ring(c, cx, ry, rr, Color.WHITE, 2.5f, 45)
                 gfx.icon(c, b.icon, cx, ry, rr * 0.42f, Color.WHITE)
-                gfx.text(c, b.label, cx, b.y + b.h + 30f, 26f, Gfx.DIM)
+                gfx.text(c, b.label, cx, b.y + b.h + 30f, 26f, Gfx.DIM, maxW = 220f)
             }
             S_BACK -> {
                 gfx.glass(c, l, t, r, bt, (bt - t) / 2f)
@@ -1040,7 +1056,7 @@ class Game(context: Context) : World.Listener {
         dim(c, 150)
         gfx.roundRect(c, -10f, -10f, W + 10f, 205f, 0f, Gfx.BG, 235)
         drawBtn(c, bBack)
-        gfx.text(c, title, W / 2f, 132f, 54f, Color.WHITE)
+        gfx.text(c, title, W / 2f, 132f, 54f, Color.WHITE, maxW = 560f)
     }
 
     // ---------------------------------------------------------------- Menü
@@ -1056,7 +1072,7 @@ class Game(context: Context) : World.Listener {
         if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, ty - 60f, 420f, 150)
         gfx.text(c, "ORBIT", cx, ty, 200f, Color.WHITE)
         gfx.spaced(c, "PLANET JUMP", cx, ty + 70f, 36f, Gfx.ACCENT, 0.5f)
-        gfx.text(c, rankStr, cx, ty + 130f, 30f, Gfx.DIM, false)
+        gfx.text(c, rankStr, cx, ty + 130f, 30f, Gfx.DIM, false, maxW = 860f)
 
         val pcy = playCY()
         val pulse = sin(time * 3f)
@@ -1073,7 +1089,7 @@ class Game(context: Context) : World.Listener {
         val last = (menuHead + 23) % 24
         gfx.drawSkin(c, save.skin, menuTX[last], menuTY[last], 1.2f, time, save.lowGfx)
 
-        gfx.text(c, nextStr, cx, pcy + 290f, 46f, Color.WHITE)
+        gfx.text(c, nextStr, cx, pcy + 290f, 46f, Color.WHITE, maxW = 700f)
         drawBtn(c, bEndless)
         drawBtn(c, bChallenge); drawBtn(c, bWheel)
         if (save.challengeDay != today()) gfx.circle(c, bChallenge.x + bChallenge.w - 14f, bChallenge.y + 14f, 14f, Gfx.RED)
@@ -1111,12 +1127,12 @@ class Game(context: Context) : World.Listener {
                 val v = min(world.captures, CHALLENGE_GOAL)
                 if (v != challengeVal) {
                     challengeVal = v
-                    challengeStr = if (save.challengeDay == today() && v >= CHALLENGE_GOAL) "CHALLENGE GESCHAFFT" else "CHALLENGE  $v / $CHALLENGE_GOAL"
+                    challengeStr = if (save.challengeDay == today() && v >= CHALLENGE_GOAL) L.t(L.CHALLENGE_DONE) else L.f(L.CHALLENGE_PROGRESS, v, CHALLENGE_GOAL)
                 }
                 val done = save.challengeDay == today()
-                val tw = gfx.textWidth(challengeStr, 30f)
+                val tw = min(gfx.textWidth(challengeStr, 30f), 700f)
                 gfx.glass(c, cx - tw / 2f - 50f, 240f, cx + tw / 2f + 50f, 310f, 35f, border = if (done) Gfx.GREEN else Gfx.GOLD)
-                gfx.text(c, challengeStr, cx, 286f, 30f, if (done) Gfx.GREEN else Gfx.GOLD)
+                gfx.text(c, challengeStr, cx, 286f, 30f, if (done) Gfx.GREEN else Gfx.GOLD, maxW = 700f)
             }
         }
         var iy = 230f
@@ -1135,14 +1151,14 @@ class Game(context: Context) : World.Listener {
         if (screen == Screen.PLAYING && save.games == 0 && world.captures == 0 && world.orbiting && runLevel <= 1) {
             val a = (170 + 85 * sin(time * 3f)).toInt().coerceIn(0, 255)
             gfx.glass(c, 90f, H * 0.3f, 910f, H * 0.3f + 150f, 40f, a)
-            gfx.text(c, "Tippe, wenn die Punkte", cx, H * 0.3f + 65f, 42f, Color.WHITE, false, alpha = a)
-            gfx.text(c, "zum nächsten Planeten zeigen", cx, H * 0.3f + 118f, 42f, Color.WHITE, false, alpha = a)
+            gfx.text(c, L.t(L.TUTORIAL_1), cx, H * 0.3f + 65f, 42f, Color.WHITE, false, alpha = a, maxW = 780f)
+            gfx.text(c, L.t(L.TUTORIAL_2), cx, H * 0.3f + 118f, 42f, Color.WHITE, false, alpha = a, maxW = 780f)
         }
     }
 
     private fun drawPause(c: Canvas) {
         dim(c, 200)
-        gfx.text(c, "PAUSE", W / 2f, H * 0.32f, 110f, Color.WHITE)
+        gfx.text(c, L.t(L.PAUSE), W / 2f, H * 0.32f, 110f, Color.WHITE, maxW = 860f)
         for (b in pauseBtns) drawBtn(c, b)
     }
 
@@ -1155,14 +1171,14 @@ class Game(context: Context) : World.Listener {
         val top = H * 0.14f
         gfx.glass(c, 70f, top, 930f, top + 560f, 50f, a)
         val cx = W / 2f
-        gfx.text(c, if (runLevel > 0) "LEVEL $runLevel VERLOREN" else if (challengeRun) "TAGES-CHALLENGE" else "VERLOREN IM ALL", cx, top + 95f, 44f, Gfx.RED, alpha = a)
+        gfx.text(c, if (runLevel > 0) L.f(L.LEVEL_LOST, runLevel) else L.t(if (challengeRun) L.DAILY_CHALLENGE else L.LOST_IN_SPACE), cx, top + 95f, 44f, Gfx.RED, alpha = a, maxW = 780f)
         if (runLevel > 0) {
             gfx.text(c, progStr, cx, top + 280f, 150f, Color.WHITE, alpha = a)
-            gfx.text(c, "Planeten geschafft", cx, top + 345f, 38f, Gfx.DIM, false, alpha = a)
+            gfx.text(c, L.t(L.PLANETS_DONE), cx, top + 345f, 38f, Gfx.DIM, false, alpha = a, maxW = 780f)
         } else {
             if (world.score != scoreVal) { scoreVal = world.score; scoreStr = world.score.toString() }
             gfx.text(c, scoreStr, cx, top + 290f, 190f, Color.WHITE, alpha = a)
-            if (newRecord) gfx.text(c, "NEUER REKORD!", cx, top + 360f, 44f, Gfx.GOLD, alpha = a)
+            if (newRecord) gfx.text(c, L.t(L.NEW_RECORD), cx, top + 360f, 44f, Gfx.GOLD, alpha = a)
             else gfx.text(c, bestStr, cx, top + 360f, 40f, Gfx.DIM, false, alpha = a)
         }
         val tw = gfx.textWidth(earnedStr, 54f)
@@ -1185,9 +1201,10 @@ class Game(context: Context) : World.Listener {
         val body = Levels.goalBody(runLevel)
         if (body != 0) {
             gfx.drawBody(c, body, cx, top + 150f, 95f, time, save.lowGfx)
-            gfx.text(c, "${Levels.bodyNames[body]} ERREICHT!", cx, top + 330f, if (body == Levels.B_CERES) 40f else 50f, Gfx.GREEN, alpha = a)
+            gfx.text(c, Levels.bodyName(body), cx, top + 310f, 54f, Gfx.GREEN, alpha = a, maxW = 780f)
+            gfx.text(c, L.t(L.REACHED), cx, top + 365f, 34f, Color.WHITE, alpha = a, maxW = 780f)
         } else {
-            gfx.text(c, "GESCHAFFT!", cx, top + 200f, 110f, Gfx.GREEN, alpha = a)
+            gfx.text(c, L.t(L.COMPLETE), cx, top + 200f, 110f, Gfx.GREEN, alpha = a, maxW = 780f)
             gfx.text(c, levelStr, cx, top + 290f, 44f, Gfx.DIM, alpha = a)
         }
         for (k in 0 until 3) {
@@ -1204,24 +1221,24 @@ class Game(context: Context) : World.Listener {
             }
         }
         val ly = top + 570f
-        crit(c, ly, true, "Level geschafft", a)
-        crit(c, ly + 62f, runRevives == 0, "Ohne Wiederbelebung", a)
+        crit(c, ly, true, L.t(L.CRIT_DONE), a)
+        crit(c, ly + 62f, runRevives == 0, L.t(L.CRIT_NO_REVIVE), a)
         crit(c, ly + 124f, perfOk, perfStr, a)
         val tw = gfx.textWidth(earnedStr, 54f)
         gfx.starShape(c, cx - tw / 2f - 40f, top + 780f, 24f, time * 40f, Gfx.GOLD, a)
         gfx.text(c, earnedStr, cx + 15f, top + 799f, 54f, Gfx.GOLD, alpha = a)
-        if (!firstClear) gfx.text(c, if (crownsNew > 0) "Neue Krone!" else "Belohnung nur beim ersten Mal", cx, top + 845f, 29f, Gfx.DIM, false, alpha = a)
+        if (!firstClear) gfx.text(c, L.t(if (crownsNew > 0) L.NEW_CROWN else L.REWARD_ONCE), cx, top + 845f, 29f, Gfx.DIM, false, alpha = a, maxW = 780f)
         if (screenTime > 0.6f) {
             bNext.visible = runLevel < Levels.COUNT
             for (b in doneBtns) drawBtn(c, b)
         }
-        if (runLevel >= Levels.COUNT) gfx.text(c, "Du hast die Reise geschafft!", cx, H * 0.64f, 40f, Gfx.ACCENT, alpha = a)
+        if (runLevel >= Levels.COUNT) gfx.text(c, L.t(L.JOURNEY_DONE), cx, H * 0.64f, 40f, Gfx.ACCENT, alpha = a, maxW = 860f)
     }
 
     private fun crit(c: Canvas, y: Float, ok: Boolean, label: String, a: Int) {
         gfx.circle(c, 190f, y - 12f, 22f, if (ok) Gfx.GREEN else Gfx.PANEL2, a)
         if (ok) gfx.icon(c, Gfx.I_CHECK, 190f, y - 12f, 14f, Gfx.BG, a)
-        gfx.text(c, label, 235f, y, 36f, if (ok) Color.WHITE else Gfx.DIM, false, Paint.Align.LEFT, a)
+        gfx.text(c, label, 235f, y, 36f, if (ok) Color.WHITE else Gfx.DIM, false, Paint.Align.LEFT, a, maxW = 640f)
     }
 
     // ---------------------------------------------------------------- Level-Karte
@@ -1245,10 +1262,17 @@ class Game(context: Context) : World.Listener {
             val r = if (s == 0) 120f else 100f
             gfx.drawBody(c, body, W / 2f, by, r, time, save.lowGfx)
             val reached = s == 0 || save.levelDone >= s * 10
-            val name = Levels.bodyNames[body]
-            val tw = gfx.textWidth(name, 38f)
+            val name = Levels.bodyName(body)
+            val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
-            gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM)
+            gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
+            if (s == 15) {
+                // Übergang in die Spiegelwelt
+                val dy = by - r - 150f
+                gfx.glass(c, 120f, dy - 70f, 880f, dy + 60f, 50f, border = 0xFFF15BB5.toInt())
+                gfx.text(c, dimTitle, W / 2f, dy - 12f, 42f, 0xFFF15BB5.toInt(), maxW = 720f)
+                gfx.text(c, L.t(L.DIM_NAMES[1]), W / 2f, dy + 34f, 32f, Color.WHITE, false, maxW = 720f)
+            }
         }
         for (i in 1..Levels.COUNT) {
             val ny = mapScreenY(mapU(i))
@@ -1280,7 +1304,7 @@ class Game(context: Context) : World.Listener {
         }
         gfx.roundRect(c, -10f, -10f, W + 10f, 205f, 0f, Gfx.BG, 235)
         drawBtn(c, bBack)
-        gfx.text(c, "REISE", W / 2f, 132f, 54f, Color.WHITE)
+        gfx.text(c, L.t(L.JOURNEY), W / 2f, 132f, 54f, Color.WHITE, maxW = 440f)
         crownPill(c, W - 40f)
     }
 
@@ -1306,13 +1330,13 @@ class Game(context: Context) : World.Listener {
         }
         gfx.roundRect(c, -10f, -10f, W + 10f, gridTop - 20f, 0f, Gfx.BG, 245)
         drawBtn(c, bBack)
-        gfx.text(c, "SHOP", W / 2f, 132f, 54f, Color.WHITE)
+        gfx.text(c, L.t(L.SHOP), W / 2f, 132f, 54f, Color.WHITE, maxW = 440f)
         starPill(c, save.stars)
         gfx.glass(c, 50f, 215f, 950f, 307f, 46f)
         val tb = bTab[shopTab]
         val sh = tb.shader
         if (sh != null) gfx.gradRoundRect(c, tb.x + 6f, tb.y + 6f, tb.x + tb.w - 6f, tb.y + tb.h - 6f, 40f, sh)
-        for (i in 0 until 3) gfx.text(c, TAB_NAMES[i], bTab[i].x + 150f, 274f, 34f, if (i == shopTab) Color.WHITE else Gfx.DIM)
+        for (i in 0 until 3) gfx.text(c, bTab[i].label, bTab[i].x + 150f, 274f, 34f, if (i == shopTab) Color.WHITE else Gfx.DIM, maxW = 260f)
     }
 
     private fun drawCard(c: Canvas, i: Int, x: Float, y: Float) {
@@ -1328,7 +1352,7 @@ class Game(context: Context) : World.Listener {
         val py = y + 130f
         if (skinsTab) {
             gfx.drawSkin(c, i, cx, py, 2.2f, time, save.lowGfx)
-            gfx.text(c, Skins.skins[i].name, cx, y + 262f, 34f, Color.WHITE)
+            gfx.text(c, Skins.skins[i].name, cx, y + 262f, 34f, Color.WHITE, maxW = cardW - 24f)
         } else {
             for (k in 0 until 24) {
                 prevX[k] = cx - 105f + k * (210f / 23f)
@@ -1336,7 +1360,7 @@ class Game(context: Context) : World.Listener {
             }
             gfx.drawTrail(c, i, prevX, prevY, 0, 24, 24, gfx.skinColor(save.skin, time), time)
             gfx.drawSkin(c, save.skin, prevX[23], prevY[23], 1f, time, true)
-            gfx.text(c, Skins.trails[i].name, cx, y + 262f, 34f, Color.WHITE)
+            gfx.text(c, Skins.trails[i].name, cx, y + 262f, 34f, Color.WHITE, maxW = cardW - 24f)
         }
         if (locked) {
             gfx.roundRect(c, x + 3f, y + 3f, x + cardW - 3f, y + 215f, 34f, Gfx.BG, 150)
@@ -1346,13 +1370,13 @@ class Game(context: Context) : World.Listener {
         when {
             selected -> {
                 gfx.icon(c, Gfx.I_CHECK, cx - 58f, y + 319f, 14f, Gfx.GREEN)
-                gfx.text(c, "AKTIV", cx + 12f, y + 330f, 32f, Gfx.GREEN)
+                gfx.text(c, L.t(L.ACTIVE), cx + 12f, y + 330f, 32f, Gfx.GREEN, maxW = 200f)
             }
-            owned -> gfx.text(c, "Auswählen", cx, y + 330f, 32f, Gfx.DIM, false)
-            locked -> gfx.text(c, if (skinsTab) skinReq[i] else trailReq[i], cx, y + 330f, 27f, Gfx.DIM, false)
+            owned -> gfx.text(c, L.t(L.SELECT), cx, y + 330f, 32f, Gfx.DIM, false, maxW = cardW - 30f)
+            locked -> gfx.text(c, if (skinsTab) skinReq[i] else trailReq[i], cx, y + 330f, 27f, Gfx.DIM, false, maxW = cardW - 24f)
             else -> {
                 val pv = if (skinsTab) Skins.skins[i].price else Skins.trails[i].price
-                if (pv == 0) gfx.text(c, "GRATIS", cx, y + 330f, 32f, Gfx.GREEN)
+                if (pv == 0) gfx.text(c, L.t(L.FREE), cx, y + 330f, 32f, Gfx.GREEN, maxW = cardW - 30f)
                 else {
                     val price = if (skinsTab) skinPrice[i] else trailPrice[i]
                     val tw = gfx.textWidth(price, 34f)
@@ -1364,10 +1388,10 @@ class Game(context: Context) : World.Listener {
     }
 
     private fun drawExtras(c: Canvas) {
-        extraCard(c, gridTop, Gfx.I_PLUS, Gfx.GREEN, "Wiederbelebung",
-            "Nach einem Absturz weiterspielen", save.revives, Skins.REVIVE_MAX, Skins.REVIVE_PRICE, bBuyRevive)
-        extraCard(c, gridTop + 560f, Gfx.I_SHIELD, Gfx.SHIELD, "Start-Schild",
-            "Schützt einmal – startet automatisch", save.shieldStarts, Skins.SHIELD_MAX, Skins.SHIELD_PRICE, bBuyShield)
+        extraCard(c, gridTop, Gfx.I_PLUS, Gfx.GREEN, L.t(L.X_REVIVE),
+            L.t(L.X_REVIVE_DESC), save.revives, Skins.REVIVE_MAX, Skins.REVIVE_PRICE, bBuyRevive)
+        extraCard(c, gridTop + 560f, Gfx.I_SHIELD, Gfx.SHIELD, L.t(L.X_SHIELD),
+            L.t(L.X_SHIELD_DESC), save.shieldStarts, Skins.SHIELD_MAX, Skins.SHIELD_PRICE, bBuyShield)
     }
 
     private fun extraCard(c: Canvas, y: Float, icon: Int, col: Int, title: String, desc: String,
@@ -1377,14 +1401,14 @@ class Game(context: Context) : World.Listener {
         if (!save.lowGfx) gfx.glow(c, if (icon == Gfx.I_SHIELD) gfx.shieldGlow else gfx.goalGlow, cx, y + 115f, 140f)
         gfx.circle(c, cx, y + 115f, 62f, col)
         gfx.icon(c, icon, cx, y + 115f, 32f, Color.WHITE)
-        gfx.text(c, title, cx, y + 240f, 50f, Color.WHITE)
-        gfx.text(c, desc, cx, y + 295f, 34f, Gfx.DIM, false)
+        gfx.text(c, title, cx, y + 240f, 50f, Color.WHITE, maxW = 820f)
+        gfx.text(c, desc, cx, y + 295f, 34f, Gfx.DIM, false, maxW = 820f)
         for (k in 0 until maxN) {
             val dx = cx + (k - (maxN - 1) / 2f) * 62f
             if (k < have) gfx.circle(c, dx, y + 345f, 19f, col) else gfx.ring(c, dx, y + 345f, 19f, Gfx.DIM, 3.5f)
         }
         if (b.y != y + 390f) place(b, cx - 250f, y + 390f, 500f, 115f)
-        b.label = if (have >= maxN) "VOLL" else "KAUFEN  ·  $price"
+        b.label = if (have >= maxN) L.t(L.FULL) else L.f(L.BUY_PRICE, price)
         b.visible = true
         drawBtn(c, b)
         if (have < maxN) {
@@ -1408,8 +1432,8 @@ class Game(context: Context) : World.Listener {
             gfx.glass(c, 40f, y, 960f, y + achH, 36f, border = if (done && !claimed) Gfx.GOLD else Color.WHITE)
             gfx.circle(c, 125f, y + achH / 2f, 52f, if (done) Gfx.GOLD else Gfx.PANEL2)
             gfx.icon(c, Gfx.I_TROPHY, 125f, y + achH / 2f + 4f, 28f, if (done) Gfx.BG else Gfx.DIM)
-            gfx.text(c, a.title, 205f, y + 62f, 40f, Color.WHITE, align = Paint.Align.LEFT)
-            gfx.text(c, a.desc, 205f, y + 105f, 30f, Gfx.DIM, false, Paint.Align.LEFT)
+            gfx.text(c, achTitleStr[i], 205f, y + 62f, 40f, Color.WHITE, align = Paint.Align.LEFT, maxW = 570f)
+            gfx.text(c, achDescStr[i], 205f, y + 105f, 30f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 570f)
             val v = min(Achievements.value(a, save), a.goal)
             val bw = 420f
             gfx.roundRect(c, 205f, y + 128f, 205f + bw, y + 144f, 8f, Gfx.PANEL2)
@@ -1433,34 +1457,33 @@ class Game(context: Context) : World.Listener {
         c.restore()
         gfx.roundRect(c, -10f, -10f, W + 10f, 205f, 0f, Gfx.BG, 245)
         drawBtn(c, bBack)
-        gfx.text(c, "ERFOLGE", W / 2f, 132f, 54f, Color.WHITE)
+        gfx.text(c, L.t(L.ACHIEVEMENTS), W / 2f, 132f, 54f, Color.WHITE, maxW = 440f)
         starPill(c, save.stars)
     }
 
     // ---------------------------------------------------------------- Einstellungen
 
-    private val settingLabels = arrayOf("Soundeffekte", "Musik", "Vibration", "Bildschirmwackeln", "FPS-Anzeige", "Grafik")
-    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE)
+    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE, Gfx.I_GLOBE)
 
     private fun drawSettings(c: Canvas) {
-        header(c, "OPTIONEN")
-        for (i in 0 until 6) {
+        header(c, L.t(L.OPTIONS))
+        for (i in 0 until 7) {
             val b = bRow[i]
             gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
             gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 38f, Gfx.PANEL2)
             gfx.icon(c, settingIcons[i], b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
-            gfx.text(c, settingLabels[i], b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT)
-            if (i == 5) {
-                val v = if (save.lowGfx) "Sparsam" else "Hoch"
-                gfx.roundRect(c, b.x + b.w - 260f, b.y + 26f, b.x + b.w - 30f, b.y + b.h - 26f, 33f, Gfx.PANEL2)
-                gfx.text(c, v, b.x + b.w - 145f, b.y + b.h / 2f + 12f, 34f, Gfx.ACCENT)
+            gfx.text(c, L.t(L.SETTINGS[i]), b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT, maxW = if (i >= 5) 440f else 560f)
+            if (i >= 5) {
+                val v = if (i == 6) L.LANG_NAMES[L.cur] else L.t(if (save.lowGfx) L.GFX_LOW else L.GFX_HIGH)
+                gfx.roundRect(c, b.x + b.w - 280f, b.y + 24f, b.x + b.w - 30f, b.y + b.h - 24f, 33f, Gfx.PANEL2)
+                gfx.text(c, v, b.x + b.w - 155f, b.y + b.h / 2f + 12f, 34f, Gfx.ACCENT, maxW = 220f)
             } else {
                 val on = when (i) { 0 -> save.sound; 1 -> save.music; 2 -> save.vibration; 3 -> save.shake; else -> save.showFps }
                 toggle(c, b.x + b.w - 175f, b.y + b.h / 2f, on)
             }
         }
         drawBtn(c, bReset)
-        gfx.text(c, "Grafik „Sparsam“ = noch flüssiger auf alten Handys", W / 2f, bReset.y + bReset.h + 75f, 29f, Gfx.DIM, false)
+        gfx.text(c, L.t(L.GFX_HINT), W / 2f, bReset.y + bReset.h + 70f, 29f, Gfx.DIM, false, maxW = 900f)
         gfx.text(c, "Orbit v$VERSION_NAME · Engelcode", W / 2f, H - 30f, 26f, Gfx.DIM, false, alpha = 150)
     }
 
@@ -1472,11 +1495,11 @@ class Game(context: Context) : World.Listener {
     // ---------------------------------------------------------------- Statistik
 
     private fun drawStats(c: Canvas) {
-        header(c, "STATISTIK")
+        header(c, L.t(L.STATS))
         for (i in statLabels.indices) {
             val y = 235f + i * 108f
             gfx.glass(c, 40f, y, 960f, y + 92f, 30f)
-            gfx.text(c, statLabels[i], 80f, y + 60f, 36f, Gfx.DIM, false, Paint.Align.LEFT)
+            gfx.text(c, statLabels[i], 80f, y + 60f, 36f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 560f)
             gfx.text(c, statValues[i], 920f, y + 62f, 42f, Color.WHITE, align = Paint.Align.RIGHT)
         }
     }
@@ -1484,7 +1507,7 @@ class Game(context: Context) : World.Listener {
     // ---------------------------------------------------------------- Glücksrad
 
     private fun drawWheel(c: Canvas) {
-        header(c, "GLÜCKSRAD")
+        header(c, L.t(L.WHEEL))
         starPill(c, save.stars)
         val cx = W / 2f
         val cy = wheelCY()
@@ -1527,7 +1550,7 @@ class Game(context: Context) : World.Listener {
         c.drawPath(pointerPath, gfx.fill)
         c.restore()
 
-        bSpin.label = if (freeSpin()) "GRATIS DREHEN" else "DREHEN  ·  $SPIN_PRICE"
+        bSpin.label = if (freeSpin()) L.t(L.FREE_SPIN) else L.f(L.SPIN_PRICE, SPIN_PRICE)
         bSpin.visible = !spinning
         if (!spinning) {
             drawBtn(c, bSpin)
@@ -1536,7 +1559,7 @@ class Game(context: Context) : World.Listener {
                 gfx.starShape(c, cx + tw / 2f + 28f, bSpin.y + bSpin.h / 2f, 18f, 0f, Gfx.BG)
             }
         }
-        gfx.text(c, if (freeSpin()) "1x täglich gratis" else "Nächste Gratis-Drehung: morgen", cx, bSpin.y + bSpin.h + 70f, 32f, Gfx.DIM, false)
+        gfx.text(c, L.t(if (freeSpin()) L.SPIN_FREE_HINT else L.SPIN_NEXT_HINT), cx, bSpin.y + bSpin.h + 70f, 32f, Gfx.DIM, false, maxW = 880f)
     }
 
     // ---------------------------------------------------------------- Dialog & Toast
@@ -1544,13 +1567,13 @@ class Game(context: Context) : World.Listener {
     private fun drawDialog(c: Canvas) {
         dim(c, 190)
         gfx.glass(c, 70f, dlgTop, 930f, dlgTop + dlgH, 48f, border = Gfx.ACCENT)
-        gfx.text(c, dlgTitle, W / 2f, dlgTop + 110f, 52f, Color.WHITE)
+        gfx.text(c, dlgTitle, W / 2f, dlgTop + 110f, 52f, Color.WHITE, maxW = 780f)
         val news = dialog == D_NEWS
         for (i in dlgLines.indices) {
             val ly = dlgTop + 190f + i * 62f
-            if (news) gfx.text(c, dlgLines[i], 120f, ly, 35f, Color.WHITE, false, Paint.Align.LEFT)
+            if (news) gfx.text(c, dlgLines[i], 120f, ly, 35f, Color.WHITE, false, Paint.Align.LEFT, maxW = 770f)
             else gfx.text(c, dlgLines[i], W / 2f, ly, 42f,
-                if (i == dlgLines.size - 1 && dialog == D_DAILY) Gfx.GOLD else Color.WHITE, dialog == D_DAILY)
+                if (i == dlgLines.size - 1 && dialog == D_DAILY) Gfx.GOLD else Color.WHITE, dialog == D_DAILY, maxW = 780f)
         }
         drawBtn(c, bDlgA)
         if (dlgTwo) drawBtn(c, bDlgB)
@@ -1558,9 +1581,9 @@ class Game(context: Context) : World.Listener {
 
     private fun drawToast(c: Canvas) {
         val a = (min(1f, toastT / 0.4f) * 255f).toInt()
-        val tw = gfx.textWidth(toast, 38f, false) + 90f
+        val tw = min(gfx.textWidth(toast, 38f, false), 860f) + 90f
         val y = H * 0.84f
         gfx.glass(c, W / 2f - tw / 2f, y - 62f, W / 2f + tw / 2f, y + 32f, 47f, a)
-        gfx.text(c, toast, W / 2f, y, 38f, Color.WHITE, false, alpha = a)
+        gfx.text(c, toast, W / 2f, y, 38f, Color.WHITE, false, alpha = a, maxW = 860f)
     }
 }

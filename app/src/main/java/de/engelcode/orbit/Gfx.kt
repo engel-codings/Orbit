@@ -64,22 +64,33 @@ class Gfx(context: Context) {
         const val I_WHEEL = 18
         const val I_TARGET = 19
         const val I_SHAKE = 20
+        const val I_GLOBE = 21
     }
 
-    val fontBold: Typeface = try {
-        Typeface.createFromAsset(context.assets, "fonts/Outfit-ExtraBold.ttf")
-    } catch (_: Exception) { Typeface.DEFAULT_BOLD }
-    val fontReg: Typeface = try {
-        Typeface.createFromAsset(context.assets, "fonts/Outfit-Medium.ttf")
-    } catch (_: Exception) { Typeface.DEFAULT }
+    private fun font(ctx: Context, file: String, fallback: Typeface): Typeface = try {
+        Typeface.createFromAsset(ctx.assets, "fonts/$file")
+    } catch (_: Exception) { fallback }
+
+    // Outfit für Deutsch/Englisch, Manrope (mit kyrillischen Buchstaben) für Russisch
+    private val outfitBold = font(context, "Outfit-ExtraBold.ttf", Typeface.DEFAULT_BOLD)
+    private val outfitReg = font(context, "Outfit-Medium.ttf", Typeface.DEFAULT)
+    private val manropeBold = font(context, "Manrope-ExtraBold.ttf", Typeface.DEFAULT_BOLD)
+    private val manropeReg = font(context, "Manrope-SemiBold.ttf", Typeface.DEFAULT)
 
     val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
     private val grad = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val bmp = Paint(Paint.FILTER_BITMAP_FLAG)
-    private val bold = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = fontBold }
-    private val reg = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = fontReg }
+    private val bold = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = outfitBold }
+    private val reg = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = outfitReg }
+
+    /** Schrift passend zur Sprache wählen. */
+    fun applyLanguage(lang: Int) {
+        val ru = lang == L.RU
+        bold.typeface = if (ru) manropeBold else outfitBold
+        reg.typeface = if (ru) manropeReg else outfitReg
+    }
     val rect = RectF()
 
     val starPath = Path().apply {
@@ -134,7 +145,14 @@ class Gfx(context: Context) {
         makeGlow(0xFFD9C3A5.toInt(), 0x60), makeGlow(0xFF7FE7FF.toInt(), 0x90),
         makeGlow(0xFFB388FF.toInt(), 0xB0), makeGlow(0xFF7FE7FF.toInt(), 0xC0),
         makeGlow(0xFFF15BB5.toInt(), 0x90), makeGlow(0xFFFFD166.toInt(), 0xC0),
-        makeGlow(0xFF9B5DE5.toInt(), 0xC0), makeGlow(0xFFFFFFFF.toInt(), 0xD0)
+        makeGlow(0xFF9B5DE5.toInt(), 0xC0), makeGlow(0xFFFFFFFF.toInt(), 0xD0),
+        makeGlow(0xFF00E5FF.toInt(), 0xB0), makeGlow(0xFFF15BB5.toInt(), 0xC0),
+        makeGlow(0xFFE0F7FF.toInt(), 0x90), makeGlow(0xFF9BE564.toInt(), 0xB0),
+        makeGlow(0xFF7B61FF.toInt(), 0xD0)
+    )
+    val nebula2 = arrayOf(
+        makeGlow(0xFFF15BB5.toInt(), 0x50), makeGlow(0xFF00E5FF.toInt(), 0x45),
+        makeGlow(0xFF9BE564.toInt(), 0x30), makeGlow(0xFF7B61FF.toInt(), 0x45)
     )
     val nebula = arrayOf(
         makeGlow(0xFF7B2CBF.toInt(), 0x55), makeGlow(0xFF1E5EFF.toInt(), 0x45),
@@ -197,12 +215,18 @@ class Gfx(context: Context) {
         c.drawCircle(x, y, r, grad)
     }
 
+    /** Text zeichnen. maxW > 0: Schrift wird verkleinert, falls der Text zu breit ist. */
     fun text(
         c: Canvas, s: String, x: Float, y: Float, size: Float, color: Int,
-        isBold: Boolean = true, align: Paint.Align = Paint.Align.CENTER, alpha: Int = 255
+        isBold: Boolean = true, align: Paint.Align = Paint.Align.CENTER, alpha: Int = 255, maxW: Float = 0f
     ) {
         val p = if (isBold) bold else reg
-        p.textSize = size; p.color = color; p.alpha = alpha; p.textAlign = align
+        p.textSize = size
+        if (maxW > 0f) {
+            val w = p.measureText(s)
+            if (w > maxW) p.textSize = size * maxW / w
+        }
+        p.color = color; p.alpha = alpha; p.textAlign = align
         c.drawText(s, x, y, p)
     }
 
@@ -386,6 +410,13 @@ class Gfx(context: Context) {
                 c.save(); c.rotate(-12f, x, y); c.drawRoundRect(rect, s * 0.12f, s * 0.12f, line); c.restore()
                 c.drawLine(x - s * 0.9f, y - s * 0.5f, x - s * 0.75f, y - s * 0.2f, line)
                 c.drawLine(x + s * 0.9f, y + s * 0.5f, x + s * 0.75f, y + s * 0.2f, line)
+            }
+            I_GLOBE -> {
+                line.strokeWidth = s * 0.14f
+                c.drawCircle(x, y, s * 0.85f, line)
+                rect.set(x - s * 0.38f, y - s * 0.85f, x + s * 0.38f, y + s * 0.85f)
+                c.drawOval(rect, line)
+                c.drawLine(x - s * 0.85f, y, x + s * 0.85f, y, line)
             }
             I_EYE -> {
                 line.strokeWidth = s * 0.14f
@@ -597,6 +628,46 @@ class Gfx(context: Context) {
                 }
                 circle(c, x, y, r * 0.42f, 0xFFFFD166.toInt())
                 circle(c, x, y, r * 0.3f, Color.WHITE)
+            }
+            Levels.B_CRYSTAL -> {
+                for (k in 0 until 6) {
+                    val a = k * 1.047f + t * 0.3f
+                    shape(c, hexPath, x + cos(a) * r * 0.55f, y + sin(a) * r * 0.55f, r * 0.42f, t * 20f + k * 10f, 0xFF7FE7FF.toInt(), 170)
+                }
+                shape(c, hexPath, x, y, r * 0.6f, -t * 25f, 0xFFE0F7FF.toInt())
+                shape(c, hexPath, x, y, r * 0.3f, t * 40f, Color.WHITE)
+            }
+            Levels.B_NEONSTAR -> {
+                for (k in 0 until 3) ring(c, x, y, r * (0.7f + k * 0.2f) + sin(t * 3f + k) * 6f, 0xFFF15BB5.toInt(), r * 0.05f, 200 - k * 50)
+                starShape(c, x, y, r * 0.75f, t * 40f, 0xFFF15BB5.toInt())
+                starShape(c, x, y, r * 0.45f, -t * 60f, Color.WHITE)
+            }
+            Levels.B_MIRROR -> {
+                circle(c, x, y, r, 0xFFE0F7FF.toInt())
+                c.save(); c.clipRect(x, y - r - 2f, x + r + 2f, y + r + 2f)
+                circle(c, x, y, r, 0xFF2A2F5A.toInt())
+                c.restore()
+                circle(c, x - r * 0.4f, y - r * 0.3f, r * 0.2f, 0xFF9AA6C8.toInt())
+                circle(c, x + r * 0.4f, y - r * 0.3f, r * 0.2f, 0xFFB8C3E6.toInt())
+                line.color = Color.WHITE; line.alpha = 230; line.strokeWidth = r * 0.05f
+                c.drawLine(x, y - r * 1.15f, x, y + r * 1.15f, line)
+                ring(c, x, y, r, 0xFF9BE564.toInt(), r * 0.05f, 200)
+            }
+            Levels.B_VORTEX -> {
+                drawGalaxy(c, x, y, r, t * 2f, 0xFF9BE564.toInt(), 0xFFE0FFE0.toInt(), true)
+                line.color = Color.WHITE; line.alpha = 230; line.strokeWidth = r * 0.06f
+                c.drawLine(x, y, x + cos(t * 2f) * r * 0.45f, y + sin(t * 2f) * r * 0.45f, line)
+                c.drawLine(x, y, x + cos(t * 0.3f) * r * 0.3f, y + sin(t * 0.3f) * r * 0.3f, line)
+            }
+            Levels.B_GATE -> {
+                circle(c, x, y, r * 0.8f, Color.BLACK)
+                stroke.strokeWidth = r * 0.12f
+                rect.set(x - r * 0.9f, y - r * 0.9f, x + r * 0.9f, y + r * 0.9f)
+                for (k in 0 until 12) {
+                    stroke.color = rainbow[(k * 3 + (t * 20f).toInt()) % 36]; stroke.alpha = 230
+                    c.drawArc(rect, t * 90f + k * 30f, 22f, false, stroke)
+                }
+                drawGalaxy(c, x, y, r * 0.55f, -t * 3f, 0xFF7B61FF.toInt(), Color.WHITE, true)
             }
             else -> drawPlanet(c, 0, 0, x, y, r, reduced)
         }
@@ -816,6 +887,27 @@ class Gfx(context: Context) {
                     c.drawLine(x, y, x + cos(a) * len, y + sin(a) * len, line)
                 }
                 circle(c, x, y, 7f * s, Color.WHITE)
+            }
+            Skins.PRISM -> {
+                c.save(); c.translate(x, y); c.rotate(t * 70f)
+                for (k in 0 until 3) {
+                    c.save(); c.rotate(k * 120f)
+                    fill.color = rainbow[(k * 12 + (t * 20f).toInt()) % 36]; fill.alpha = 220
+                    c.drawRect(-4f * s, -20f * s, 4f * s, -4f * s, fill)
+                    c.restore()
+                }
+                c.restore()
+                shape(c, hexPath, x, y, 9f * s, -t * 90f, Color.WHITE)
+            }
+            Skins.MIRROR -> {
+                circle(c, x, y, 15f * s, sk.color)
+                c.save(); c.clipRect(x, y - 16f * s, x + 16f * s, y + 16f * s)
+                circle(c, x, y, 15f * s, sk.color2)
+                c.restore()
+                ring(c, x, y, 15f * s, sk.glow, 2.5f * s)
+                val o = sin(t * 3f) * 6f * s
+                circle(c, x - 6f * s, y + o, 3.5f * s, sk.color2)
+                circle(c, x + 6f * s, y - o, 3.5f * s, sk.color)
             }
             Skins.CROWN -> {
                 shape(c, crownPath, x, y, 18f * s, sin(t * 3f) * 8f, col)
