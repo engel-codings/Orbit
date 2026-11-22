@@ -919,7 +919,7 @@ class Game(context: Context) : World.Listener {
 
     private fun drawMenu(c: Canvas) {
         val cx = W / 2f
-        gfx.drawBody(c, Levels.B_EARTH, cx, H + 330f, 560f, time, save.lowGfx)
+        gfx.drawBody(c, Levels.B_EARTH, cx, H + 440f, 560f, time, save.lowGfx)
 
         crownPill(c, 300f)
         starPill(c, save.stars)
@@ -988,7 +988,7 @@ class Game(context: Context) : World.Listener {
             gfx.rect.set(48f, iy + 8f, 142f, iy + 102f)
             c.drawArc(gfx.rect, -90f, 360f * world.magnetT / World.MAGNET_TIME, false, gfx.stroke)
         }
-        if (save.games == 0 && world.captures == 0 && world.orbiting && runLevel <= 1) {
+        if (screen == Screen.PLAYING && save.games == 0 && world.captures == 0 && world.orbiting && runLevel <= 1) {
             val a = (170 + 85 * sin(time * 3f)).toInt().coerceIn(0, 255)
             gfx.glass(c, 90f, H * 0.3f, 910f, H * 0.3f + 150f, 40f, a)
             gfx.text(c, "Tippe, wenn die Punkte", cx, H * 0.3f + 65f, 42f, Color.WHITE, false, alpha = a)
