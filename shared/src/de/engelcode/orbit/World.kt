@@ -468,7 +468,11 @@ class World(private val gfx: Gfx) {
 
     // ===================================================================== Update
 
-    fun update(dt: Float, playing: Boolean) {
+    private var live = false
+
+    fun update(dtIn: Float, playing: Boolean) {
+        val dt = if (dim == 6) dtIn * 1.2f else dtIn
+        live = playing
         time += dt
 
         for (p in planets) if (p.active && p.amp > 0f) {
@@ -603,7 +607,7 @@ class World(private val gfx: Gfx) {
             if (d < p.r + CAPTURE * captureMul) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; else -> 1f })
+                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; 5 -> 1.15f; 6 -> 0.9f; else -> 1f })
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -651,7 +655,8 @@ class World(private val gfx: Gfx) {
         if (dim == 4) ax += windX
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
-        val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * (if (boostT > 0f) 1.35f else 1f)
+        val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * (if (boostT > 0f) 1.35f else 1f) *
+            (if (dim == 5) max(0.68f, 1f - flyTime * 0.2f) else 1f)
         if (sp > 0.001f) { vx = vx / sp * speed; vy = vy / sp * speed }
         plX += vx * h; plY += vy * h
 
@@ -712,7 +717,7 @@ class World(private val gfx: Gfx) {
         burst(x, y, Gfx.GOLD, 16, 380f)
         burst(x, y, Color.WHITE, 10, 260f)
         shake = max(shake, 0.45f)
-        listener?.onExplosion()
+        if (live) listener?.onExplosion()
     }
 
     /** Hintergrund-Action: zwei Kometen stoßen zusammen und explodieren. */
@@ -741,8 +746,10 @@ class World(private val gfx: Gfx) {
         if (boom) {
             burst(bx, by, Gfx.ORANGE, 22, 450f)
             burst(bx, by, Color.WHITE, 10, 250f)
-            shake = max(shake, 0.25f)
-            listener?.onExplosion()
+            if (live) {
+                shake = max(shake, 0.25f)
+                listener?.onExplosion()
+            }
         }
     }
 
@@ -813,6 +820,14 @@ class World(private val gfx: Gfx) {
                 gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, noGlow)
                 if (dim == 2) gfx.ring(c, p.x, p.y, p.r + 4f, Color.WHITE, 3f, 150 + (sin(time * 4f + p.phase) * 80f).toInt())
                 if (dim == 4) gfx.ring(c, p.x, p.y, p.r + 3f, 0xFFFF9F1C.toInt(), 4f, 140 + (sin(time * 5f + p.phase) * 70f).toInt())
+                if (dim == 5) {
+                    gfx.ring(c, p.x, p.y, p.r + 4f, 0xFFBDE8FF.toInt(), 5f, 170)
+                    for (k in 0 until 6) {
+                        val a = k * 1.0472f + p.phase
+                        gfx.circle(c, p.x + cos(a) * (p.r + 4f), p.y + sin(a) * (p.r + 4f), 5f, Color.WHITE, 200)
+                    }
+                }
+                if (dim == 6) gfx.ring(c, p.x, p.y, p.r + 5f + sin(time * 9f + p.phase) * 3f, 0xFFE040FB.toInt(), 3f, 200)
                 if (dim == 3) {
                     gfx.circle(c, p.x, p.y, p.r, Color.BLACK, 140)
                     gfx.ring(c, p.x, p.y, p.r, 0xFF2EE5C8.toInt(), 3f, 160 + (sin(time * 2f + p.phase) * 60f).toInt())
@@ -924,7 +939,7 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
             }
         }
         if (dim == 4) {

@@ -79,7 +79,11 @@ object Achievements {
         Ach(n("Kurskorrektur", "Course correction", "Коррекция курса"), REDIRECTS, 50, 200),
         Ach(n("Überflieger", "High flyer", "Высокий полёт"), SKIPS, 50, 250),
         Ach(n("Wurmloch-Reisender", "Wormhole traveller", "Путник червоточин"), WORMS, 20, 200),
-        Ach(n("Rennfahrer", "Racer", "Гонщик"), TT, 10, 300)
+        Ach(n("Rennfahrer", "Racer", "Гонщик"), TT, 10, 300),
+        Ach(n("Frostbeule", "Frostbite", "Обморожение"), LEVEL, 310, 700),
+        Ach(n("Eiskönig", "Ice king", "Ледяной король"), LEVEL, 350, 2500),
+        Ach(n("Lichtgeschwindigkeit", "Light speed", "Скорость света"), LEVEL, 360, 900),
+        Ach(n("Unendlichkeit", "Infinity", "Бесконечность"), LEVEL, 400, 4000)
     )
 
     private val DESC = arrayOf(

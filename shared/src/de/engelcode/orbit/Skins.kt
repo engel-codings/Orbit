@@ -142,7 +142,17 @@ object Skins {
         Skin(n("Blitzkugel", "Ball lightning", "Шаровая молния"), 3400, c(0xFFB388FF), c(0xFF7FE7FF), ELECTRIC, c(0xFFFFFFFF), reqLevel = 160),
         Skin(n("Schmetterling", "Butterfly", "Бабочка"), 4400, c(0xFFF15BB5), c(0xFFF15BB5), BUTTERFLY, c(0xFF4CC9F0), reqLevel = 180),
         Skin(n("Ringplanet", "Ring planet", "Кольцевая планета"), 6800, c(0xFF7B61FF), c(0xFF7B61FF), RINGPLANET, reqCrowns = 360),
-        Skin(n("Glut", "Ember", "Уголёк"), 0, c(0xFFFF7A00), c(0xFFFF3D00), EMBER, c(0xFFFFD166), reqLevel = 300)
+        Skin(n("Glut", "Ember", "Уголёк"), 0, c(0xFFFF7A00), c(0xFFFF3D00), EMBER, c(0xFFFFD166), reqLevel = 300),
+        Skin(n("Eiskristall", "Ice crystal", "Ледяной кристалл"), 3800, c(0xFFBDE8FF), c(0xFF8FD3FF), SNOWFLAKE, reqLevel = 305),
+        Skin(n("Gletscher", "Glacier", "Ледник"), 4200, c(0xFFE0F7FF), c(0xFF4CC9F0), DIAMOND, reqLevel = 315),
+        Skin(n("Polarstern", "Pole star", "Полярная звезда"), 5200, c(0xFF2EE59D), c(0xFF7B61FF), STAR, reqLevel = 330),
+        Skin(n("Eisring", "Ice ring", "Ледяное кольцо"), 6500, c(0xFF8FD3FF), c(0xFF8FD3FF), RINGPLANET, reqCrowns = 450),
+        Skin(n("Frostkrone", "Frost crown", "Морозная корона"), 0, c(0xFFE0F7FF), c(0xFFBDE8FF), CROWN, c(0xFF8FD3FF), reqLevel = 350),
+        Skin(n("Hyperwürfel", "Hypercube", "Гиперкуб"), 5600, c(0xFFE040FB), c(0xFF00E5FF), CUBE, c(0xFF00E5FF), reqLevel = 355),
+        Skin(n("Quant", "Quantum", "Квант"), 6200, c(0xFF00E5FF), c(0xFFE040FB), ATOM, c(0xFFE040FB), reqLevel = 365),
+        Skin(n("Tachyon", "Tachyon", "Тахион"), 7400, c(0xFFE040FB), c(0xFFE040FB), ELECTRIC, c(0xFF00E5FF), reqLevel = 380),
+        Skin(n("Neon-Prisma", "Neon prism", "Неоновая призма"), 8500, c(0xFF76FF03), c(0xFF76FF03), PRISM, reqCrowns = 600),
+        Skin(n("Unendlichkeit", "Infinity", "Бесконечность"), 0, c(0xFFFFFFFF), c(0xFFE040FB), GALAXY, c(0xFF00E5FF), reqLevel = 400)
     )
 
     val trails = arrayOf(
@@ -169,7 +179,13 @@ object Skins {
         Trail(n("Eis", "Ice", "Лёд"), 1400, c(0xFFBDE8FF), T_ICE, reqLevel = 65),
         Trail(n("Punkte", "Dots", "Точки"), 700, c(0xFFFFFFFF), T_DOTS),
         Trail(n("Glut", "Embers", "Угли"), 3200, c(0xFFFF7A00), T_EMBERS, reqLevel = 260),
-        Trail(n("Aurora", "Aurora", "Сияние"), 5000, 0, T_AURORA, reqCrowns = 400)
+        Trail(n("Aurora", "Aurora", "Сияние"), 5000, 0, T_AURORA, reqCrowns = 400),
+        Trail(n("Schneesturm", "Blizzard", "Метель"), 3600, c(0xFFE0F7FF), T_ICE, reqLevel = 310),
+        Trail(n("Frostfunken", "Frost sparks", "Морозные искры"), 4000, c(0xFFBDE8FF), T_SPARK, reqLevel = 325),
+        Trail(n("Nordlicht", "Northern lights", "Северное сияние"), 4800, c(0xFF2EE59D), T_WAVES, reqLevel = 340),
+        Trail(n("Hyperlaser", "Hyper laser", "Гиперлазер"), 5400, c(0xFFE040FB), T_LASER, reqLevel = 360),
+        Trail(n("Quantenstaub", "Quantum dust", "Квантовая пыль"), 6000, c(0xFF00E5FF), T_STARDUST, reqLevel = 375),
+        Trail(n("Lichtspur", "Light trail", "Световой след"), 7500, c(0xFF76FF03), T_COMET, reqCrowns = 700)
     )
 
     const val REVIVE_PRICE = 120

@@ -20,8 +20,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 10
-        const val VERSION_NAME = "0.8.0"
+        const val VERSION_CODE = 11
+        const val VERSION_NAME = "0.9.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -158,16 +158,18 @@ class Game(context: Context) : World.Listener {
     private var redirVal = -1
 
     // Zeitrennen
-    private val TT_COURSES = arrayOf(intArrayOf(3, 6, 9), intArrayOf(12, 18, 24, 30, 36), IntArray(10) { (it + 1) * 10 })
-    private val TT_REWARD = intArrayOf(30, 60, 120)
+    private val TT_COURSES = arrayOf(intArrayOf(3, 6, 9), intArrayOf(12, 18, 24, 30, 36), IntArray(10) { (it + 1) * 10 },
+        intArrayOf(50, 160, 210, 260, 310, 360))
+    private val TT_REWARD = intArrayOf(30, 60, 120, 250)
+    private val TT_N = 4
     private var ttCourse = -1
     private var ttIdx = 0
     private var ttTime = 0f
     private var ttStr = ""
     private var ttShown = -1
     private var ttLevelStr = ""
-    private val ttBestStr = Array(3) { "" }
-    private val ttInfoStr = Array(3) { "" }
+    private val ttBestStr = Array(4) { "" }
+    private val ttInfoStr = Array(4) { "" }
     private val skinPrice = Array(Skins.skins.size) { Skins.skins[it].price.toString() }
     private val trailPrice = Array(Skins.trails.size) { Skins.trails[it].price.toString() }
     private val skinReq = Array(Skins.skins.size) { "" }
@@ -219,10 +221,10 @@ class Game(context: Context) : World.Listener {
     private val achTitleStr = Array(Achievements.list.size) { "" }
     private var achBadge = 0
     private var rankStr = ""
-    private val dimTitles = arrayOf("", "", "", "")
-    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt())
-    private val dimBestStr = arrayOf("", "", "", "")
-    private val dimLockStr = arrayOf("", "", "", "")
+    private val dimTitles = Array(Levels.DIMS) { "" }
+    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt(), 0xFF8FD3FF.toInt(), 0xFFE040FB.toInt())
+    private val dimBestStr = Array(Levels.DIMS) { "" }
+    private val dimLockStr = Array(Levels.DIMS) { "" }
     private var missionBadge = 0
     private var chestLabelMin = -1
     private val missionDescStr = arrayOf("", "", "")
@@ -401,7 +403,7 @@ class Game(context: Context) : World.Listener {
     private fun refreshMenuTexts() {
         val next = min(save.levelDone + 1, Levels.COUNT)
         nextStr = L.f(L.LEVEL_N, next)
-        for (d in 0 until 4) dimTitles[d] = L.f(L.DIMENSION, d + 1)
+        for (d in 0 until Levels.DIMS) dimTitles[d] = L.f(L.DIMENSION, d + 1)
         missionsToday()
         buildMissions()
         chestLabelMin = -1
@@ -436,6 +438,8 @@ class Game(context: Context) : World.Listener {
             2 -> showToast(L.t(L.DIM2_HINT))
             3 -> showToast(L.t(L.DIM3_HINT))
             4 -> showToast(L.t(L.DIM4_HINT))
+            5 -> showToast(L.t(L.DIM5_HINT))
+            6 -> showToast(L.t(L.DIM6_HINT))
         }
         if (!save.redirectHint && (level == 0 || level >= 2)) {
             save.redirectHint = true; save.flush()
@@ -461,20 +465,20 @@ class Game(context: Context) : World.Listener {
     private fun dimUnlocked(d: Int) = save.levelDone >= Levels.DIM_UNLOCK[d]
 
     private fun buildEndlessTexts() {
-        for (d in 0 until 4) {
+        for (d in 0 until Levels.DIMS) {
             dimBestStr[d] = L.f(L.RECORD, save.bestDim[d])
             dimLockStr[d] = L.f(L.ENDLESS_LOCKED, Levels.DIM_UNLOCK[d])
         }
-        for (k in 0 until 3) {
-            ttBestStr[k] = if (!ttOpen(k)) L.f(L.ENDLESS_LOCKED, TT_COURSES[k].last())
+        for (k in 0 until TT_N) {
+            ttBestStr[k] = if (!ttOpen(k)) L.f(L.ENDLESS_LOCKED, TT_COURSES[k].max())
                 else if (save.ttBest[k] > 0L) L.f(L.TT_BEST, fmtTime(save.ttBest[k] / 1000f)) else L.t(L.TT_NONE)
             ttInfoStr[k] = L.f(L.TT_LEVELS, TT_COURSES[k].size, L.levels(TT_COURSES[k].size))
         }
     }
 
-    private fun ttTop() = 245f + 4 * 285f
+    private fun ttTop() = 245f + 3 * 285f
 
-    private fun ttOpen(k: Int) = save.levelDone >= TT_COURSES[k].last()
+    private fun ttOpen(k: Int) = save.levelDone >= TT_COURSES[k].max()
 
     private fun fmtTime(t: Float): String {
         val ds = (t * 10f).toInt()
@@ -513,17 +517,18 @@ class Game(context: Context) : World.Listener {
         showToast(L.t(if (best) L.TT_NEW_BEST else L.TT_DONE) + "  " + fmtTime(ttTime) + if (first) "  +${TT_REWARD[k]}★" else "")
     }
 
-    private fun endlessTap(lastTapX: Float, y: Float) {
+    private fun endlessTap(tx: Float, y: Float) {
         val tt = ttTop() + 70f
         if (y > tt && y < tt + 230f) {
-            val k = ((lastTapX - 40f) / 315f).toInt().coerceIn(0, 2)
+            val k = ((tx - 40f) / 235f).toInt().coerceIn(0, TT_N - 1)
             if (ttOpen(k)) { sound.play(Sound.CLICK); startTrial(k) }
-            else { sound.play(Sound.ERROR); showToast(L.f(L.ENDLESS_LOCKED, TT_COURSES[k].last())) }
+            else { sound.play(Sound.ERROR); showToast(L.f(L.ENDLESS_LOCKED, TT_COURSES[k].max())) }
             return
         }
-        for (d in 0 until 4) {
-            val top = 245f + d * 285f
-            if (y < top || y > top + 260f) continue
+        for (d in 0 until Levels.DIMS) {
+            val top = 245f + (d / 2) * 285f
+            val x = 40f + (d % 2) * 470f
+            if (y < top || y > top + 260f || tx < x || tx > x + 450f) continue
             if (dimUnlocked(d)) { sound.play(Sound.CLICK); startRun(0, 0L, d + 1) }
             else { sound.play(Sound.ERROR); showToast(dimLockStr[d]) }
             return
@@ -533,31 +538,33 @@ class Game(context: Context) : World.Listener {
     private fun drawEndlessSel(c: Canvas) {
         header(c, L.t(L.ENDLESS_TITLE))
         starPill(c, save.stars)
-        for (d in 0 until 4) {
-            val top = 245f + d * 285f
+        for (d in 0 until Levels.DIMS) {
+            val top = 245f + (d / 2) * 285f
+            val x = 40f + (d % 2) * 470f
             val open = dimUnlocked(d)
             val col = DIM_COL[d]
-            gfx.glass(c, 40f, top, 960f, top + 260f, 40f, border = if (open) col else Color.WHITE)
-            if (!save.lowGfx && open) gfx.glowA(c, gfx.planetGlow[4], 140f, top + 130f, 130f, 120)
-            gfx.circle(c, 140f, top + 130f, 70f, if (open) col else Gfx.PANEL2)
-            if (open) gfx.text(c, levelNum[d + 1], 140f, top + 155f, 72f, Gfx.BG)
-            else gfx.icon(c, Gfx.I_LOCK, 140f, top + 130f, 30f, Gfx.DIM)
-            gfx.text(c, dimTitles[d], 245f, top + 80f, 30f, col, align = Paint.Align.LEFT, maxW = 680f)
-            gfx.text(c, L.t(L.DIM_NAMES[d]), 245f, top + 135f, 46f, if (open) Color.WHITE else Gfx.DIM, align = Paint.Align.LEFT, maxW = 680f)
-            gfx.text(c, L.t(L.DIM_RULES[d]), 245f, top + 182f, 32f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 680f)
-            gfx.text(c, if (open) dimBestStr[d] else dimLockStr[d], 245f, top + 230f, 30f, if (open) Gfx.GOLD else Gfx.DIM, open, Paint.Align.LEFT, maxW = 680f)
+            gfx.glass(c, x, top, x + 450f, top + 260f, 40f, border = if (open) col else Color.WHITE)
+            val cx = x + 75f
+            if (!save.lowGfx && open) gfx.glowA(c, gfx.planetGlow[4], cx, top + 95f, 95f, 120)
+            gfx.circle(c, cx, top + 95f, 48f, if (open) col else Gfx.PANEL2)
+            if (open) gfx.text(c, levelNum[d + 1], cx, top + 113f, 52f, Gfx.BG)
+            else gfx.icon(c, Gfx.I_LOCK, cx, top + 95f, 22f, Gfx.DIM)
+            gfx.text(c, dimTitles[d], x + 140f, top + 70f, 24f, col, align = Paint.Align.LEFT, maxW = 290f)
+            gfx.text(c, L.t(L.DIM_NAMES[d]), x + 140f, top + 118f, 34f, if (open) Color.WHITE else Gfx.DIM, align = Paint.Align.LEFT, maxW = 290f)
+            gfx.text(c, L.t(L.DIM_RULES[d]), x + 30f, top + 192f, 26f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 390f)
+            gfx.text(c, if (open) dimBestStr[d] else dimLockStr[d], x + 30f, top + 235f, 26f, if (open) Gfx.GOLD else Gfx.DIM, open, Paint.Align.LEFT, maxW = 390f)
         }
         val tt = ttTop()
         gfx.text(c, L.t(L.TIME_TRIAL), W / 2f, tt + 45f, 40f, Gfx.ORANGE)
-        for (k in 0 until 3) {
-            val x = 40f + k * 315f
+        for (k in 0 until TT_N) {
+            val x = 40f + k * 235f
             val y = tt + 70f
             val open = ttOpen(k)
-            gfx.glass(c, x, y, x + 290f, y + 230f, 36f, border = if (open) Gfx.ORANGE else Color.WHITE)
-            gfx.icon(c, if (open) Gfx.I_SPEED else Gfx.I_LOCK, x + 145f, y + 50f, 24f, if (open) Gfx.ORANGE else Gfx.DIM)
-            gfx.text(c, L.t(L.TT_NAMES[k]), x + 145f, y + 115f, 32f, if (open) Color.WHITE else Gfx.DIM, maxW = 260f)
-            gfx.text(c, ttInfoStr[k], x + 145f, y + 158f, 25f, Gfx.DIM, false, maxW = 260f)
-            gfx.text(c, ttBestStr[k], x + 145f, y + 200f, 24f, if (open) Gfx.GOLD else Gfx.DIM, false, maxW = 260f)
+            gfx.glass(c, x, y, x + 215f, y + 230f, 32f, border = if (open) Gfx.ORANGE else Color.WHITE)
+            gfx.icon(c, if (open) Gfx.I_SPEED else Gfx.I_LOCK, x + 107f, y + 48f, 22f, if (open) Gfx.ORANGE else Gfx.DIM)
+            gfx.text(c, L.t(L.TT_NAMES[k]), x + 107f, y + 112f, 27f, if (open) Color.WHITE else Gfx.DIM, maxW = 195f)
+            gfx.text(c, ttInfoStr[k], x + 107f, y + 155f, 22f, Gfx.DIM, false, maxW = 195f)
+            gfx.text(c, ttBestStr[k], x + 107f, y + 198f, 21f, if (open) Gfx.GOLD else Gfx.DIM, false, maxW = 195f)
         }
     }
 
@@ -726,7 +733,7 @@ class Game(context: Context) : World.Listener {
         save.perfects += world.perfects - cPerfects
         if (world.bestStreak > save.bestStreak) save.bestStreak = world.bestStreak
         if (runLevel == 0) {
-            val d = (runDim - 1).coerceIn(0, 3)
+            val d = (runDim - 1).coerceIn(0, Levels.DIMS - 1)
             if (world.score > save.bestDim[d]) { save.bestDim[d] = world.score; newRecord = true }
             if (world.score > save.best) save.best = world.score
         }
@@ -806,7 +813,7 @@ class Game(context: Context) : World.Listener {
             return
         }
         earnedStr = "+$runEarned"
-        bestStr = L.f(L.RECORD, save.bestDim[(runDim - 1).coerceIn(0, 3)])
+        bestStr = L.f(L.RECORD, save.bestDim[(runDim - 1).coerceIn(0, Levels.DIMS - 1)])
         bRevive.label = L.f(L.REVIVE_BTN, save.revives)
         bLeave.label = L.t(if (runLevel > 0) L.TO_MAP else L.MENU)
         go(Screen.GAMEOVER)
@@ -1626,7 +1633,7 @@ class Game(context: Context) : World.Listener {
             val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
             gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
-            if (s == 15 || s == 20 || s == 25) {
+            if (s == 15 || s == 20 || s == 25 || s == 30 || s == 35) {
                 // Übergang in die Spiegelwelt
                 val dy = by - r - 150f
                 val di = s / 5 - 2

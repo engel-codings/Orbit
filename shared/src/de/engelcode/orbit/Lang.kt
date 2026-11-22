@@ -142,20 +142,27 @@ object L {
         a("Unser Universum", "Our universe", "Наша вселенная"),
         a("Spiegelwelt", "Mirror world", "Зеркальный мир"),
         a("Die Leere", "The Void", "Пустота"),
-        a("Sonnensturm", "Solar storm", "Солнечная буря")
+        a("Sonnensturm", "Solar storm", "Солнечная буря"),
+        a("Frostwelt", "Frost world", "Ледяной мир"),
+        a("Hyperraum", "Hyperspace", "Гиперпространство")
     )
+    val DIM5_HINT = a("Frostwelt: Die Kälte bremst deinen Flug!", "Frost world: the cold slows your flight!", "Ледяной мир: холод замедляет полёт!")
+    val DIM6_HINT = a("Hyperraum: Alles ist schneller!", "Hyperspace: everything is faster!", "Гиперпространство: всё быстрее!")
     val DIM4_HINT = a("Sonnensturm: Der Wind treibt dich ab!", "Solar storm: the wind pushes you!", "Солнечная буря: ветер сносит тебя!")
     val DIM_RULES = arrayOf(
         a("Normale Schwerkraft", "Normal gravity", "Обычная гравитация"),
         a("Planeten stoßen dich ab", "Planets push you away", "Планеты отталкивают тебя"),
         a("Keine Schwerkraft", "No gravity", "Нет гравитации"),
-        a("Sonnenwind treibt dich ab", "Solar wind pushes you", "Солнечный ветер сносит тебя")
+        a("Sonnenwind treibt dich ab", "Solar wind pushes you", "Солнечный ветер сносит тебя"),
+        a("Kälte bremst dich", "The cold slows you", "Холод тормозит тебя"),
+        a("Alles ist schneller", "Everything is faster", "Всё быстрее")
     )
     val ENDLESS_TITLE = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ ИГРЫ")
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
-    val TT_NAMES = arrayOf(a("Kurze Strecke", "Short course", "Короткая трасса"), a("Mittlere Strecke", "Medium course", "Средняя трасса"), a("Lange Strecke", "Long course", "Длинная трасса"))
+    val TT_NAMES = arrayOf(a("Kurze Strecke", "Short course", "Короткая трасса"), a("Mittlere Strecke", "Medium course", "Средняя трасса"),
+        a("Lange Strecke", "Long course", "Длинная трасса"), a("Dimensionen-Tour", "Dimension tour", "Тур по измерениям"))
     val TT_LEVELS = a("{0} {1} am Stück", "{0} {1} in a row", "{0} {1} подряд")
     val TT_BEST = a("Bestzeit: {0}", "Best time: {0}", "Лучшее время: {0}")
     val TT_NONE = a("Noch keine Zeit", "No time yet", "Времени пока нет")
@@ -211,13 +218,13 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Alle 300 Level überarbeitet und länger", "• All 300 levels reworked and longer", "• Все 300 уровней переработаны и длиннее"),
-        a("• Planeten überspringen = Sprung-Bonus", "• Skipping planets = skip bonus", "• Пропуск планет = бонус"),
-        a("• Umlenken: im Flug tippen", "• Redirect: tap in flight", "• Смена курса: нажми в полёте"),
-        a("• Boost-Ringe, Asteroiden, Wurmlöcher, Laser", "• Boost rings, asteroids, wormholes, lasers", "• Ускорители, астероиды, червоточины, лазеры"),
-        a("• Explosionen und mehr Action", "• Explosions and more action", "• Взрывы и больше экшена"),
-        a("• Shop: neue Fähigkeiten", "• Shop: new skills", "• Магазин: новые навыки"),
-        a("• Zeitrennen und 4 Musikstücke", "• Time trial and 4 music tracks", "• Гонка на время и 4 трека")
+        a("• 100 neue Level – jetzt 400!", "• 100 new levels – now 400!", "• 100 новых уровней – теперь 400!"),
+        a("• Dimension 5: Frostwelt", "• Dimension 5: Frost world", "• Измерение 5: Ледяной мир"),
+        a("• Dimension 6: Hyperraum", "• Dimension 6: Hyperspace", "• Измерение 6: Гиперпространство"),
+        a("• 10 neue Himmelskörper", "• 10 new celestial bodies", "• 10 новых небесных тел"),
+        a("• 10 neue Skins und 6 neue Spuren", "• 10 new skins and 6 new trails", "• 10 новых скинов и 6 новых следов"),
+        a("• Neue Erfolge und Zeitrennen-Strecke", "• New achievements and time trial course", "• Новые достижения и трасса"),
+        a("• Fehler behoben: Explosionen im Menü", "• Fixed: explosion sounds in the menu", "• Исправлено: звуки взрывов в меню")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

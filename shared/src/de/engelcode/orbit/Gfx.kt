@@ -156,7 +156,21 @@ class Gfx(context: Context) {
         makeGlow(0xFF9B5DE5.toInt(), 0xB0),
         makeGlow(0xFFFF7A00.toInt(), 0x90), makeGlow(0xFFFFB703.toInt(), 0x90),
         makeGlow(0xFFFF3D00.toInt(), 0xA0), makeGlow(0xFFFF5C8A.toInt(), 0xA0),
-        makeGlow(0xFFFFFFFF.toInt(), 0xE0)
+        makeGlow(0xFFFFFFFF.toInt(), 0xE0),
+        makeGlow(0xFFBDE8FF.toInt(), 0x90), makeGlow(0xFF8FD3FF.toInt(), 0x90),
+        makeGlow(0xFFE0F7FF.toInt(), 0x70), makeGlow(0xFF2EE59D.toInt(), 0xA0),
+        makeGlow(0xFFBDE8FF.toInt(), 0xC0),
+        makeGlow(0xFFE040FB.toInt(), 0xB0), makeGlow(0xFF00E5FF.toInt(), 0xC0),
+        makeGlow(0xFF76FF03.toInt(), 0x90), makeGlow(0xFFFFFFFF.toInt(), 0xC0),
+        makeGlow(0xFFE040FB.toInt(), 0xE0)
+    )
+    val nebula5 = arrayOf(
+        makeGlow(0xFF8FD3FF.toInt(), 0x40), makeGlow(0xFF1E5EFF.toInt(), 0x40),
+        makeGlow(0xFFE0F7FF.toInt(), 0x25), makeGlow(0xFF4CC9F0.toInt(), 0x35)
+    )
+    val nebula6 = arrayOf(
+        makeGlow(0xFFE040FB.toInt(), 0x45), makeGlow(0xFF00E5FF.toInt(), 0x40),
+        makeGlow(0xFF76FF03.toInt(), 0x25), makeGlow(0xFF651FFF.toInt(), 0x50)
     )
     val nebula4 = arrayOf(
         makeGlow(0xFFFF7A00.toInt(), 0x45), makeGlow(0xFFFF3D00.toInt(), 0x40),
@@ -733,6 +747,94 @@ class Gfx(context: Context) {
             Levels.B_PHOENIX -> {
                 drawGalaxy(c, x, y, r, t * 1.5f, 0xFFFF7A00.toInt(), 0xFFFFE0B2.toInt(), true)
                 starShape(c, x, y, r * 0.45f, t * 50f, 0xFFFFD166.toInt(), 220)
+            }
+            Levels.B_FROSTSTAR -> {
+                for (k in 0 until 6) {
+                    val a = k * 1.0472f + t * 0.3f
+                    line.color = 0xFFE0F7FF.toInt(); line.alpha = 230; line.strokeWidth = r * 0.07f
+                    c.drawLine(x, y, x + cos(a) * r, y + sin(a) * r, line)
+                    circle(c, x + cos(a) * r * 0.65f, y + sin(a) * r * 0.65f, r * 0.1f, 0xFFBDE8FF.toInt())
+                }
+                circle(c, x, y, r * 0.35f, 0xFFBDE8FF.toInt())
+                circle(c, x, y, r * 0.18f, Color.WHITE)
+            }
+            Levels.B_ICEGIANT -> {
+                val col = 0xFF6FB7E8.toInt()
+                circle(c, x, y, r, col); shade(c, x, y, r, col)
+                for (k in 0 until 3) circle(c, x - r * 0.4f + k * r * 0.4f, y - r * 0.3f + k * r * 0.25f, r * 0.22f, 0xFFBDE8FF.toInt(), 150)
+                ring(c, x, y, r * 1.08f, 0xFFE0F7FF.toInt(), r * 0.05f, 150)
+                highlight(c, x, y, r)
+            }
+            Levels.B_GLACIER -> {
+                val col = 0xFFDDEFFA.toInt()
+                circle(c, x, y, r, col); shade(c, x, y, r, col)
+                line.color = 0xFF8FD3FF.toInt(); line.alpha = 200; line.strokeWidth = r * 0.04f
+                c.drawLine(x - r * 0.6f, y - r * 0.2f, x + r * 0.1f, y + r * 0.1f, line)
+                c.drawLine(x + r * 0.1f, y + r * 0.1f, x + r * 0.5f, y - r * 0.4f, line)
+                c.drawLine(x - r * 0.2f, y + r * 0.5f, x + r * 0.3f, y + r * 0.3f, line)
+                highlight(c, x, y, r)
+            }
+            Levels.B_AURORA -> {
+                val col = 0xFF173A5E.toInt()
+                circle(c, x, y, r, col)
+                for (k in 0 until 4) {
+                    val yy = y - r * 0.5f + k * r * 0.3f
+                    val w = r * (0.9f - kotlin.math.abs(k - 1.5f) * 0.25f)
+                    val cc = if (k % 2 == 0) 0xFF2EE59D.toInt() else 0xFF7B61FF.toInt()
+                    rect.set(x - w + sin(t * 2f + k) * r * 0.1f, yy - r * 0.08f, x + w + sin(t * 2f + k) * r * 0.1f, yy + r * 0.08f)
+                    fill.color = cc; fill.alpha = 170
+                    c.drawOval(rect, fill)
+                }
+                ring(c, x, y, r, 0xFF2EE59D.toInt(), r * 0.05f, 180)
+            }
+            Levels.B_ICECROWN -> {
+                circle(c, x, y, r * 0.75f, 0xFF8FD3FF.toInt())
+                for (k in 0 until 8) {
+                    val a = k * 0.7854f - t * 0.4f
+                    starShape(c, x + cos(a) * r * 0.85f, y + sin(a) * r * 0.85f, r * 0.2f, t * 40f, 0xFFE0F7FF.toInt(), 230)
+                }
+                starShape(c, x, y, r * 0.45f, t * 30f, Color.WHITE, 230)
+            }
+            Levels.B_HYPERGATE -> {
+                for (k in 0 until 4) {
+                    val f = ((t * 0.6f + k / 4f) % 1f)
+                    ring(c, x, y, r * (1.1f - f * 0.8f), if (k % 2 == 0) 0xFFE040FB.toInt() else 0xFF00E5FF.toInt(), r * 0.06f, (230 * (0.3f + f * 0.7f)).toInt())
+                }
+                circle(c, x, y, r * 0.25f, Color.BLACK)
+            }
+            Levels.B_QUANTUM -> {
+                circle(c, x, y, r * 0.35f, 0xFF00E5FF.toInt())
+                for (k in 0 until 3) {
+                    c.save(); c.translate(x, y); c.rotate(k * 60f + t * 40f)
+                    stroke.color = 0xFFE040FB.toInt(); stroke.alpha = 220; stroke.strokeWidth = r * 0.05f
+                    rect.set(-r, -r * 0.35f, r, r * 0.35f)
+                    c.drawOval(rect, stroke)
+                    c.restore()
+                    val a = t * 3f + k * 2.094f
+                    circle(c, x + cos(a) * r * 0.9f, y + sin(a) * r * 0.3f, r * 0.09f, Color.WHITE)
+                }
+            }
+            Levels.B_SPIRAL -> {
+                drawGalaxy(c, x, y, r, t * 2f, 0xFF76FF03.toInt(), 0xFFE0FFD0.toInt(), true)
+                circle(c, x, y, r * 0.2f, Color.WHITE, 230)
+            }
+            Levels.B_TACHYON -> {
+                for (k in 0 until 10) {
+                    val a = k * 0.6283f + t * 2f
+                    line.color = if (k % 2 == 0) 0xFF00E5FF.toInt() else 0xFFE040FB.toInt(); line.alpha = 200; line.strokeWidth = r * 0.05f
+                    c.drawLine(x + cos(a) * r * 0.3f, y + sin(a) * r * 0.3f, x + cos(a + 0.4f) * r, y + sin(a + 0.4f) * r, line)
+                }
+                starShape(c, x, y, r * 0.5f, t * 120f, Color.WHITE, 240)
+            }
+            Levels.B_INFINITY -> {
+                for (k in 0 until 24) {
+                    val a = k * 0.2618f + t * 0.8f
+                    val d = sin(a * 2f)
+                    val px = x + cos(a) * r * 0.9f
+                    val py = y + d * r * 0.4f
+                    circle(c, px, py, r * 0.08f, if (k % 3 == 0) 0xFFE040FB.toInt() else if (k % 3 == 1) 0xFF00E5FF.toInt() else Color.WHITE, 230)
+                }
+                circle(c, x, y, r * 0.18f, Color.WHITE)
             }
             Levels.B_SOLARCORE -> {
                 for (k in 0 until 16) {

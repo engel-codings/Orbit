@@ -8,7 +8,7 @@ import kotlin.math.min
  */
 object Levels {
 
-    const val COUNT = 300
+    const val COUNT = 400
 
     // Himmelskörper
     const val B_NONE = 0
@@ -43,6 +43,16 @@ object Levels {
     const val B_FIRERING = 29
     const val B_PHOENIX = 30
     const val B_SOLARCORE = 31
+    const val B_FROSTSTAR = 32
+    const val B_ICEGIANT = 33
+    const val B_GLACIER = 34
+    const val B_AURORA = 35
+    const val B_ICECROWN = 36
+    const val B_HYPERGATE = 37
+    const val B_QUANTUM = 38
+    const val B_SPIRAL = 39
+    const val B_TACHYON = 40
+    const val B_INFINITY = 41
 
     private val bodyNames = arrayOf(
         arrayOf("", "", ""),
@@ -76,13 +86,25 @@ object Levels {
         arrayOf("STURMAUGE", "STORM EYE", "ОКО БУРИ"),
         arrayOf("FEUERRING", "RING OF FIRE", "ОГНЕННОЕ КОЛЬЦО"),
         arrayOf("PHÖNIXNEBEL", "PHOENIX NEBULA", "ТУМАННОСТЬ ФЕНИКСА"),
-        arrayOf("SONNENKERN", "SOLAR CORE", "СОЛНЕЧНОЕ ЯДРО")
+        arrayOf("SONNENKERN", "SOLAR CORE", "СОЛНЕЧНОЕ ЯДРО"),
+        arrayOf("FROSTSTERN", "FROST STAR", "МОРОЗНАЯ ЗВЕЗДА"),
+        arrayOf("EISRIESE", "ICE GIANT", "ЛЕДЯНОЙ ГИГАНТ"),
+        arrayOf("GLETSCHERMOND", "GLACIER MOON", "ЛЕДНИКОВАЯ ЛУНА"),
+        arrayOf("POLARLICHT", "POLAR LIGHTS", "ПОЛЯРНОЕ СИЯНИЕ"),
+        arrayOf("EISKRONE", "ICE CROWN", "ЛЕДЯНАЯ КОРОНА"),
+        arrayOf("HYPERTOR", "HYPER GATE", "ГИПЕРВРАТА"),
+        arrayOf("QUANTENKERN", "QUANTUM CORE", "КВАНТОВОЕ ЯДРО"),
+        arrayOf("LICHTSPIRALE", "LIGHT SPIRAL", "СВЕТОВАЯ СПИРАЛЬ"),
+        arrayOf("TACHYONENSTERN", "TACHYON STAR", "ТАХИОННАЯ ЗВЕЗДА"),
+        arrayOf("UNENDLICHKEIT", "INFINITY", "БЕСКОНЕЧНОСТЬ")
     )
 
     fun bodyName(b: Int): String = bodyNames[b][L.cur]
 
     /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200), 3 = Die Leere (201–250). */
     fun dimension(level: Int) = when {
+        level > 350 -> 6
+        level > 300 -> 5
         level > 250 -> 4
         level > 200 -> 3
         level > 150 -> 2
@@ -91,8 +113,11 @@ object Levels {
     const val DIM2_FROM = 151
     const val DIM3_FROM = 201
     const val DIM4_FROM = 251
+    const val DIM5_FROM = 301
+    const val DIM6_FROM = 351
+    const val DIMS = 6
     /** Ab welchem geschafften Level ist der Endlos-Modus einer Dimension frei? */
-    val DIM_UNLOCK = intArrayOf(0, 150, 200, 250)
+    val DIM_UNLOCK = intArrayOf(0, 150, 200, 250, 300, 350)
 
     /** Abschnitt 0..19 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10
