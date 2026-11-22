@@ -1,9 +1,5 @@
 package de.engelcode.orbit
 
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.floor
@@ -43,7 +39,7 @@ object Synth {
 
     private fun launch(): FloatArray {
         val d = 0.14; val b = buf(d); var ph = 0.0
-        val rnd = java.util.Random(1)
+        val rnd = kotlin.random.Random(1)
         for (i in b.indices) {
             val t = i / SR.toDouble(); val k = t / d
             ph += TAU * (260 + 1100 * k) / SR
@@ -107,7 +103,7 @@ object Synth {
 
     private fun shield(): FloatArray {
         val b = buf(0.5); var lp = 0.0
-        val rnd = java.util.Random(3)
+        val rnd = kotlin.random.Random(3)
         for (i in b.indices) {
             val t = i / SR.toDouble()
             lp += ((rnd.nextDouble() * 2 - 1) - lp) * 0.5
@@ -130,7 +126,7 @@ object Synth {
 
     private fun death(): FloatArray {
         val b = buf(0.8); var ph = 0.0; var lp = 0.0
-        val rnd = java.util.Random(2)
+        val rnd = kotlin.random.Random(2)
         for (i in b.indices) {
             val t = i / SR.toDouble()
             ph += TAU * (170 * exp(-t * 2.2) + 30) / SR
@@ -187,7 +183,7 @@ object Synth {
             doubleArrayOf(196.0, 246.94, 293.66)
         )
         val roots = doubleArrayOf(110.0, 87.31, 130.81, 98.0)
-        fun q(f: Double) = Math.round(f * len) / len   // nahtloser Loop
+        fun q(f: Double) = kotlin.math.round(f * len) / len   // nahtloser Loop
         val padA = Array(4) { k -> DoubleArray(3) { q(chords[k][it]) } }
         val padB = Array(4) { k -> DoubleArray(3) { q(chords[k][it] * 1.004) } }
         val rootQ = DoubleArray(4) { q(roots[it]) }
@@ -201,8 +197,8 @@ object Synth {
                 val local = ((t - k * 4 + 1 + len) % len)
                 if (local < 6.0) {
                     val env = when {
-                        local < 2.0 -> (1 - Math.cos(PI * local / 2)) / 2
-                        local > 4.0 -> (1 - Math.cos(PI * (6 - local) / 2)) / 2
+                        local < 2.0 -> (1 - kotlin.math.cos(PI * local / 2)) / 2
+                        local > 4.0 -> (1 - kotlin.math.cos(PI * (6 - local) / 2)) / 2
                         else -> 1.0
                     }
                     var p = 0.0
@@ -232,7 +228,7 @@ object Synth {
             doubleArrayOf(261.63, 329.63, 392.0)
         )
         val roots = doubleArrayOf(73.42, 58.27, 87.31, 65.41)
-        fun q(f: Double) = Math.round(f * len) / len
+        fun q(f: Double) = kotlin.math.round(f * len) / len
         val padA = Array(4) { k -> DoubleArray(3) { q(chords[k][it]) } }
         val rootQ = DoubleArray(4) { q(roots[it]) }
         val pattern = intArrayOf(0, 1, 2, 1, 2, 0, 1, 2)
@@ -244,8 +240,8 @@ object Synth {
                 val local = ((t - k * 4 + 1 + len) % len)
                 if (local < 6.0) {
                     val env = when {
-                        local < 2.0 -> (1 - Math.cos(PI * local / 2)) / 2
-                        local > 4.0 -> (1 - Math.cos(PI * (6 - local) / 2)) / 2
+                        local < 2.0 -> (1 - kotlin.math.cos(PI * local / 2)) / 2
+                        local > 4.0 -> (1 - kotlin.math.cos(PI * (6 - local) / 2)) / 2
                         else -> 1.0
                     }
                     var p = 0.0
@@ -267,18 +263,5 @@ object Synth {
             b[i] = s.toFloat()
         }
         return b
-    }
-
-    fun writeWav(file: File, data: FloatArray) {
-        val n = data.size
-        val bb = ByteBuffer.allocate(44 + n * 2).order(ByteOrder.LITTLE_ENDIAN)
-        bb.put("RIFF".toByteArray()); bb.putInt(36 + n * 2); bb.put("WAVE".toByteArray())
-        bb.put("fmt ".toByteArray()); bb.putInt(16); bb.putShort(1); bb.putShort(1)
-        bb.putInt(SR); bb.putInt(SR * 2); bb.putShort(2); bb.putShort(16)
-        bb.put("data".toByteArray()); bb.putInt(n * 2)
-        for (v in data) bb.putShort((v.coerceIn(-1f, 1f) * 32767f).toInt().toShort())
-        val tmp = File(file.path + ".tmp")
-        FileOutputStream(tmp).use { it.write(bb.array()) }
-        tmp.renameTo(file)
     }
 }

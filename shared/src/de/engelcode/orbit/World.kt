@@ -76,7 +76,10 @@ class World(private val gfx: Gfx) {
     }
 
     var listener: Listener? = null
-    var reduced = false
+    /** Grafikqualität: 0 = Hoch, 1 = Mittel, 2 = Sparsam. */
+    var quality = 0
+    val reduced get() = quality == 2
+    private val noGlow get() = quality >= 1
     var shakeOn = true
 
     var worldH = 1800f; private set
@@ -175,7 +178,7 @@ class World(private val gfx: Gfx) {
         rng = when {
             level > 0 -> Random(Levels.seed(level))
             seed != 0L -> Random(seed)
-            else -> Random(System.nanoTime())
+            else -> Random(Platform.now() * 31L + Random.nextLong())
         }
         target = if (level > 0) Levels.planetCount(level) else 0
         for (p in planets) p.active = false
@@ -558,7 +561,7 @@ class World(private val gfx: Gfx) {
     }
 
     private fun burst(x: Float, y: Float, color: Int, count: Int, speed: Float) {
-        val n = if (reduced) count / 2 else count
+        val n = when (quality) { 0 -> count; 1 -> count * 3 / 4; else -> count / 2 }
         var made = 0
         for (p in particles) {
             if (made >= n) break
@@ -603,9 +606,9 @@ class World(private val gfx: Gfx) {
             if (p.goal && p.body == 0) {
                 if (!reduced) gfx.glow(c, gfx.goalGlow, p.x, p.y, p.r * 2.6f)
             }
-            if (p.body != 0) gfx.drawBody(c, p.body, p.x, p.y, p.r, time, reduced)
+            if (p.body != 0) gfx.drawBody(c, p.body, p.x, p.y, p.r, time, noGlow)
             else {
-                gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
+                gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, noGlow)
                 if (dim == 2) gfx.ring(c, p.x, p.y, p.r + 4f, Color.WHITE, 3f, 150 + (sin(time * 4f + p.phase) * 80f).toInt())
                 if (dim == 4) gfx.ring(c, p.x, p.y, p.r + 3f, 0xFFFF9F1C.toInt(), 4f, 140 + (sin(time * 5f + p.phase) * 70f).toInt())
                 if (dim == 3) {
@@ -618,7 +621,7 @@ class World(private val gfx: Gfx) {
 
         for (s in stars) {
             if (!s.active || s.y < top || s.y > bottom) continue
-            if (!reduced) gfx.glow(c, gfx.starGlow, s.x, s.y, 60f)
+            if (!noGlow) gfx.glow(c, gfx.starGlow, s.x, s.y, 60f)
             gfx.starShape(c, s.x, s.y, 22f + sin(time * 5f + s.spin) * 3f, s.spin * 57.3f, Gfx.GOLD)
         }
 
@@ -634,7 +637,7 @@ class World(private val gfx: Gfx) {
         for (m in meteors) {
             if (!m.active || m.y < top || m.y > bottom) continue
             val dirX = if (m.vx > 0f) -1f else 1f
-            if (!reduced) gfx.glow(c, gfx.fireGlow, m.x + dirX * m.r * 0.8f, m.y, m.r * 3f)
+            if (!noGlow) gfx.glow(c, gfx.fireGlow, m.x + dirX * m.r * 0.8f, m.y, m.r * 3f)
             for (k in 1..4) gfx.circle(c, m.x + dirX * k * m.r * 0.55f, m.y, m.r * (1f - k * 0.18f), 0xFFFF7A00.toInt(), 150 - k * 30)
             gfx.circle(c, m.x, m.y, m.r, 0xFF6D5D4F.toInt())
             gfx.circle(c, m.x + cos(m.spin) * m.r * 0.4f, m.y + sin(m.spin) * m.r * 0.4f, m.r * 0.25f, 0xFF4E4237.toInt())
@@ -673,7 +676,7 @@ class World(private val gfx: Gfx) {
 
     /** Sternenhimmel + Nebel (auch für Menüs). */
     fun drawBackground(c: Canvas) {
-        if (!reduced) {
+        if (quality == 0) {
             val band = worldH * 2f
             for (i in 0 until 4) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
@@ -701,7 +704,7 @@ class World(private val gfx: Gfx) {
     }
 
     private fun drawStarfield(c: Canvas) {
-        val layers = if (reduced) 1 else 3
+        val layers = when (quality) { 0 -> 3; 1 -> 2; else -> 1 }
         for (l in 0 until layers) {
             var off = (-camY * layerDepth[l]) % worldH
             if (off < 0f) off += worldH
@@ -715,7 +718,7 @@ class World(private val gfx: Gfx) {
     }
 
     private fun drawHole(c: Canvas, h: Hole) {
-        if (!reduced) gfx.glow(c, gfx.holeGlow, h.x, h.y, 170f)
+        if (!noGlow) gfx.glow(c, gfx.holeGlow, h.x, h.y, 170f)
         val st = gfx.stroke
         st.color = 0xFFB388FF.toInt(); st.alpha = 210; st.strokeWidth = 7f
         gfx.rect.set(h.x - 62f, h.y - 62f, h.x + 62f, h.y + 62f)

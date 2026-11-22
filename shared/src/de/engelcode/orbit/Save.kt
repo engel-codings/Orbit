@@ -36,7 +36,9 @@ class Save(context: Context) {
     var music = p.getBoolean("music", true)
     var vibration = p.getBoolean("vibration", true)
     var showFps = p.getBoolean("showFps", true)
-    var lowGfx = p.getBoolean("lowGfx", false)
+    /** Grafik: 0 = Hoch, 1 = Mittel, 2 = Sparsam. */
+    var gfx = if (p.contains("gfx")) p.getInt("gfx", 0) else if (p.getBoolean("lowGfx", false)) 2 else 0
+    val lowGfx get() = gfx == 2
     var shake = p.getBoolean("shake", true)
     var musicTrack = p.getInt("musicTrack", 0)
     /** Endlos-Rekord je Dimension (1–4). */
@@ -94,7 +96,7 @@ class Save(context: Context) {
 
     fun ownsSkin(i: Int) = ownedSkins and (1L shl i) != 0L
     fun ownsTrail(i: Int) = ownedTrails and (1 shl i) != 0
-    fun skinCount() = java.lang.Long.bitCount(ownedSkins)
+    fun skinCount() = ownedSkins.countOneBits()
 
     fun flush() {
         val sb = StringBuilder(Levels.COUNT)
@@ -113,7 +115,7 @@ class Save(context: Context) {
             .putLong("chestReady", chestReady).putInt("chests", chests)
             .putBoolean("sound", sound).putBoolean("music", music)
             .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
-            .putBoolean("lowGfx", lowGfx).putBoolean("shake", shake).putInt("musicTrack", musicTrack)
+            .putInt("gfx", gfx).putBoolean("shake", shake).putInt("musicTrack", musicTrack)
             .putInt("bestD1", bestDim[0]).putInt("bestD2", bestDim[1]).putInt("bestD3", bestDim[2]).putInt("bestD4", bestDim[3])
             .putInt("challengesDone", challengesDone).putInt("spins", spins)
             .putLong("challengeDay", challengeDay).putLong("wheelDay", wheelDay)

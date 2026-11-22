@@ -1,6 +1,5 @@
 package de.engelcode.orbit
 
-import java.util.Locale
 
 /**
  * Alle Texte des Spiels in drei Sprachen: Deutsch (0), Englisch (1), Russisch (2).
@@ -18,7 +17,7 @@ object L {
 
     val LANG_NAMES = arrayOf("Deutsch", "English", "Русский")
 
-    fun systemDefault(): Int = when (Locale.getDefault().language) {
+    fun systemDefault(): Int = when (Platform.systemLanguage()) {
         "de" -> DE
         "ru", "uk", "be", "kk" -> RU
         else -> EN
@@ -195,7 +194,8 @@ object L {
         a("• Endlos-Modus in jeder Dimension", "• Endless mode in every dimension", "• Бесконечный режим в каждом измерении"),
         a("• Zweites Musikstück „Puls“", "• Second music track “Pulse”", "• Второй музыкальный трек «Пульс»"),
         a("• 50 Skins und 24 Spuren", "• 50 skins and 24 trails", "• 50 скинов и 24 следа"),
-        a("• 44 Erfolge", "• 44 achievements", "• 44 достижения")
+        a("• 44 Erfolge", "• 44 achievements", "• 44 достижения"),
+        a("• Grafik-Stufe „Mittel“, neues App-Icon", "• “Medium” graphics, new app icon", "• Графика «Средняя», новая иконка")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe
@@ -240,8 +240,9 @@ object L {
         a("Musikstück", "Music track", "Музыка: трек")
     )
     val GFX_HIGH = a("Hoch", "High", "Высокая")
+    val GFX_MEDIUM = a("Mittel", "Medium", "Средняя")
     val GFX_LOW = a("Sparsam", "Low", "Экономная")
-    val GFX_HINT = a("Grafik „Sparsam“ = noch flüssiger auf alten Handys", "“Low” graphics = even smoother on old phones", "Графика «Экономная» – ещё плавнее на старых телефонах")
+    val GFX_HINT = a("Grafik „Mittel“ oder „Sparsam“ = flüssiger auf alten Handys", "“Medium” or “Low” graphics = smoother on old phones", "Графика «Средняя» или «Экономная» – плавнее на старых телефонах")
 
     // ------------------------------------------------------------- Statistik
     val STAT_LABELS = arrayOf(

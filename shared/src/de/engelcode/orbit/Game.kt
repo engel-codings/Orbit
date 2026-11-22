@@ -6,12 +6,12 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Shader
 import android.view.MotionEvent
-import java.util.TimeZone
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.random.Random
 
 /**
  * ORBIT – Bildschirme, Menüs, Shop, Level-Karte, Erfolge, Einstellungen.
@@ -20,8 +20,8 @@ import kotlin.math.sin
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 7
-        const val VERSION_NAME = "0.7.0"
+        const val VERSION_CODE = 8
+        const val VERSION_NAME = "0.7.1"
         const val W = 1000f
 
         // Knopf-Stile
@@ -229,7 +229,7 @@ class Game(context: Context) : World.Listener {
 
     init {
         world.listener = this
-        world.reduced = save.lowGfx
+        world.quality = save.gfx
         world.shakeOn = save.shake
         L.set(if (save.lang < 0) L.systemDefault() else save.lang)
         applyTexts()
@@ -382,7 +382,7 @@ class Game(context: Context) : World.Listener {
     }
 
     private fun startRun(level: Int, seed: Long = 0L, dim: Int = runDim) {
-        world.reduced = save.lowGfx
+        world.quality = save.gfx
         world.shakeOn = save.shake
         runDim = if (level > 0) Levels.dimension(level) else if (seed != 0L) 1 else dim
         world.reset(level, seed, runDim)
@@ -514,14 +514,14 @@ class Game(context: Context) : World.Listener {
 
     // ===================================================================== Truhe
 
-    private fun chestReady() = System.currentTimeMillis() >= save.chestReady
+    private fun chestReady() = Platform.now() >= save.chestReady
 
     private fun updateChestLabel() {
         if (chestReady()) {
             if (chestLabelMin != 0) { chestLabelMin = 0; bChest.label = L.t(L.CHEST) }
             return
         }
-        val mins = ((save.chestReady - System.currentTimeMillis()) / 60000L).toInt() + 1
+        val mins = ((save.chestReady - Platform.now()) / 60000L).toInt() + 1
         if (mins != chestLabelMin) {
             chestLabelMin = mins
             bChest.label = "${mins / 60}:${(mins % 60).toString().padStart(2, '0')} h"
@@ -530,15 +530,15 @@ class Game(context: Context) : World.Listener {
 
     private fun openChest() {
         if (!chestReady()) {
-            val mins = ((save.chestReady - System.currentTimeMillis()) / 60000L).toInt() + 1
+            val mins = ((save.chestReady - Platform.now()) / 60000L).toInt() + 1
             sound.play(Sound.ERROR)
             showToast(L.f(L.T_CHEST_WAIT, mins / 60, mins % 60))
             return
         }
-        val r = 8 + (Math.random() * 13).toInt()
+        val r = 8 + (Random.nextDouble() * 13).toInt()
         save.stars += r
         save.chests++
-        save.chestReady = System.currentTimeMillis() + 4L * 60L * 60L * 1000L
+        save.chestReady = Platform.now() + 4L * 60L * 60L * 1000L
         save.flush()
         chestLabelMin = -1
         sound.play(Sound.BONUS)
@@ -564,7 +564,7 @@ class Game(context: Context) : World.Listener {
         // Gewinn auswürfeln (gewichtet)
         var total = 0
         for (w in WHEEL_WEIGHT) total += w
-        var roll = (Math.random() * total).toInt()
+        var roll = (Random.nextDouble() * total).toInt()
         var prize = 0
         for (i in WHEEL_WEIGHT.indices) { roll -= WHEEL_WEIGHT[i]; if (roll < 0) { prize = i; break } }
         spinPrize = prize
@@ -582,7 +582,7 @@ class Game(context: Context) : World.Listener {
         var delta = desired - cur
         if (delta < 0f) delta += 360f
         spinFrom = wheelAngle
-        spinTo = wheelAngle + 360f * 5f + delta + ((Math.random() - 0.5) * 28.0).toFloat()
+        spinTo = wheelAngle + 360f * 5f + delta + ((Random.nextDouble() - 0.5) * 28.0).toFloat()
         spinT = 0f
         spinTick = ((wheelAngle + 22.5f) / 45f).toInt()
         spinning = true
@@ -774,8 +774,8 @@ class Game(context: Context) : World.Listener {
     }
 
     private fun today(): Long {
-        val now = System.currentTimeMillis()
-        return (now + TimeZone.getDefault().getOffset(now)) / 86_400_000L
+        val now = Platform.now()
+        return (now + Platform.tzOffset(now)) / 86_400_000L
     }
 
     // ===================================================================== Eingabe
@@ -879,7 +879,7 @@ class Game(context: Context) : World.Listener {
             bRow[2].id -> { save.vibration = !save.vibration; save.flush(); sound.vibrate(40) }
             bRow[3].id -> { save.shake = !save.shake; world.shakeOn = save.shake; save.flush() }
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
-            bRow[5].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bRow[5].id -> { save.gfx = (save.gfx + 1) % 3; world.quality = save.gfx; save.flush() }
             bRow[7].id -> { save.musicTrack = 1 - save.musicTrack; save.flush(); sound.syncMusic() }
             bRow[6].id -> {
                 save.lang = (L.cur + 1) % 3
@@ -1673,7 +1673,7 @@ class Game(context: Context) : World.Listener {
                 val v = when (i) {
                     6 -> L.LANG_NAMES[L.cur]
                     7 -> L.t(L.MUSIC_TRACKS[save.musicTrack])
-                    else -> L.t(if (save.lowGfx) L.GFX_LOW else L.GFX_HIGH)
+                    else -> L.t(when (save.gfx) { 0 -> L.GFX_HIGH; 1 -> L.GFX_MEDIUM; else -> L.GFX_LOW })
                 }
                 gfx.roundRect(c, b.x + b.w - 280f, b.y + 24f, b.x + b.w - 30f, b.y + b.h - 24f, 33f, Gfx.PANEL2)
                 gfx.text(c, v, b.x + b.w - 155f, b.y + b.h / 2f + 12f, 34f, Gfx.ACCENT, maxW = 220f)
@@ -1745,8 +1745,8 @@ class Game(context: Context) : World.Listener {
             }
         }
         // Zeit bis zu neuen Missionen
-        val now = System.currentTimeMillis()
-        val off = TimeZone.getDefault().getOffset(now)
+        val now = Platform.now()
+        val off = Platform.tzOffset(now)
         val minsLeft = (((today() + 1) * 86_400_000L - (now + off)) / 60000L).toInt()
         if (minsLeft != missionTimerMin) {
             missionTimerMin = minsLeft

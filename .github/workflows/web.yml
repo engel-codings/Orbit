@@ -1,0 +1,71 @@
+name: Orbit Web (Apple & Browser)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Yarn bereitstellen
+        run: npm install -g yarn
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Web-Version bauen
+        run: |
+          gradle :web:jsBrowserDistribution --no-daemon
+          rm -f web/build/dist/js/productionExecutable/*.map
+
+      - name: Für GitHub Pages bereitstellen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/build/dist/js/productionExecutable
+
+      - name: Screenshots (iPhone-Größe)
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+          python .github/scripts/web_screens.py web/build/dist/js/productionExecutable shots-web
+
+      - name: Screenshots speichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Orbit-Web-Screenshots
+          path: shots-web/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4

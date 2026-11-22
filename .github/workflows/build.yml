@@ -24,7 +24,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: APK bauen
-        run: gradle assembleRelease --no-daemon
+        run: gradle :app:assembleRelease --no-daemon
 
       - name: APK umbenennen
         run: cp app/build/outputs/apk/release/app-release.apk Orbit.apk

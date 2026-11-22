@@ -112,7 +112,7 @@ class Gfx(context: Context) {
     }
     private val hexPath = Path().apply {
         for (k in 0 until 6) {
-            val a = (k * 60.0 - 90.0) * Math.PI / 180.0
+            val a = (k * 60.0 - 90.0) * kotlin.math.PI / 180.0
             val x = cos(a).toFloat(); val y = sin(a).toFloat()
             if (k == 0) moveTo(x, y) else lineTo(x, y)
         }

@@ -7,6 +7,9 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 /** Soundeffekte, Musik und Vibration. */
 class Sound(context: Context, private val save: Save) {
@@ -29,7 +32,7 @@ class Sound(context: Context, private val save: Save) {
         const val MUSIC = 14
         const val MUSIC2 = 15
         const val COUNT = 16
-        private const val FILE_VERSION = 2
+        private const val FILE_VERSION = 3
         private const val MUSIC_VOL = 0.35f
     }
 
@@ -56,7 +59,7 @@ class Sound(context: Context, private val save: Save) {
             for (i in 0 until COUNT) {
                 try {
                     val f = File(dir, "orbit_snd${i}_v$FILE_VERSION.wav")
-                    if (!f.exists() || f.length() < 100) Synth.writeWav(f, Synth.create(i))
+                    if (!f.exists() || f.length() < 100) writeWav(f, Synth.create(i))
                     ids[i] = pool.load(f.path, 1)
                 } catch (_: Exception) {
                 }
@@ -115,5 +118,18 @@ class Sound(context: Context, private val save: Save) {
 
     fun release() {
         pool.release()
+    }
+
+    private fun writeWav(file: File, data: FloatArray) {
+        val n = data.size
+        val bb = ByteBuffer.allocate(44 + n * 2).order(ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()); bb.putInt(36 + n * 2); bb.put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray()); bb.putInt(16); bb.putShort(1); bb.putShort(1)
+        bb.putInt(Synth.SR); bb.putInt(Synth.SR * 2); bb.putShort(2); bb.putShort(16)
+        bb.put("data".toByteArray()); bb.putInt(n * 2)
+        for (v in data) bb.putShort((v.coerceIn(-1f, 1f) * 32767f).toInt().toShort())
+        val tmp = File(file.path + ".tmp")
+        FileOutputStream(tmp).use { it.write(bb.array()) }
+        tmp.renameTo(file)
     }
 }

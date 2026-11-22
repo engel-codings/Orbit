@@ -11,8 +11,8 @@ android {
         applicationId = "de.engelcode.orbit"
         minSdk = 21          // Android 5.0 – läuft auch auf sehr alten Geräten
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.7.0"
+        versionCode = 8
+        versionName = "0.7.1"
     }
 
     // Fester Test-Schlüssel: so lassen sich neue APKs einfach über die alte installieren.
@@ -34,6 +34,9 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Gemeinsamer Spiel-Kern (auch von der Web-Version genutzt)
+    sourceSets["main"].java.srcDir("../shared/src")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
