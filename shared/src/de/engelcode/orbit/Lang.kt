@@ -237,7 +237,8 @@ object L {
         a("FPS-Anzeige", "FPS counter", "Счётчик FPS"),
         a("Grafik", "Graphics", "Графика"),
         a("Sprache", "Language", "Язык"),
-        a("Musikstück", "Music track", "Музыка: трек")
+        a("Musikstück", "Music track", "Музыка: трек"),
+        a("Als App installieren", "Install as app", "Установить как приложение")
     )
     val GFX_HIGH = a("Hoch", "High", "Высокая")
     val GFX_MEDIUM = a("Mittel", "Medium", "Средняя")

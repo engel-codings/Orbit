@@ -11,8 +11,8 @@ android {
         applicationId = "de.engelcode.orbit"
         minSdk = 21          // Android 5.0 – läuft auch auf sehr alten Geräten
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.7.1"
+        versionCode = 9
+        versionName = "0.7.2"
     }
 
     // Fester Test-Schlüssel: so lassen sich neue APKs einfach über die alte installieren.

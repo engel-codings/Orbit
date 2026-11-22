@@ -8,4 +8,13 @@ object Platform {
     fun now(): Long = Date.now().toLong()
     fun tzOffset(now: Long): Int = (-Date(now.toDouble()).getTimezoneOffset() * 60000.0).toInt()
     fun systemLanguage(): String = window.navigator.language.substringBefore('-').lowercase()
+
+    /** Kann die Seite als App auf den Home-Bildschirm gelegt werden? (siehe index.html) */
+    fun canInstall(): Boolean = try {
+        js("window.orbitCanInstall ? window.orbitCanInstall() : false") as Boolean
+    } catch (_: Throwable) { false }
+
+    fun showInstall() {
+        try { js("if (window.orbitShowInstall) window.orbitShowInstall()") } catch (_: Throwable) {}
+    }
 }

@@ -22,6 +22,35 @@
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; }
   body { display: flex; justify-content: center; align-items: center; }
   canvas { display: block; touch-action: none; -webkit-tap-highlight-color: transparent; }
+  /* ---------- Installations-Hilfe ---------- */
+  #inst { position: fixed; inset: 0; display: none; z-index: 10; background: rgba(4,6,14,0.72);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-family: OutfitMd, ManropeSB, sans-serif; color: #fff; }
+  #inst.show { display: flex; align-items: flex-end; justify-content: center; }
+  #inst.top { align-items: flex-start; }
+  .card { width: min(92vw, 420px); margin: 0 0 calc(18px + env(safe-area-inset-bottom)); padding: 22px 22px 18px;
+    border-radius: 26px; background: linear-gradient(160deg, rgba(30,38,80,0.97), rgba(18,24,51,0.97));
+    border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 18px 60px rgba(0,0,0,0.55); animation: up .35s ease-out; }
+  #inst.top .card { margin: calc(18px + env(safe-area-inset-top)) 0 0; }
+  #inst.ios .card { margin-bottom: calc(58px + env(safe-area-inset-bottom)); }
+  @keyframes up { from { transform: translateY(40px); opacity: 0 } to { transform: none; opacity: 1 } }
+  .head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .head img { width: 58px; height: 58px; border-radius: 14px; box-shadow: 0 4px 16px rgba(76,201,240,0.35); }
+  .head b { font-family: OutfitXB, ManropeXB, sans-serif; font-size: 21px; display: block; }
+  .head span { color: #8A93B2; font-size: 14px; }
+  .step { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 8px 0; border-radius: 16px;
+    background: rgba(255,255,255,0.06); font-size: 16px; line-height: 1.25; }
+  .num { flex: 0 0 28px; height: 28px; border-radius: 14px; background: linear-gradient(135deg,#4CC9F0,#7B61FF);
+    font-family: OutfitXB, ManropeXB, sans-serif; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .ico { flex: 0 0 auto; width: 26px; height: 26px; color: #4CC9F0; }
+  .btns { display: flex; gap: 10px; margin-top: 14px; }
+  .btn { flex: 1; border: 0; border-radius: 22px; padding: 13px 10px; font-size: 15px; color: #fff;
+    font-family: OutfitXB, ManropeXB, sans-serif; background: rgba(255,255,255,0.1); }
+  .btn.main { background: linear-gradient(135deg,#4CC9F0,#7B61FF); }
+  .never { display: block; margin: 12px auto 0; background: none; border: 0; color: #8A93B2; font-size: 13px; font-family: inherit; }
+  #arrow { position: fixed; left: 50%; bottom: calc(4px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: 34px; height: 34px; color: #4CC9F0; z-index: 11; display: none; animation: bob 1s ease-in-out infinite; }
+  #arrow.top { bottom: auto; top: calc(4px + env(safe-area-inset-top)); left: auto; right: 72px; transform: rotate(180deg); }
+  @keyframes bob { 0%,100% { margin-bottom: 0 } 50% { margin-bottom: 10px } }
   /* Schriften vorladen, damit sie beim ersten Bild schon da sind */
   .pre { position: absolute; left: -999px; top: -999px; font-size: 1px; }
 </style>
@@ -32,6 +61,99 @@
 <span class="pre" style="font-family:OutfitMd">a</span>
 <span class="pre" style="font-family:ManropeXB">я</span>
 <span class="pre" style="font-family:ManropeSB">я</span>
+<div id="inst">
+  <div class="card">
+    <div class="head"><img src="icons/icon-192.png" alt=""><div><b id="i-title"></b><span id="i-sub"></span></div></div>
+    <div id="i-steps"></div>
+    <div class="btns"><button class="btn" id="i-later"></button><button class="btn main" id="i-ok"></button></div>
+    <button class="never" id="i-never"></button>
+  </div>
+</div>
+<svg id="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v15M5 12l7 7 7-7"/></svg>
+<script>
+// ---------- Installations-Hilfe (iPhone/iPad: Anleitung, Android/PC: automatisch) ----------
+(function () {
+  var SHARE = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7.5 7.5L12 3l4.5 4.5"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+  var PLUS = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+  var CHECK = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var T = {
+    de: { title: 'Orbit als App', sub: 'Auf den Home-Bildschirm legen – startet im Vollbild, auch offline.',
+      s1: 'Tippe unten auf <b>Teilen</b>', s1pad: 'Tippe oben auf <b>Teilen</b>', s2: 'Wähle <b>„Zum Home-Bildschirm“</b>',
+      s3: 'Tippe auf <b>„Hinzufügen“</b> – fertig!', ok: 'VERSTANDEN', later: 'SPÄTER', never: 'Nicht mehr anzeigen',
+      install: 'JETZT INSTALLIEREN', auto: 'Ein Tipp genügt – Orbit wird wie eine App installiert.' },
+    en: { title: 'Orbit as an app', sub: 'Add it to your home screen – fullscreen, even offline.',
+      s1: 'Tap <b>Share</b> at the bottom', s1pad: 'Tap <b>Share</b> at the top', s2: 'Choose <b>“Add to Home Screen”</b>',
+      s3: 'Tap <b>“Add”</b> – done!', ok: 'GOT IT', later: 'LATER', never: 'Don’t show again',
+      install: 'INSTALL NOW', auto: 'One tap is enough – Orbit installs like an app.' },
+    ru: { title: 'Orbit как приложение', sub: 'Добавь на экран «Домой» – полный экран, даже офлайн.',
+      s1: 'Нажми <b>«Поделиться»</b> внизу', s1pad: 'Нажми <b>«Поделиться»</b> вверху', s2: 'Выбери <b>«На экран „Домой“»</b>',
+      s3: 'Нажми <b>«Добавить»</b> – готово!', ok: 'ПОНЯТНО', later: 'ПОЗЖЕ', never: 'Больше не показывать',
+      install: 'УСТАНОВИТЬ', auto: 'Одно нажатие – и Orbit установится как приложение.' }
+  };
+  function lang() {
+    var l = parseInt(localStorage.getItem('orbit.lang') || '-1', 10);
+    if (l === 0) return 'de'; if (l === 1) return 'en'; if (l === 2) return 'ru';
+    var n = (navigator.language || 'en').slice(0, 2).toLowerCase();
+    return n === 'de' ? 'de' : (['ru', 'uk', 'be', 'kk'].indexOf(n) >= 0 ? 'ru' : 'en');
+  }
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPod/.test(ua);
+  var isIPad = /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches
+    || window.matchMedia('(display-mode: fullscreen)').matches;
+  var deferred = null;
+  var el = document.getElementById('inst'), arrow = document.getElementById('arrow');
+
+  function hide() { el.className = ''; arrow.style.display = 'none'; }
+  function show() {
+    if (standalone) return;
+    var t = T[lang()];
+    document.getElementById('i-title').textContent = t.title;
+    var steps = document.getElementById('i-steps');
+    var ok = document.getElementById('i-ok');
+    if (deferred) {
+      document.getElementById('i-sub').textContent = t.auto;
+      steps.innerHTML = '';
+      ok.textContent = t.install;
+      ok.onclick = function () {
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; hide(); });
+      };
+    } else {
+      document.getElementById('i-sub').textContent = t.sub;
+      steps.innerHTML =
+        '<div class="step"><span class="num">1</span>' + SHARE + '<span>' + (isIPad ? t.s1pad : t.s1) + '</span></div>' +
+        '<div class="step"><span class="num">2</span>' + PLUS + '<span>' + t.s2 + '</span></div>' +
+        '<div class="step"><span class="num">3</span>' + CHECK + '<span>' + t.s3 + '</span></div>';
+      ok.textContent = t.ok;
+      ok.onclick = hide;
+    }
+    document.getElementById('i-later').textContent = t.later;
+    document.getElementById('i-later').onclick = hide;
+    document.getElementById('i-never').textContent = t.never;
+    document.getElementById('i-never').onclick = function () { localStorage.setItem('orbit.installHidden', '1'); hide(); };
+    el.className = isIPad ? 'show top' : (isIOS && !deferred ? 'show ios' : 'show');
+    if (!deferred && (isIOS || isIPad)) { arrow.className = isIPad ? 'top' : ''; arrow.style.display = 'block'; }
+  }
+  // Für das Spiel (Optionen → „Als App installieren“)
+  window.orbitCanInstall = function () { return !standalone && (isIOS || isIPad || deferred !== null); };
+  window.orbitShowInstall = show;
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e;
+    if (localStorage.getItem('orbit.installHidden') !== '1' && !sessionStorage.getItem('orbit.instShown')) {
+      sessionStorage.setItem('orbit.instShown', '1'); setTimeout(show, 1500);
+    }
+  });
+  window.addEventListener('appinstalled', function () { standalone = true; hide(); });
+  // iPhone/iPad: nach dem Öffnen automatisch einmal pro Sitzung zeigen
+  if ((isIOS || isIPad) && !standalone && localStorage.getItem('orbit.installHidden') !== '1'
+      && !sessionStorage.getItem('orbit.instShown')) {
+    sessionStorage.setItem('orbit.instShown', '1');
+    setTimeout(show, 1800);
+  }
+})();
+</script>
 <script src="orbit.js"></script>
 </body>
 </html>

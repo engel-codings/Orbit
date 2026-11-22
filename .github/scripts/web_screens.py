@@ -25,6 +25,11 @@ try:
         pg.on("console", lambda m: errors.append(m.type + ": " + m.text) if m.type == "error" else None)
         pg.goto("http://localhost:8765/index.html")
         time.sleep(3)
+        pg.screenshot(path=f"{out}/00_install_hinweis.png")
+        try:
+            pg.click("#i-later", timeout=3000); time.sleep(0.8)
+        except Exception:
+            pass
 
         def shot(name):
             pg.screenshot(path=f"{out}/{name}.png")

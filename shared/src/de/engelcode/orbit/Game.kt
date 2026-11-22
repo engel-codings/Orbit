@@ -20,8 +20,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 8
-        const val VERSION_NAME = "0.7.1"
+        const val VERSION_CODE = 9
+        const val VERSION_NAME = "0.7.2"
         const val W = 1000f
 
         // Knopf-Stile
@@ -97,7 +97,7 @@ class Game(context: Context) : World.Listener {
     private val bNext = Btn(15, "", S_PRIMARY)
     private val bToMap = Btn(16, "", S_GLASS)
     private val bTab = Array(3) { Btn(17 + it, "", S_INVISIBLE) }
-    private val bRow = Array(8) { Btn(40 + it, "", S_INVISIBLE) }
+    private val bRow = Array(9) { Btn(40 + it, "", S_INVISIBLE) }
     private val bReset = Btn(30, "", S_DANGER)
     private val bDlgA = Btn(31, "OK", S_PRIMARY)
     private val bDlgB = Btn(32, "", S_GLASS)
@@ -115,7 +115,7 @@ class Game(context: Context) : World.Listener {
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bRow[8], bReset)
     private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
@@ -313,6 +313,15 @@ class Game(context: Context) : World.Listener {
         }
     }
 
+    private fun settingRows() = if (Platform.canInstall()) 9 else 8
+
+    private fun layoutSettings() {
+        val n = settingRows()
+        for (i in 0 until 9) place(bRow[i], 40f, 235f + i * 112f, 920f, 98f)
+        bRow[8].visible = n == 9
+        place(bReset, 80f, 235f + n * 112f + 20f, 840f, 104f)
+    }
+
     private fun playCY() = H * 0.43f
     private fun wheelCY() = H * 0.42f
 
@@ -341,8 +350,7 @@ class Game(context: Context) : World.Listener {
         place(bNext, cx - 300f, H * 0.66f, 600f, 140f)
         place(bToMap, cx - 300f, H * 0.66f + 165f, 600f, 125f)
         for (i in 0 until 3) place(bTab[i], 50f + i * 300f, 215f, 300f, 92f)
-        for (i in 0 until 8) place(bRow[i], 40f, 235f + i * 112f, 920f, 98f)
-        place(bReset, 80f, 235f + 8 * 112f + 20f, 840f, 104f)
+        layoutSettings()
     }
 
     // ===================================================================== Ablauf
@@ -360,6 +368,7 @@ class Game(context: Context) : World.Listener {
                 mapScroll = clampMap(mapU(cur) - H / 2f + 450f)
             }
             Screen.SHOP -> shopScroll = 0f
+            Screen.SETTINGS -> layoutSettings()
             Screen.ENDLESS_SEL -> buildEndlessTexts()
             Screen.MENU -> refreshMenuTexts()
             else -> {}
@@ -880,6 +889,7 @@ class Game(context: Context) : World.Listener {
             bRow[3].id -> { save.shake = !save.shake; world.shakeOn = save.shake; save.flush() }
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
             bRow[5].id -> { save.gfx = (save.gfx + 1) % 3; world.quality = save.gfx; save.flush() }
+            bRow[8].id -> Platform.showInstall()
             bRow[7].id -> { save.musicTrack = 1 - save.musicTrack; save.flush(); sound.syncMusic() }
             bRow[6].id -> {
                 save.lang = (L.cur + 1) % 3
@@ -1659,17 +1669,22 @@ class Game(context: Context) : World.Listener {
 
     // ---------------------------------------------------------------- Einstellungen
 
-    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE, Gfx.I_GLOBE, Gfx.I_MUSIC)
+    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE, Gfx.I_GLOBE, Gfx.I_MUSIC, Gfx.I_PLUS)
 
     private fun drawSettings(c: Canvas) {
         header(c, L.t(L.OPTIONS))
-        for (i in 0 until 8) {
+        for (i in 0 until settingRows()) {
             val b = bRow[i]
             gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
             gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 38f, Gfx.PANEL2)
             gfx.icon(c, settingIcons[i], b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
-            gfx.text(c, L.t(L.SETTINGS[i]), b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT, maxW = if (i >= 5) 440f else 560f)
-            if (i >= 5) {
+            gfx.text(c, L.t(L.SETTINGS[i]), b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT, maxW = if (i == 8) 680f else if (i >= 5) 440f else 560f)
+            if (i == 8) {
+                gfx.line.color = Gfx.ACCENT; gfx.line.alpha = 255; gfx.line.strokeWidth = 7f
+                val ax = b.x + b.w - 60f; val ay = b.y + b.h / 2f
+                c.drawLine(ax - 12f, ay - 20f, ax + 8f, ay, gfx.line)
+                c.drawLine(ax + 8f, ay, ax - 12f, ay + 20f, gfx.line)
+            } else if (i >= 5) {
                 val v = when (i) {
                     6 -> L.LANG_NAMES[L.cur]
                     7 -> L.t(L.MUSIC_TRACKS[save.musicTrack])

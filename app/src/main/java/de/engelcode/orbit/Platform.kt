@@ -8,4 +8,8 @@ object Platform {
     fun now(): Long = System.currentTimeMillis()
     fun tzOffset(now: Long): Int = TimeZone.getDefault().getOffset(now)
     fun systemLanguage(): String = Locale.getDefault().language
+
+    /** „Als App installieren“ gibt es nur in der Web-Version. */
+    fun canInstall(): Boolean = false
+    fun showInstall() {}
 }
