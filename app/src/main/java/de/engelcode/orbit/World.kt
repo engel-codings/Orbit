@@ -135,6 +135,8 @@ class World(private val gfx: Gfx) {
     private var popY = 0f
     private var popStr = ""
     var dim = 1; private set
+    /** Sonnenwind (nur Dimension 4): positive Werte = nach rechts. */
+    val windX: Float get() = if (dim == 4) sin(time * 0.55f) * 330f + sin(time * 1.7f) * 60f else 0f
 
     private val layerPts = Array(3) { FloatArray(0) }
     private val layerDepth = floatArrayOf(0.04f, 0.12f, 0.25f)
@@ -167,9 +169,9 @@ class World(private val gfx: Gfx) {
     }
 
     /** level = 0 → Endlos-Modus, sonst Level 1..50. */
-    fun reset(level: Int, seed: Long = 0L) {
+    fun reset(level: Int, seed: Long = 0L, endlessDim: Int = 1) {
         this.level = level
-        dim = if (level > 0) Levels.dimension(level) else 1
+        dim = if (level > 0) Levels.dimension(level) else endlessDim
         rng = when {
             level > 0 -> Random(Levels.seed(level))
             seed != 0L -> Random(seed)
@@ -470,7 +472,7 @@ class World(private val gfx: Gfx) {
             if (d < p.r + CAPTURE) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; else -> 1f })
+                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; else -> 1f })
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -491,6 +493,7 @@ class World(private val gfx: Gfx) {
             val rr = m.r + 12f
             if (dx * dx + dy * dy < rr * rr) { die(); return false }
         }
+        if (dim == 4) ax += windX
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
         val speed = if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED
@@ -604,6 +607,7 @@ class World(private val gfx: Gfx) {
             else {
                 gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
                 if (dim == 2) gfx.ring(c, p.x, p.y, p.r + 4f, Color.WHITE, 3f, 150 + (sin(time * 4f + p.phase) * 80f).toInt())
+                if (dim == 4) gfx.ring(c, p.x, p.y, p.r + 3f, 0xFFFF9F1C.toInt(), 4f, 140 + (sin(time * 5f + p.phase) * 70f).toInt())
                 if (dim == 3) {
                     gfx.circle(c, p.x, p.y, p.r, Color.BLACK, 140)
                     gfx.ring(c, p.x, p.y, p.r, 0xFF2EE5C8.toInt(), 3f, 160 + (sin(time * 2f + p.phase) * 60f).toInt())
@@ -675,7 +679,22 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+            }
+        }
+        if (dim == 4) {
+            // sichtbare Windstreifen
+            val w = windX
+            val len = 40f + kotlin.math.abs(w) * 0.25f
+            val a = (60 + kotlin.math.abs(w) * 0.35f).toInt().coerceAtMost(200)
+            gfx.line.color = 0xFFFFC38A.toInt(); gfx.line.strokeWidth = 3f
+            for (k in 0 until 16) {
+                val baseY = (k * 0.0625f + (k % 3) * 0.02f) * worldH
+                var x = (k * 211f + time * w * 1.6f) % (W + 200f)
+                if (x < 0f) x += W + 200f
+                x -= 100f
+                gfx.line.alpha = a
+                c.drawLine(x, baseY, x - len * kotlin.math.sign(w), baseY, gfx.line)
             }
         }
         drawStarfield(c)

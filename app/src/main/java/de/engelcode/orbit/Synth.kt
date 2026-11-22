@@ -34,6 +34,7 @@ object Synth {
         Sound.POWER -> power()
         Sound.CROWN -> crown()
         Sound.SHIELD -> shield()
+        Sound.MUSIC2 -> music2()
         else -> music()
     }
 
@@ -214,6 +215,54 @@ object Synth {
                 val j = ((jc - o) % 32 + 32) % 32
                 val dt = ((t - j * 0.5) % len + len) % len
                 if (dt < 1.0) s += sin(TAU * pluck[j] * dt) * exp(-dt * 5) * att(dt, 0.005) * 0.06
+            }
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Zweites Musikstück „Puls“: 16 s, Dm – B – F – C, schnellere Arpeggios und Bass-Puls. */
+    private fun music2(): FloatArray {
+        val len = 16.0
+        val b = buf(len)
+        val chords = arrayOf(
+            doubleArrayOf(293.66, 349.23, 440.0),
+            doubleArrayOf(233.08, 293.66, 349.23),
+            doubleArrayOf(349.23, 440.0, 523.25),
+            doubleArrayOf(261.63, 329.63, 392.0)
+        )
+        val roots = doubleArrayOf(73.42, 58.27, 87.31, 65.41)
+        fun q(f: Double) = Math.round(f * len) / len
+        val padA = Array(4) { k -> DoubleArray(3) { q(chords[k][it]) } }
+        val rootQ = DoubleArray(4) { q(roots[it]) }
+        val pattern = intArrayOf(0, 1, 2, 1, 2, 0, 1, 2)
+        val arp = DoubleArray(64) { j -> chords[(j / 16) % 4][pattern[j % 8]] * 2.0 }
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            var s = 0.0
+            for (k in 0 until 4) {
+                val local = ((t - k * 4 + 1 + len) % len)
+                if (local < 6.0) {
+                    val env = when {
+                        local < 2.0 -> (1 - Math.cos(PI * local / 2)) / 2
+                        local > 4.0 -> (1 - Math.cos(PI * (6 - local) / 2)) / 2
+                        else -> 1.0
+                    }
+                    var p = 0.0
+                    for (n in 0 until 3) p += sin(TAU * padA[k][n] * t)
+                    s += p * 0.035 * env
+                }
+            }
+            // Bass-Puls auf jeder Viertel
+            val sec = ((t / 4.0).toInt()) % 4
+            val bt = t % 0.5
+            s += sin(TAU * rootQ[sec] * t) * exp(-bt * 6) * 0.16
+            // Arpeggio auf jeder Achtel
+            val jc = floor(t / 0.25).toInt()
+            for (o in 0..1) {
+                val j = ((jc - o) % 64 + 64) % 64
+                val dt = ((t - j * 0.25) % len + len) % len
+                if (dt < 0.6) s += sin(TAU * arp[j] * dt) * exp(-dt * 7) * att(dt, 0.004) * 0.055
             }
             b[i] = s.toFloat()
         }

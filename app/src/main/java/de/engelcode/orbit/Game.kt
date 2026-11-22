@@ -20,8 +20,8 @@ import kotlin.math.sin
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 6
-        const val VERSION_NAME = "0.6.0"
+        const val VERSION_CODE = 7
+        const val VERSION_NAME = "0.7.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -56,7 +56,7 @@ class Game(context: Context) : World.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -97,7 +97,7 @@ class Game(context: Context) : World.Listener {
     private val bNext = Btn(15, "", S_PRIMARY)
     private val bToMap = Btn(16, "", S_GLASS)
     private val bTab = Array(3) { Btn(17 + it, "", S_INVISIBLE) }
-    private val bRow = Array(7) { Btn(40 + it, "", S_INVISIBLE) }
+    private val bRow = Array(8) { Btn(40 + it, "", S_INVISIBLE) }
     private val bReset = Btn(30, "", S_DANGER)
     private val bDlgA = Btn(31, "OK", S_PRIMARY)
     private val bDlgB = Btn(32, "", S_GLASS)
@@ -115,7 +115,7 @@ class Game(context: Context) : World.Listener {
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bReset)
     private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
@@ -162,6 +162,7 @@ class Game(context: Context) : World.Listener {
 
     // ---- Lauf
     private var runLevel = 0
+    private var runDim = 1
     private var runTime = 0f
     private var cStars = 0; private var cBonus = 0; private var cCaptures = 0; private var cPerfects = 0
     private var runCounted = false
@@ -197,8 +198,10 @@ class Game(context: Context) : World.Listener {
     private val achTitleStr = Array(Achievements.list.size) { "" }
     private var achBadge = 0
     private var rankStr = ""
-    private var dimTitle = ""
-    private var dimTitle3 = ""
+    private val dimTitles = arrayOf("", "", "", "")
+    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt())
+    private val dimBestStr = arrayOf("", "", "", "")
+    private val dimLockStr = arrayOf("", "", "", "")
     private var missionBadge = 0
     private var chestLabelMin = -1
     private val missionDescStr = arrayOf("", "", "")
@@ -338,8 +341,8 @@ class Game(context: Context) : World.Listener {
         place(bNext, cx - 300f, H * 0.66f, 600f, 140f)
         place(bToMap, cx - 300f, H * 0.66f + 165f, 600f, 125f)
         for (i in 0 until 3) place(bTab[i], 50f + i * 300f, 215f, 300f, 92f)
-        for (i in 0 until 7) place(bRow[i], 40f, 240f + i * 122f, 920f, 104f)
-        place(bReset, 80f, 240f + 7 * 122f + 24f, 840f, 106f)
+        for (i in 0 until 8) place(bRow[i], 40f, 235f + i * 112f, 920f, 98f)
+        place(bReset, 80f, 235f + 8 * 112f + 20f, 840f, 104f)
     }
 
     // ===================================================================== Ablauf
@@ -357,6 +360,7 @@ class Game(context: Context) : World.Listener {
                 mapScroll = clampMap(mapU(cur) - H / 2f + 450f)
             }
             Screen.SHOP -> shopScroll = 0f
+            Screen.ENDLESS_SEL -> buildEndlessTexts()
             Screen.MENU -> refreshMenuTexts()
             else -> {}
         }
@@ -365,8 +369,7 @@ class Game(context: Context) : World.Listener {
     private fun refreshMenuTexts() {
         val next = min(save.levelDone + 1, Levels.COUNT)
         nextStr = L.f(L.LEVEL_N, next)
-        dimTitle = L.f(L.DIMENSION, 2)
-        dimTitle3 = L.f(L.DIMENSION, 3)
+        for (d in 0 until 4) dimTitles[d] = L.f(L.DIMENSION, d + 1)
         missionsToday()
         buildMissions()
         chestLabelMin = -1
@@ -378,10 +381,11 @@ class Game(context: Context) : World.Listener {
         rankStr = if (r < RANK_AT.size - 1) L.f(L.RANK, L.t(L.RANKS[r]), save.planets, RANK_AT[r + 1]) else L.f(L.RANK_MAX, L.t(L.RANKS[r]))
     }
 
-    private fun startRun(level: Int, seed: Long = 0L) {
+    private fun startRun(level: Int, seed: Long = 0L, dim: Int = runDim) {
         world.reduced = save.lowGfx
         world.shakeOn = save.shake
-        world.reset(level, seed)
+        runDim = if (level > 0) Levels.dimension(level) else if (seed != 0L) 1 else dim
+        world.reset(level, seed, runDim)
         challengeRun = seed != 0L
         challengeVal = -1
         runLevel = level
@@ -392,7 +396,11 @@ class Game(context: Context) : World.Listener {
         levelStr = if (level > 0) L.f(L.LEVEL_N, level) else ""
         progVal = -1
         go(Screen.PLAYING)
-        if (level >= Levels.DIM2_FROM) showToast(L.t(if (Levels.dimension(level) == 3) L.DIM3_HINT else L.DIM2_HINT))
+        when (runDim) {
+            2 -> showToast(L.t(L.DIM2_HINT))
+            3 -> showToast(L.t(L.DIM3_HINT))
+            4 -> showToast(L.t(L.DIM4_HINT))
+        }
         if (save.shieldStarts > 0) {
             save.shieldStarts--
             save.flush()
@@ -404,6 +412,46 @@ class Game(context: Context) : World.Listener {
     private fun leaveRun() {
         world.reset(0)
         go(if (runLevel > 0) Screen.MAP else Screen.MENU)
+    }
+
+    // ===================================================================== Endlos-Auswahl
+
+    private fun dimUnlocked(d: Int) = save.levelDone >= Levels.DIM_UNLOCK[d]
+
+    private fun buildEndlessTexts() {
+        for (d in 0 until 4) {
+            dimBestStr[d] = L.f(L.RECORD, save.bestDim[d])
+            dimLockStr[d] = L.f(L.ENDLESS_LOCKED, Levels.DIM_UNLOCK[d])
+        }
+    }
+
+    private fun endlessTap(y: Float) {
+        for (d in 0 until 4) {
+            val top = 245f + d * 285f
+            if (y < top || y > top + 260f) continue
+            if (dimUnlocked(d)) { sound.play(Sound.CLICK); startRun(0, 0L, d + 1) }
+            else { sound.play(Sound.ERROR); showToast(dimLockStr[d]) }
+            return
+        }
+    }
+
+    private fun drawEndlessSel(c: Canvas) {
+        header(c, L.t(L.ENDLESS_TITLE))
+        starPill(c, save.stars)
+        for (d in 0 until 4) {
+            val top = 245f + d * 285f
+            val open = dimUnlocked(d)
+            val col = DIM_COL[d]
+            gfx.glass(c, 40f, top, 960f, top + 260f, 40f, border = if (open) col else Color.WHITE)
+            if (!save.lowGfx && open) gfx.glowA(c, gfx.planetGlow[4], 140f, top + 130f, 130f, 120)
+            gfx.circle(c, 140f, top + 130f, 70f, if (open) col else Gfx.PANEL2)
+            if (open) gfx.text(c, levelNum[d + 1], 140f, top + 155f, 72f, Gfx.BG)
+            else gfx.icon(c, Gfx.I_LOCK, 140f, top + 130f, 30f, Gfx.DIM)
+            gfx.text(c, dimTitles[d], 245f, top + 80f, 30f, col, align = Paint.Align.LEFT, maxW = 680f)
+            gfx.text(c, L.t(L.DIM_NAMES[d]), 245f, top + 135f, 46f, if (open) Color.WHITE else Gfx.DIM, align = Paint.Align.LEFT, maxW = 680f)
+            gfx.text(c, L.t(L.DIM_RULES[d]), 245f, top + 182f, 32f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 680f)
+            gfx.text(c, if (open) dimBestStr[d] else dimLockStr[d], 245f, top + 230f, 30f, if (open) Gfx.GOLD else Gfx.DIM, open, Paint.Align.LEFT, maxW = 680f)
+        }
     }
 
     // ===================================================================== Missionen
@@ -569,7 +617,11 @@ class Game(context: Context) : World.Listener {
         save.planets += world.captures - cCaptures
         save.perfects += world.perfects - cPerfects
         if (world.bestStreak > save.bestStreak) save.bestStreak = world.bestStreak
-        if (runLevel == 0 && world.score > save.best) { save.best = world.score; newRecord = true }
+        if (runLevel == 0) {
+            val d = (runDim - 1).coerceIn(0, 3)
+            if (world.score > save.bestDim[d]) { save.bestDim[d] = world.score; newRecord = true }
+            if (world.score > save.best) save.best = world.score
+        }
         save.playTime += runTime; runTime = 0f
         if (!runCounted) { save.games++; runCounted = true }
         cStars = world.runStars; cBonus = bonus; cCaptures = world.captures; cPerfects = world.perfects
@@ -614,7 +666,7 @@ class Game(context: Context) : World.Listener {
         sound.vibrate(160)
         commitRun()
         earnedStr = "+$runEarned"
-        bestStr = L.f(L.RECORD, save.best)
+        bestStr = L.f(L.RECORD, save.bestDim[(runDim - 1).coerceIn(0, 3)])
         bRevive.label = L.f(L.REVIVE_BTN, save.revives)
         bLeave.label = L.t(if (runLevel > 0) L.TO_MAP else L.MENU)
         go(Screen.GAMEOVER)
@@ -772,6 +824,7 @@ class Game(context: Context) : World.Listener {
                     Screen.MAP -> mapTap(x, y)
                     Screen.ACHIEVE -> achTap(x, y)
                     Screen.MISSIONS -> missionTap(y)
+                    Screen.ENDLESS_SEL -> endlessTap(y)
                     else -> {}
                 }
             }
@@ -794,14 +847,14 @@ class Game(context: Context) : World.Listener {
         Screen.SETTINGS -> setBtns
         Screen.MAP, Screen.STATS, Screen.ACHIEVE -> backBtns
         Screen.WHEEL -> wheelBtns
-        Screen.MISSIONS -> backBtns
+        Screen.MISSIONS, Screen.ENDLESS_SEL -> backBtns
     }
 
     private fun onButton(id: Int) {
         sound.play(Sound.CLICK)
         when (id) {
             bPlay.id -> go(Screen.MAP)
-            bEndless.id -> startRun(0)
+            bEndless.id -> go(Screen.ENDLESS_SEL)
             bShop.id -> go(Screen.SHOP)
             bAch.id -> go(Screen.ACHIEVE)
             bStats.id -> go(Screen.STATS)
@@ -827,6 +880,7 @@ class Game(context: Context) : World.Listener {
             bRow[3].id -> { save.shake = !save.shake; world.shakeOn = save.shake; save.flush() }
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
             bRow[5].id -> { save.lowGfx = !save.lowGfx; world.reduced = save.lowGfx; save.flush() }
+            bRow[7].id -> { save.musicTrack = 1 - save.musicTrack; save.flush(); sound.syncMusic() }
             bRow[6].id -> {
                 save.lang = (L.cur + 1) % 3
                 save.flush()
@@ -834,7 +888,7 @@ class Game(context: Context) : World.Listener {
                 applyTexts()
                 buildStats(); buildAch()
             }
-            bChallenge.id -> startRun(0, today() * 7919L + 17L)
+            bChallenge.id -> startRun(0, today() * 7919L + 17L, 1)
             bWheel.id -> go(Screen.WHEEL)
             bSpin.id -> startSpin()
             bMissions.id -> go(Screen.MISSIONS)
@@ -1096,6 +1150,7 @@ class Game(context: Context) : World.Listener {
             Screen.ACHIEVE -> drawAch(c)
             Screen.WHEEL -> drawWheel(c)
             Screen.MISSIONS -> drawMissions(c)
+            Screen.ENDLESS_SEL -> drawEndlessSel(c)
         }
 
         if (save.showFps) {
@@ -1264,6 +1319,17 @@ class Game(context: Context) : World.Listener {
                 gfx.text(c, challengeStr, cx, 286f, 30f, if (done) Gfx.GREEN else Gfx.GOLD, maxW = 700f)
             }
         }
+        if (world.dim == 4) {
+            val w = world.windX
+            gfx.glass(c, W - 230f, 175f, W - 40f, 255f, 40f, border = 0xFFFF9F1C.toInt())
+            val cxw = W - 135f
+            val len = 70f * (w / 390f)
+            gfx.line.color = 0xFFFF9F1C.toInt(); gfx.line.alpha = 255; gfx.line.strokeWidth = 8f
+            c.drawLine(cxw - len, 215f, cxw + len, 215f, gfx.line)
+            val dir = if (w >= 0f) 1f else -1f
+            c.drawLine(cxw + len, 215f, cxw + len - dir * 16f, 202f, gfx.line)
+            c.drawLine(cxw + len, 215f, cxw + len - dir * 16f, 228f, gfx.line)
+        }
         var iy = 230f
         if (world.shield) {
             gfx.glass(c, 40f, iy, 150f, iy + 110f, 55f, border = Gfx.SHIELD)
@@ -1395,12 +1461,13 @@ class Game(context: Context) : World.Listener {
             val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
             gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
-            if (s == 15 || s == 20) {
+            if (s == 15 || s == 20 || s == 25) {
                 // Übergang in die Spiegelwelt
                 val dy = by - r - 150f
-                gfx.glass(c, 120f, dy - 70f, 880f, dy + 60f, 50f, border = if (s == 15) 0xFFF15BB5.toInt() else 0xFF2EE5C8.toInt())
-                gfx.text(c, if (s == 15) dimTitle else dimTitle3, W / 2f, dy - 12f, 42f, if (s == 15) 0xFFF15BB5.toInt() else 0xFF2EE5C8.toInt(), maxW = 720f)
-                gfx.text(c, L.t(L.DIM_NAMES[if (s == 15) 1 else 2]), W / 2f, dy + 34f, 32f, Color.WHITE, false, maxW = 720f)
+                val di = s / 5 - 2
+                gfx.glass(c, 120f, dy - 70f, 880f, dy + 60f, 50f, border = DIM_COL[di])
+                gfx.text(c, dimTitles[di], W / 2f, dy - 12f, 42f, DIM_COL[di], maxW = 720f)
+                gfx.text(c, L.t(L.DIM_NAMES[di]), W / 2f, dy + 34f, 32f, Color.WHITE, false, maxW = 720f)
             }
         }
         for (i in 1..Levels.COUNT) {
@@ -1592,18 +1659,22 @@ class Game(context: Context) : World.Listener {
 
     // ---------------------------------------------------------------- Einstellungen
 
-    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE, Gfx.I_GLOBE)
+    private val settingIcons = intArrayOf(Gfx.I_SOUND, Gfx.I_MUSIC, Gfx.I_VIBRATE, Gfx.I_SHAKE, Gfx.I_SPEED, Gfx.I_EYE, Gfx.I_GLOBE, Gfx.I_MUSIC)
 
     private fun drawSettings(c: Canvas) {
         header(c, L.t(L.OPTIONS))
-        for (i in 0 until 7) {
+        for (i in 0 until 8) {
             val b = bRow[i]
             gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
             gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 38f, Gfx.PANEL2)
             gfx.icon(c, settingIcons[i], b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
             gfx.text(c, L.t(L.SETTINGS[i]), b.x + 130f, b.y + b.h / 2f + 14f, 40f, Color.WHITE, false, Paint.Align.LEFT, maxW = if (i >= 5) 440f else 560f)
             if (i >= 5) {
-                val v = if (i == 6) L.LANG_NAMES[L.cur] else L.t(if (save.lowGfx) L.GFX_LOW else L.GFX_HIGH)
+                val v = when (i) {
+                    6 -> L.LANG_NAMES[L.cur]
+                    7 -> L.t(L.MUSIC_TRACKS[save.musicTrack])
+                    else -> L.t(if (save.lowGfx) L.GFX_LOW else L.GFX_HIGH)
+                }
                 gfx.roundRect(c, b.x + b.w - 280f, b.y + 24f, b.x + b.w - 30f, b.y + b.h - 24f, 33f, Gfx.PANEL2)
                 gfx.text(c, v, b.x + b.w - 155f, b.y + b.h / 2f + 12f, 34f, Gfx.ACCENT, maxW = 220f)
             } else {

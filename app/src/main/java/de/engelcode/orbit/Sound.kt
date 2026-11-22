@@ -27,7 +27,8 @@ class Sound(context: Context, private val save: Save) {
         const val CROWN = 12
         const val SHIELD = 13
         const val MUSIC = 14
-        const val COUNT = 15
+        const val MUSIC2 = 15
+        const val COUNT = 16
         private const val FILE_VERSION = 2
         private const val MUSIC_VOL = 0.35f
     }
@@ -43,6 +44,7 @@ class Sound(context: Context, private val save: Save) {
 
     private val ids = IntArray(COUNT)
     private var musicStream = 0
+    private var musicPlaying = -1
     private var appPaused = false
 
     @Suppress("DEPRECATION")
@@ -72,11 +74,14 @@ class Sound(context: Context, private val save: Save) {
     @Synchronized
     fun syncMusic() {
         val wanted = save.music && !appPaused
-        if (wanted && musicStream == 0 && ids[MUSIC] != 0) {
-            musicStream = pool.play(ids[MUSIC], MUSIC_VOL, MUSIC_VOL, 0, -1, 1f)
-        } else if (!wanted && musicStream != 0) {
+        val track = if (save.musicTrack == 1) MUSIC2 else MUSIC
+        if (musicStream != 0 && (!wanted || musicPlaying != track)) {
             pool.stop(musicStream)
             musicStream = 0
+        }
+        if (wanted && musicStream == 0 && ids[track] != 0) {
+            musicStream = pool.play(ids[track], MUSIC_VOL, MUSIC_VOL, 0, -1, 1f)
+            if (musicStream != 0) musicPlaying = track
         }
     }
 

@@ -19,7 +19,9 @@ tap 68 83; sleep 1.2;     shot 05_pause
 tap 360 722; sleep 0.8
 tap 360 1000; sleep 0.35; shot 06_flug
 sleep 2.5;                shot 07_ende
-back; sleep 1.5; back; sleep 1.5
+adb shell am force-stop de.engelcode.orbit
+adb shell am start -n de.engelcode.orbit/.MainActivity
+sleep 6
 tap 72 $NAVY; sleep 1.5;  shot 08_shop_skins
 adb shell input swipe 360 1300 360 300 400; sleep 1; shot 09_shop_skins2
 adb shell input swipe 360 1300 360 300 400; sleep 1; shot 10_shop_skins3
@@ -41,17 +43,22 @@ back; sleep 1.5
 tap 216 $NAVY; sleep 1.5; shot 20_missionen2
 back; sleep 1.5
 tap 134 $ROWY; sleep 1.5; shot 21_challenge
+adb shell am force-stop de.engelcode.orbit
+adb shell am start -n de.engelcode.orbit/.MainActivity
+sleep 6
+tap 360 965; sleep 1.5;   shot 21b_endlos_auswahl
+tap 360 270; sleep 1.5;   shot 21c_endlos
 # Sprachen: App neu starten
 adb shell am force-stop de.engelcode.orbit
 adb shell am start -n de.engelcode.orbit/.MainActivity
 sleep 6
 tap 648 $NAVY; sleep 1.5
-tap 360 737; sleep 1.2;   shot 22_optionen_RU
+tap 360 688; sleep 1.2;   shot 22_optionen_RU
 back; sleep 1.5;          shot 23_menu_RU
 tap 216 $NAVY; sleep 1.5; shot 24_missionen_RU
 back; sleep 1.5
 tap 648 $NAVY; sleep 1.5
-tap 360 737; sleep 1.2;   shot 25_optionen_DE
+tap 360 688; sleep 1.2;   shot 25_optionen_DE
 back; sleep 1.5;          shot 26_menu_DE
 tap 216 $NAVY; sleep 1.5; shot 27_missionen_DE
 adb logcat -d -s AndroidRuntime:E > shots/crashlog.txt || true

@@ -38,6 +38,9 @@ class Save(context: Context) {
     var showFps = p.getBoolean("showFps", true)
     var lowGfx = p.getBoolean("lowGfx", false)
     var shake = p.getBoolean("shake", true)
+    var musicTrack = p.getInt("musicTrack", 0)
+    /** Endlos-Rekord je Dimension (1–4). */
+    val bestDim = IntArray(4) { if (it == 0) p.getInt("bestD1", best) else p.getInt("bestD${it + 1}", 0) }
 
     // Statistik
     var games = p.getInt("games", 0)
@@ -110,7 +113,8 @@ class Save(context: Context) {
             .putLong("chestReady", chestReady).putInt("chests", chests)
             .putBoolean("sound", sound).putBoolean("music", music)
             .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
-            .putBoolean("lowGfx", lowGfx).putBoolean("shake", shake)
+            .putBoolean("lowGfx", lowGfx).putBoolean("shake", shake).putInt("musicTrack", musicTrack)
+            .putInt("bestD1", bestDim[0]).putInt("bestD2", bestDim[1]).putInt("bestD3", bestDim[2]).putInt("bestD4", bestDim[3])
             .putInt("challengesDone", challengesDone).putInt("spins", spins)
             .putLong("challengeDay", challengeDay).putLong("wheelDay", wheelDay)
             .putInt("games", games).putInt("planets", planets)
@@ -130,6 +134,7 @@ class Save(context: Context) {
         for (i in crowns.indices) crowns[i] = 0
         recount()
         achClaimed = 0L
+        for (i in 0 until 4) bestDim[i] = 0
         missionDay = 0L; missionClaimed = 0; missionsDone = 0; chestReady = 0L; chests = 0
         for (i in 0 until 3) missionProg[i] = 0
         games = 0; planets = 0; perfects = 0; bestStreak = 0

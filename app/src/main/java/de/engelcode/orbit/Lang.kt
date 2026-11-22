@@ -142,8 +142,19 @@ object L {
     val DIM_NAMES = arrayOf(
         a("Unser Universum", "Our universe", "Наша вселенная"),
         a("Spiegelwelt", "Mirror world", "Зеркальный мир"),
-        a("Die Leere", "The Void", "Пустота")
+        a("Die Leere", "The Void", "Пустота"),
+        a("Sonnensturm", "Solar storm", "Солнечная буря")
     )
+    val DIM4_HINT = a("Sonnensturm: Der Wind treibt dich ab!", "Solar storm: the wind pushes you!", "Солнечная буря: ветер сносит тебя!")
+    val DIM_RULES = arrayOf(
+        a("Normale Schwerkraft", "Normal gravity", "Обычная гравитация"),
+        a("Planeten stoßen dich ab", "Planets push you away", "Планеты отталкивают тебя"),
+        a("Keine Schwerkraft", "No gravity", "Нет гравитации"),
+        a("Sonnenwind treibt dich ab", "Solar wind pushes you", "Солнечный ветер сносит тебя")
+    )
+    val ENDLESS_TITLE = a("ENDLOS-MODUS", "ENDLESS MODE", "БЕСКОНЕЧНЫЙ РЕЖИМ")
+    val ENDLESS_LOCKED = a("Erreiche zuerst Level {0}", "Reach level {0} first", "Сначала дойди до уровня {0}")
+    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"))
     val DIM3_HINT = a("Die Leere: keine Schwerkraft – ziele genau!", "The Void: no gravity – aim precisely!", "Пустота: нет гравитации – целься точно!")
     val DIM2_HINT = a("Spiegelwelt: Planeten stoßen dich ab!", "Mirror world: planets push you away!", "Зеркальный мир: планеты отталкивают тебя!")
 
@@ -180,12 +191,11 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 250 Level: Dimension 3 „Die Leere“", "• 250 levels: dimension 3 “The Void”", "• 250 уровней: измерение 3 «Пустота»"),
-        a("• Tägliche Missionen mit Belohnung", "• Daily missions with rewards", "• Ежедневные миссии с наградами"),
-        a("• Gratis-Truhe alle 4 Stunden", "• Free chest every 4 hours", "• Бесплатный сундук каждые 4 часа"),
-        a("• 42 Skins und 20 Spuren", "• 42 skins and 20 trails", "• 42 скина и 20 следов"),
-        a("• 38 Erfolge, neues Menü", "• 38 achievements, new menu", "• 38 достижений, новое меню"),
-        a("• Mehr Sterne, faire Preise", "• More stars, fair prices", "• Больше звёзд, честные цены")
+        a("• 300 Level: Dimension 4 „Sonnensturm“", "• 300 levels: dimension 4 “Solar storm”", "• 300 уровней: измерение 4 «Солнечная буря»"),
+        a("• Endlos-Modus in jeder Dimension", "• Endless mode in every dimension", "• Бесконечный режим в каждом измерении"),
+        a("• Zweites Musikstück „Puls“", "• Second music track “Pulse”", "• Второй музыкальный трек «Пульс»"),
+        a("• 50 Skins und 24 Spuren", "• 50 skins and 24 trails", "• 50 скинов и 24 следа"),
+        a("• 44 Erfolge", "• 44 achievements", "• 44 достижения")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe
@@ -226,7 +236,8 @@ object L {
         a("Bildschirmwackeln", "Screen shake", "Тряска экрана"),
         a("FPS-Anzeige", "FPS counter", "Счётчик FPS"),
         a("Grafik", "Graphics", "Графика"),
-        a("Sprache", "Language", "Язык")
+        a("Sprache", "Language", "Язык"),
+        a("Musikstück", "Music track", "Музыка: трек")
     )
     val GFX_HIGH = a("Hoch", "High", "Высокая")
     val GFX_LOW = a("Sparsam", "Low", "Экономная")

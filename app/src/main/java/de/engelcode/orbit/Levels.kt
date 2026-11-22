@@ -8,7 +8,7 @@ import kotlin.math.min
  */
 object Levels {
 
-    const val COUNT = 250
+    const val COUNT = 300
 
     // Himmelskörper
     const val B_NONE = 0
@@ -38,6 +38,11 @@ object Levels {
     const val B_SHADOWMOON = 24
     const val B_ECHO = 25
     const val B_VOIDHEART = 26
+    const val B_EMBER = 27
+    const val B_STORMEYE = 28
+    const val B_FIRERING = 29
+    const val B_PHOENIX = 30
+    const val B_SOLARCORE = 31
 
     private val bodyNames = arrayOf(
         arrayOf("", "", ""),
@@ -66,19 +71,28 @@ object Levels {
         arrayOf("LEERENAUGE", "VOID EYE", "ОКО ПУСТОТЫ"),
         arrayOf("SCHATTENMOND", "SHADOW MOON", "ТЕНЕВАЯ ЛУНА"),
         arrayOf("ECHO", "ECHO", "ЭХО"),
-        arrayOf("HERZ DER LEERE", "HEART OF THE VOID", "СЕРДЦЕ ПУСТОТЫ")
+        arrayOf("HERZ DER LEERE", "HEART OF THE VOID", "СЕРДЦЕ ПУСТОТЫ"),
+        arrayOf("GLUTSTERN", "EMBER STAR", "ТЛЕЮЩАЯ ЗВЕЗДА"),
+        arrayOf("STURMAUGE", "STORM EYE", "ОКО БУРИ"),
+        arrayOf("FEUERRING", "RING OF FIRE", "ОГНЕННОЕ КОЛЬЦО"),
+        arrayOf("PHÖNIXNEBEL", "PHOENIX NEBULA", "ТУМАННОСТЬ ФЕНИКСА"),
+        arrayOf("SONNENKERN", "SOLAR CORE", "СОЛНЕЧНОЕ ЯДРО")
     )
 
     fun bodyName(b: Int): String = bodyNames[b][L.cur]
 
     /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200), 3 = Die Leere (201–250). */
     fun dimension(level: Int) = when {
+        level > 250 -> 4
         level > 200 -> 3
         level > 150 -> 2
         else -> 1
     }
     const val DIM2_FROM = 151
     const val DIM3_FROM = 201
+    const val DIM4_FROM = 251
+    /** Ab welchem geschafften Level ist der Endlos-Modus einer Dimension frei? */
+    val DIM_UNLOCK = intArrayOf(0, 150, 200, 250)
 
     /** Abschnitt 0..19 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10

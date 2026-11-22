@@ -65,7 +65,13 @@ object Achievements {
         Ach(n("Missions-Ass", "Mission ace", "Мастер миссий"), MISSIONS, 30, 300),
         Ach(n("Schatzsucher", "Treasure hunter", "Кладоискатель"), CHESTS, 20, 150),
         Ach(n("Großsammler", "Big collector", "Большой коллекционер"), SKINS, 25, 600),
-        Ach(n("Kronen-Gott", "Crown god", "Бог корон"), CROWNS, 500, 1000)
+        Ach(n("Kronen-Gott", "Crown god", "Бог корон"), CROWNS, 500, 1000),
+        Ach(n("Sturmreiter", "Storm rider", "Покоритель бурь"), LEVEL, 260, 600),
+        Ach(n("Sonnenkern", "Solar core", "Солнечное ядро"), LEVEL, 300, 2000),
+        Ach(n("Endlos-Profi", "Endless pro", "Профи бесконечности"), BEST, 250, 400),
+        Ach(n("Sammelwut", "Collecting frenzy", "Страсть к коллекциям"), SKINS, 35, 800),
+        Ach(n("Truhen-König", "Chest king", "Король сундуков"), CHESTS, 60, 300),
+        Ach(n("Missions-Legende", "Mission legend", "Легенда миссий"), MISSIONS, 100, 600)
     )
 
     private val DESC = arrayOf(
