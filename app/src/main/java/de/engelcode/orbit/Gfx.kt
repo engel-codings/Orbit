@@ -65,6 +65,8 @@ class Gfx(context: Context) {
         const val I_TARGET = 19
         const val I_SHAKE = 20
         const val I_GLOBE = 21
+        const val I_CHEST = 22
+        const val I_LIST = 23
     }
 
     private fun font(ctx: Context, file: String, fallback: Typeface): Typeface = try {
@@ -148,7 +150,14 @@ class Gfx(context: Context) {
         makeGlow(0xFF9B5DE5.toInt(), 0xC0), makeGlow(0xFFFFFFFF.toInt(), 0xD0),
         makeGlow(0xFF00E5FF.toInt(), 0xB0), makeGlow(0xFFF15BB5.toInt(), 0xC0),
         makeGlow(0xFFE0F7FF.toInt(), 0x90), makeGlow(0xFF9BE564.toInt(), 0xB0),
-        makeGlow(0xFF7B61FF.toInt(), 0xD0)
+        makeGlow(0xFF7B61FF.toInt(), 0xD0),
+        makeGlow(0xFFB0BEC5.toInt(), 0x70), makeGlow(0xFF2EE5C8.toInt(), 0x90),
+        makeGlow(0xFF7B2CBF.toInt(), 0x80), makeGlow(0xFF2EE5C8.toInt(), 0x70),
+        makeGlow(0xFF9B5DE5.toInt(), 0xB0)
+    )
+    val nebula3 = arrayOf(
+        makeGlow(0xFF1B4D4A.toInt(), 0x60), makeGlow(0xFF2A1B4D.toInt(), 0x60),
+        makeGlow(0xFF2EE5C8.toInt(), 0x20), makeGlow(0xFF3D1B4D.toInt(), 0x55)
     )
     val nebula2 = arrayOf(
         makeGlow(0xFFF15BB5.toInt(), 0x50), makeGlow(0xFF00E5FF.toInt(), 0x45),
@@ -411,6 +420,23 @@ class Gfx(context: Context) {
                 c.drawLine(x - s * 0.9f, y - s * 0.5f, x - s * 0.75f, y - s * 0.2f, line)
                 c.drawLine(x + s * 0.9f, y + s * 0.5f, x + s * 0.75f, y + s * 0.2f, line)
             }
+            I_CHEST -> {
+                rect.set(x - s * 0.9f, y - s * 0.1f, x + s * 0.9f, y + s * 0.8f)
+                c.drawRoundRect(rect, s * 0.12f, s * 0.12f, fill)
+                rect.set(x - s * 0.9f, y - s * 0.75f, x + s * 0.9f, y + s * 0.2f)
+                c.drawArc(rect, 180f, 180f, true, fill)
+                fill.color = PANEL; fill.alpha = alpha
+                c.drawRect(x - s * 0.9f, y - s * 0.12f, x + s * 0.9f, y + s * 0.02f, fill)
+                c.drawRect(x - s * 0.15f, y - s * 0.25f, x + s * 0.15f, y + s * 0.2f, fill)
+                fill.color = color
+            }
+            I_LIST -> {
+                line.strokeWidth = s * 0.18f
+                for (k in -1..1) {
+                    c.drawCircle(x - s * 0.7f, y + k * s * 0.6f, s * 0.13f, fill)
+                    c.drawLine(x - s * 0.35f, y + k * s * 0.6f, x + s * 0.85f, y + k * s * 0.6f, line)
+                }
+            }
             I_GLOBE -> {
                 line.strokeWidth = s * 0.14f
                 c.drawCircle(x, y, s * 0.85f, line)
@@ -669,6 +695,44 @@ class Gfx(context: Context) {
                 }
                 drawGalaxy(c, x, y, r * 0.55f, -t * 3f, 0xFF7B61FF.toInt(), Color.WHITE, true)
             }
+            Levels.B_SILENT -> {
+                for (k in 0 until 3) {
+                    val f = ((t * 0.3f + k / 3f) % 1f)
+                    ring(c, x, y, r * (0.5f + f * 0.9f), 0xFFB0BEC5.toInt(), r * 0.03f, (180 * (1f - f)).toInt())
+                }
+                starShape(c, x, y, r * 0.7f, 45f, 0xFFB0BEC5.toInt(), 220)
+                circle(c, x, y, r * 0.22f, Color.WHITE, 230)
+            }
+            Levels.B_VOIDEYE -> {
+                circle(c, x, y, r, 0xFF0A0F1A.toInt())
+                ring(c, x, y, r, 0xFF2EE5C8.toInt(), r * 0.05f, 200)
+                val lx = cos(t * 0.7f) * r * 0.2f; val ly = sin(t * 0.9f) * r * 0.12f
+                circle(c, x + lx, y + ly, r * 0.45f, 0xFF2EE5C8.toInt(), 220)
+                circle(c, x + lx, y + ly, r * 0.22f, Color.BLACK)
+                circle(c, x + lx - r * 0.1f, y + ly - r * 0.1f, r * 0.07f, Color.WHITE)
+            }
+            Levels.B_SHADOWMOON -> {
+                val col = 0xFF2A1B4D.toInt()
+                circle(c, x, y, r, col)
+                ring(c, x - r * 0.04f, y - r * 0.04f, r * 0.97f, 0xFF2EE5C8.toInt(), r * 0.05f, 170)
+                val cr = 0xFF3D2A66.toInt()
+                circle(c, x - r * 0.3f, y - r * 0.25f, r * 0.2f, cr)
+                circle(c, x + r * 0.3f, y + r * 0.15f, r * 0.26f, cr)
+                circle(c, x - r * 0.1f, y + r * 0.45f, r * 0.12f, cr)
+            }
+            Levels.B_ECHO -> {
+                for (k in 0 until 5) {
+                    val f = ((t * 0.5f + k / 5f) % 1f)
+                    ring(c, x, y, r * (0.2f + f * 1.1f), if (k % 2 == 0) 0xFF2EE5C8.toInt() else Color.WHITE, r * 0.04f, (220 * (1f - f)).toInt())
+                }
+                circle(c, x, y, r * 0.2f, Color.WHITE)
+            }
+            Levels.B_VOIDHEART -> {
+                val p = 1f + 0.08f * sin(t * 4f)
+                shape(c, heartPath, x, y, r * 1.05f * p, 0f, 0xFF2EE5C8.toInt(), 120)
+                shape(c, heartPath, x, y, r * 0.95f * p, 0f, 0xFF2A1B4D.toInt())
+                shape(c, heartPath, x, y, r * 0.45f * p, 0f, 0xFF9B5DE5.toInt(), 200)
+            }
             else -> drawPlanet(c, 0, 0, x, y, r, reduced)
         }
     }
@@ -909,6 +973,79 @@ class Gfx(context: Context) {
                 circle(c, x - 6f * s, y + o, 3.5f * s, sk.color2)
                 circle(c, x + 6f * s, y - o, 3.5f * s, sk.color)
             }
+            Skins.FLOWER -> {
+                c.save(); c.translate(x, y); c.rotate(t * 40f)
+                for (k in 0 until 6) {
+                    fill.color = col; fill.alpha = 235
+                    rect.set(-5f * s, -21f * s, 5f * s, -5f * s)
+                    c.drawOval(rect, fill)
+                    c.rotate(60f)
+                }
+                c.restore()
+                circle(c, x, y, 6.5f * s, sk.color2)
+            }
+            Skins.DONUT -> {
+                ring(c, x, y, 11f * s, 0xFFE0A96D.toInt(), 9f * s)
+                ring(c, x, y, 11f * s, col, 6f * s)
+                for (k in 0 until 6) {
+                    val a = k * 1.047f + 0.4f
+                    fill.color = rainbow[(k * 6) % 36]; fill.alpha = 255
+                    c.save(); c.translate(x + cos(a) * 11f * s, y + sin(a) * 11f * s); c.rotate(k * 50f)
+                    c.drawRect(-2.5f * s, -0.9f * s, 2.5f * s, 0.9f * s, fill)
+                    c.restore()
+                }
+            }
+            Skins.SHURIKEN -> {
+                c.save(); c.translate(x, y); c.rotate(t * 400f)
+                for (k in 0 until 4) {
+                    shape(c, crownPath, 0f, -11f * s, 6f * s, 0f, col)
+                    c.rotate(90f)
+                }
+                c.restore()
+                circle(c, x, y, 4f * s, PANEL)
+            }
+            Skins.CLOCK -> {
+                circle(c, x, y, 16f * s, col)
+                ring(c, x, y, 16f * s, sk.color2, 2.5f * s)
+                line.color = PANEL; line.alpha = 255; line.strokeWidth = 2.5f * s
+                c.drawLine(x, y, x + cos(t * 3f) * 12f * s, y + sin(t * 3f) * 12f * s, line)
+                c.drawLine(x, y, x + cos(t * 0.25f) * 8f * s, y + sin(t * 0.25f) * 8f * s, line)
+                circle(c, x, y, 2.5f * s, RED)
+            }
+            Skins.BEE -> {
+                val wing = 0.6f + 0.4f * sin(t * 40f)
+                fill.color = Color.WHITE; fill.alpha = 160
+                rect.set(x - 12f * s, y - 16f * s * wing - 4f * s, x - 1f * s, y - 4f * s); c.drawOval(rect, fill)
+                rect.set(x + 1f * s, y - 16f * s * wing - 4f * s, x + 12f * s, y - 4f * s); c.drawOval(rect, fill)
+                fill.color = col; fill.alpha = 255
+                rect.set(x - 15f * s, y - 10f * s, x + 15f * s, y + 10f * s); c.drawOval(rect, fill)
+                fill.color = Color.BLACK
+                c.drawRect(x - 4f * s, y - 9f * s, x + 1f * s, y + 9f * s, fill)
+                c.drawRect(x + 6f * s, y - 7f * s, x + 10f * s, y + 7f * s, fill)
+            }
+            Skins.GHOST -> {
+                val bob = sin(t * 3f) * 3f * s
+                fill.color = col; fill.alpha = 215
+                rect.set(x - 13f * s, y - 16f * s + bob, x + 13f * s, y + 10f * s + bob)
+                c.drawRoundRect(rect, 13f * s, 13f * s, fill)
+                for (k in 0 until 3) circle(c, x - 8.5f * s + k * 8.5f * s, y + 10f * s + bob, 4.4f * s, col, 215)
+                circle(c, x - 5f * s, y - 5f * s + bob, 3f * s, Color.BLACK)
+                circle(c, x + 5f * s, y - 5f * s + bob, 3f * s, Color.BLACK)
+            }
+            Skins.ORB -> {
+                circle(c, x, y, 17f * s, sk.color2, 90)
+                drawGalaxy(c, x, y, 12f * s, t * 3f, col, Color.WHITE, true)
+                ring(c, x, y, 17f * s, Color.WHITE, 2f * s, 160)
+                circle(c, x - 6f * s, y - 7f * s, 4f * s, Color.WHITE, 150)
+            }
+            Skins.VOID -> {
+                circle(c, x, y, 15f * s, 0xFF05070D.toInt())
+                ring(c, x, y, 15f * s + sin(t * 4f) * 1.5f * s, sk.color2, 3f * s)
+                for (k in 0 until 3) {
+                    val a = t * 2f + k * 2.094f
+                    circle(c, x + cos(a) * 21f * s, y + sin(a) * 21f * s, 2.5f * s, sk.color2, 200)
+                }
+            }
             Skins.CROWN -> {
                 shape(c, crownPath, x, y, 18f * s, sin(t * 3f) * 8f, col)
                 circle(c, x, y - 2f * s, 3.5f * s, RED)
@@ -986,6 +1123,28 @@ class Gfx(context: Context) {
                     val d = 14f * (1f - f) + 3f
                     circle(c, x + cos(a) * d, y + sin(a) * d, 2f + 5f * f, tr.color, (f * 230f).toInt())
                     circle(c, x - cos(a) * d, y - sin(a) * d, 1.5f + 3f * f, Color.WHITE, (f * 200f).toInt())
+                }
+                Skins.T_WAVES -> {
+                    val dx = x - px; val dy = y - py
+                    val len = sqrt(dx * dx + dy * dy) + 0.001f
+                    val o = sin(i * 0.9f + t * 10f) * 10f * f
+                    val ox = -dy / len * o; val oy = dx / len * o
+                    seg(c, px + ox, py + oy, x + ox, y + oy, tr.color, (f * 220f).toInt(), 2f + 5f * f)
+                    seg(c, px - ox, py - oy, x - ox, y - oy, Color.WHITE, (f * 150f).toInt(), 1.5f + 3f * f)
+                }
+                Skins.T_CONFETTI -> if (i % 2 == 0) {
+                    c.save(); c.translate(x + sin(i * 7.3f) * 9f, y + cos(i * 5.1f) * 9f); c.rotate(t * 300f + i * 40f)
+                    fill.color = rainbow[(i * 7) % 36]; fill.alpha = (f * 255f).toInt()
+                    c.drawRect(-5f * f - 2f, -2f, 5f * f + 2f, 2f, fill)
+                    c.restore()
+                }
+                Skins.T_SHADOW -> {
+                    seg(c, px, py, x, y, 0xFF2A1B4D.toInt(), (f * 200f).toInt(), 10f + 22f * f)
+                    seg(c, px, py, x, y, tr.color, (f * 160f).toInt(), 2f + 2f * f)
+                }
+                Skins.T_LASER -> {
+                    seg(c, px, py, x, y, tr.color, (f * 110f).toInt(), 6f + 8f * f)
+                    seg(c, px, py, x, y, Color.WHITE, (f * 255f).toInt(), 1.5f + 2f * f)
                 }
                 Skins.T_MATRIX -> if (i % 2 == 0) {
                     val sz = 3f + 5f * f

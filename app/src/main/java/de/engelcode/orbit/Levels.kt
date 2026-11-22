@@ -8,7 +8,7 @@ import kotlin.math.min
  */
 object Levels {
 
-    const val COUNT = 200
+    const val COUNT = 250
 
     // Himmelskörper
     const val B_NONE = 0
@@ -33,6 +33,11 @@ object Levels {
     const val B_MIRROR = 19
     const val B_VORTEX = 20
     const val B_GATE = 21
+    const val B_SILENT = 22
+    const val B_VOIDEYE = 23
+    const val B_SHADOWMOON = 24
+    const val B_ECHO = 25
+    const val B_VOIDHEART = 26
 
     private val bodyNames = arrayOf(
         arrayOf("", "", ""),
@@ -56,14 +61,24 @@ object Levels {
         arrayOf("NEONSTERN", "NEON STAR", "НЕОНОВАЯ ЗВЕЗДА"),
         arrayOf("SPIEGELPLANET", "MIRROR PLANET", "ЗЕРКАЛЬНАЯ ПЛАНЕТА"),
         arrayOf("ZEITSTRUDEL", "TIME VORTEX", "ВИХРЬ ВРЕМЕНИ"),
-        arrayOf("DIMENSIONSTOR", "DIMENSION GATE", "ВРАТА ИЗМЕРЕНИЙ")
+        arrayOf("DIMENSIONSTOR", "DIMENSION GATE", "ВРАТА ИЗМЕРЕНИЙ"),
+        arrayOf("STILLER STERN", "SILENT STAR", "БЕЗМОЛВНАЯ ЗВЕЗДА"),
+        arrayOf("LEERENAUGE", "VOID EYE", "ОКО ПУСТОТЫ"),
+        arrayOf("SCHATTENMOND", "SHADOW MOON", "ТЕНЕВАЯ ЛУНА"),
+        arrayOf("ECHO", "ECHO", "ЭХО"),
+        arrayOf("HERZ DER LEERE", "HEART OF THE VOID", "СЕРДЦЕ ПУСТОТЫ")
     )
 
     fun bodyName(b: Int): String = bodyNames[b][L.cur]
 
-    /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200). */
-    fun dimension(level: Int) = if (level > 150) 2 else 1
+    /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200), 3 = Die Leere (201–250). */
+    fun dimension(level: Int) = when {
+        level > 200 -> 3
+        level > 150 -> 2
+        else -> 1
+    }
     const val DIM2_FROM = 151
+    const val DIM3_FROM = 201
 
     /** Abschnitt 0..19 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10

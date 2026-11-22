@@ -20,7 +20,16 @@ class Save(context: Context) {
     var shieldStarts = p.getInt("shieldStarts", 0)
     var levelDone = p.getInt("levelDone", 0)      // höchstes geschafftes Level
     private val crowns = ByteArray(Levels.COUNT + 1)
-    var achClaimed = p.getInt("achClaimed", 0)
+    var achClaimed: Long = if (p.contains("achClaimedL")) p.getLong("achClaimedL", 0L)
+        else (p.getInt("achClaimed", 0).toLong() and 0xFFFFFFFFL)
+
+    // Missionen & Truhe
+    var missionDay = p.getLong("missionDay", 0L)
+    val missionProg = IntArray(3) { p.getInt("mProg$it", 0) }
+    var missionClaimed = p.getInt("mClaimed", 0)
+    var missionsDone = p.getInt("missionsDone", 0)
+    var chestReady = p.getLong("chestReady", 0L)
+    var chests = p.getInt("chests", 0)
 
     // Einstellungen
     var sound = p.getBoolean("sound", true)
@@ -94,7 +103,11 @@ class Save(context: Context) {
             .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())
-            .putInt("achClaimed", achClaimed)
+            .putLong("achClaimedL", achClaimed)
+            .putLong("missionDay", missionDay).putInt("mClaimed", missionClaimed)
+            .putInt("mProg0", missionProg[0]).putInt("mProg1", missionProg[1]).putInt("mProg2", missionProg[2])
+            .putInt("missionsDone", missionsDone)
+            .putLong("chestReady", chestReady).putInt("chests", chests)
             .putBoolean("sound", sound).putBoolean("music", music)
             .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
             .putBoolean("lowGfx", lowGfx).putBoolean("shake", shake)
@@ -116,7 +129,9 @@ class Save(context: Context) {
         ownedSkins = 1L; ownedTrails = 1; revives = 0; shieldStarts = 0; levelDone = 0
         for (i in crowns.indices) crowns[i] = 0
         recount()
-        achClaimed = 0
+        achClaimed = 0L
+        missionDay = 0L; missionClaimed = 0; missionsDone = 0; chestReady = 0L; chests = 0
+        for (i in 0 until 3) missionProg[i] = 0
         games = 0; planets = 0; perfects = 0; bestStreak = 0
         starsCollected = 0; playTime = 0f; powerups = 0; revivesUsed = 0; bestDayStreak = 0
         challengesDone = 0; spins = 0; challengeDay = 0L; wheelDay = 0L

@@ -18,6 +18,8 @@ object Achievements {
     private const val TIME = 11
     private const val CHALLENGES = 12
     private const val SPINS = 13
+    private const val MISSIONS = 14
+    private const val CHESTS = 15
 
     class Ach(private val titles: Array<String>, val kind: Int, val goal: Int, val reward: Int) {
         val title: String get() = titles[L.cur]
@@ -57,7 +59,13 @@ object Achievements {
         Ach(n("Admiral", "Admiral", "Адмирал"), PLANETS, 1000, 250),
         Ach(n("Power-Profi", "Power pro", "Мастер бонусов"), POWERUPS, 100, 200),
         Ach(n("Dimensionsspringer", "Dimension jumper", "Прыгун измерений"), LEVEL, 160, 400),
-        Ach(n("Spiegelmeister", "Mirror master", "Мастер зеркал"), LEVEL, 200, 1000)
+        Ach(n("Spiegelmeister", "Mirror master", "Мастер зеркал"), LEVEL, 200, 1000),
+        Ach(n("Ins Nichts", "Into the void", "В пустоту"), LEVEL, 210, 500),
+        Ach(n("Herr der Leere", "Lord of the void", "Повелитель пустоты"), LEVEL, 250, 1500),
+        Ach(n("Missions-Ass", "Mission ace", "Мастер миссий"), MISSIONS, 30, 300),
+        Ach(n("Schatzsucher", "Treasure hunter", "Кладоискатель"), CHESTS, 20, 150),
+        Ach(n("Großsammler", "Big collector", "Большой коллекционер"), SKINS, 25, 600),
+        Ach(n("Kronen-Gott", "Crown god", "Бог корон"), CROWNS, 500, 1000)
     )
 
     private val DESC = arrayOf(
@@ -74,7 +82,9 @@ object Achievements {
         n("Sammle {0} Power-ups", "Collect {0} power-ups", "Собери {0} бонусов"),
         n("Spiele insgesamt {0} Stunden", "Play for {0} hours in total", "Играй {0} часа в сумме"),
         n("Schaffe {0} Tages-Challenges", "Complete {0} daily challenges", "Пройди {0} ежедневных испытаний"),
-        n("Drehe {0}-mal am Glücksrad", "Spin the lucky wheel {0} times", "Крути колесо удачи {0} раз")
+        n("Drehe {0}-mal am Glücksrad", "Spin the lucky wheel {0} times", "Крути колесо удачи {0} раз"),
+        n("Erfülle {0} Missionen", "Complete {0} missions", "Выполни {0} миссий"),
+        n("Öffne {0} Truhen", "Open {0} chests", "Открой {0} сундуков")
     )
     private val FIRST_PLANET = n("Erreiche deinen ersten Planeten", "Reach your first planet", "Достигни первой планеты")
 
@@ -98,11 +108,13 @@ object Achievements {
         POWERUPS -> s.powerups
         CHALLENGES -> s.challengesDone
         SPINS -> s.spins
+        MISSIONS -> s.missionsDone
+        CHESTS -> s.chests
         else -> (s.playTime / 60f).toInt()
     }
 
     fun done(i: Int, s: Save) = value(list[i], s) >= list[i].goal
-    fun claimed(i: Int, s: Save) = s.achClaimed and (1 shl i) != 0
+    fun claimed(i: Int, s: Save) = s.achClaimed and (1L shl i) != 0L
 
     fun claimableCount(s: Save): Int {
         var n = 0

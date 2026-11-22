@@ -53,6 +53,18 @@ object L {
         else -> ruPlural(n, "звезда", "звезды", "звёзд")
     }
 
+    fun levels(n: Int): String = when (cur) {
+        DE -> "Level"
+        EN -> if (n == 1) "level" else "levels"
+        else -> ruPlural(n, "уровень", "уровня", "уровней")
+    }
+
+    fun powerups(n: Int): String = when (cur) {
+        DE -> if (n == 1) "Power-up" else "Power-ups"
+        EN -> if (n == 1) "power-up" else "power-ups"
+        else -> ruPlural(n, "бонус", "бонуса", "бонусов")
+    }
+
     fun crowns(n: Int): String = when (cur) {
         DE -> if (n == 1) "Krone" else "Kronen"
         EN -> if (n == 1) "crown" else "crowns"
@@ -129,8 +141,10 @@ object L {
     val DIMENSION = a("DIMENSION {0}", "DIMENSION {0}", "ИЗМЕРЕНИЕ {0}")
     val DIM_NAMES = arrayOf(
         a("Unser Universum", "Our universe", "Наша вселенная"),
-        a("Spiegelwelt", "Mirror world", "Зеркальный мир")
+        a("Spiegelwelt", "Mirror world", "Зеркальный мир"),
+        a("Die Leere", "The Void", "Пустота")
     )
+    val DIM3_HINT = a("Die Leere: keine Schwerkraft – ziele genau!", "The Void: no gravity – aim precisely!", "Пустота: нет гравитации – целься точно!")
     val DIM2_HINT = a("Spiegelwelt: Planeten stoßen dich ab!", "Mirror world: planets push you away!", "Зеркальный мир: планеты отталкивают тебя!")
 
     // ------------------------------------------------------------- Meldungen
@@ -166,13 +180,31 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 3 Sprachen: Deutsch, Englisch, Russisch", "• 3 languages: German, English, Russian", "• 3 языка: немецкий, английский, русский"),
-        a("• 200 Level und eine neue Dimension", "• 200 levels and a new dimension", "• 200 уровней и новое измерение"),
-        a("• Spiegelwelt: Planeten stoßen dich ab", "• Mirror world: planets push you away", "• Зеркальный мир: планеты отталкивают"),
-        a("• Neue Skins: Prisma und Spiegel", "• New skins: Prism and Mirror", "• Новые скины: Призма и Зеркало"),
-        a("• 32 Erfolge", "• 32 achievements", "• 32 достижения"),
-        a("• Viele Verbesserungen", "• Many improvements", "• Множество улучшений")
+        a("• 250 Level: Dimension 3 „Die Leere“", "• 250 levels: dimension 3 “The Void”", "• 250 уровней: измерение 3 «Пустота»"),
+        a("• Tägliche Missionen mit Belohnung", "• Daily missions with rewards", "• Ежедневные миссии с наградами"),
+        a("• Gratis-Truhe alle 4 Stunden", "• Free chest every 4 hours", "• Бесплатный сундук каждые 4 часа"),
+        a("• 42 Skins und 20 Spuren", "• 42 skins and 20 trails", "• 42 скина и 20 следов"),
+        a("• 38 Erfolge, neues Menü", "• 38 achievements, new menu", "• 38 достижений, новое меню"),
+        a("• Mehr Sterne, faire Preise", "• More stars, fair prices", "• Больше звёзд, честные цены")
     )
+
+    // ------------------------------------------------------------- Missionen & Truhe
+    val MISSIONS = a("MISSIONEN", "MISSIONS", "МИССИИ")
+    val MISSION_DESC = arrayOf(
+        a("Sammle {0} {1}", "Collect {0} {1}", "Собери {0} {1}"),
+        a("{0} perfekte Landungen", "{0} perfect landings", "{0} идеальных посадок"),
+        a("Erreiche {0} Planeten", "Reach {0} planets", "Достигни {0} планет"),
+        a("Schaffe {0} {1}", "Complete {0} {1}", "Пройди {0} {1}"),
+        a("{0} Punkte in einer Endlos-Runde", "{0} points in one endless run", "{0} очков за одну бесконечную игру"),
+        a("Sammle {0} {1}", "Collect {0} {1}", "Собери {0} {1}"),
+        a("Drehe am Glücksrad", "Spin the lucky wheel", "Покрути колесо удачи")
+    )
+    val MISSION_NEW_IN = a("Neue Missionen in {0} h {1} min", "New missions in {0} h {1} min", "Новые миссии через {0} ч {1} мин")
+    val MISSION_DONE_ALL = a("Alle Missionen erledigt – stark!", "All missions done – great job!", "Все миссии выполнены – отлично!")
+    val T_MISSION = a("Mission erfüllt! Hol dir die Belohnung", "Mission complete! Claim your reward", "Миссия выполнена! Забери награду")
+    val CHEST = a("TRUHE", "CHEST", "СУНДУК")
+    val T_CHEST_WAIT = a("Truhe bereit in {0} h {1} min", "Chest ready in {0} h {1} min", "Сундук будет готов через {0} ч {1} мин")
+    val T_CHEST = a("Truhe geöffnet: +{0} {1}!", "Chest opened: +{0} {1}!", "Сундук открыт: +{0} {1}!")
 
     // ------------------------------------------------------------- Shop
     val TABS = arrayOf(a("SKINS", "SKINS", "СКИНЫ"), a("SPUREN", "TRAILS", "СЛЕДЫ"), a("EXTRAS", "EXTRAS", "БОНУСЫ"))
@@ -214,6 +246,8 @@ object L {
         a("Wiederbelebungen", "Revives", "Возрождения"),
         a("Tages-Challenges", "Daily challenges", "Ежедневные испытания"),
         a("Glücksrad", "Lucky wheel", "Колесо удачи"),
+        a("Missionen", "Missions", "Миссии"),
+        a("Truhen", "Chests", "Сундуки"),
         a("Spielzeit", "Play time", "Время игры")
     )
     val TIME_HM = a("{0} h {1} min", "{0} h {1} min", "{0} ч {1} мин")

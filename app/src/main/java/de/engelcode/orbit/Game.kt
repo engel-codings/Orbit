@@ -20,8 +20,8 @@ import kotlin.math.sin
 class Game(context: Context) : World.Listener {
 
     companion object {
-        const val VERSION_CODE = 5
-        const val VERSION_NAME = "0.5.0"
+        const val VERSION_CODE = 6
+        const val VERSION_NAME = "0.6.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -56,7 +56,7 @@ class Game(context: Context) : World.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -106,8 +106,10 @@ class Game(context: Context) : World.Listener {
     private val bChallenge = Btn(35, "", S_GLASS, Gfx.I_TARGET)
     private val bWheel = Btn(36, "", S_GLASS, Gfx.I_WHEEL)
     private val bSpin = Btn(37, "", S_GOLD)
+    private val bMissions = Btn(38, "", S_ROUND, Gfx.I_LIST)
+    private val bChest = Btn(39, "", S_GLASS, Gfx.I_CHEST)
 
-    private val menuBtns = arrayOf(bPlay, bEndless, bChallenge, bWheel, bShop, bAch, bStats, bSettings)
+    private val menuBtns = arrayOf(bPlay, bEndless, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bStats, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
@@ -196,6 +198,13 @@ class Game(context: Context) : World.Listener {
     private var achBadge = 0
     private var rankStr = ""
     private var dimTitle = ""
+    private var dimTitle3 = ""
+    private var missionBadge = 0
+    private var chestLabelMin = -1
+    private val missionDescStr = arrayOf("", "", "")
+    private val missionProgStr = arrayOf("", "", "")
+    private var missionTimerStr = ""
+    private var missionTimerMin = -1
     private var rankIdx = 0
 
     // ---- Tages-Challenge
@@ -232,6 +241,7 @@ class Game(context: Context) : World.Listener {
     /** Alle festen Texte in der aktuellen Sprache setzen. */
     private fun applyTexts() {
         gfx.applyLanguage(L.cur)
+        bMissions.label = L.t(L.MISSIONS)
         bShop.label = L.t(L.SHOP); bAch.label = L.t(L.ACHIEVEMENTS); bStats.label = L.t(L.STATS); bSettings.label = L.t(L.OPTIONS)
         bChallenge.label = L.t(L.CHALLENGE); bWheel.label = L.t(L.WHEEL)
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
@@ -308,13 +318,13 @@ class Game(context: Context) : World.Listener {
         val pcy = playCY()
         place(bPlay, cx - 160f, pcy - 160f, 320f, 320f)
         place(bEndless, cx - 240f, pcy + 330f, 480f, 110f)
-        place(bChallenge, cx - 340f, pcy + 465f, 330f, 105f)
-        place(bWheel, cx + 10f, pcy + 465f, 330f, 105f)
+        place(bChallenge, 40f, pcy + 465f, 293f, 105f)
+        place(bWheel, 353f, pcy + 465f, 293f, 105f)
+        place(bChest, 666f, pcy + 465f, 293f, 105f)
         place(bSpin, cx - 290f, wheelCY() + 420f, 580f, 140f)
         val ny = H - 300f
-        val xs = floatArrayOf(155f, 385f, 615f, 845f)
-        val nav = arrayOf(bShop, bAch, bStats, bSettings)
-        for (i in 0 until 4) place(nav[i], xs[i] - 70f, ny, 140f, 140f)
+        val nav = arrayOf(bShop, bMissions, bAch, bStats, bSettings)
+        for (i in 0 until 5) place(nav[i], 100f + i * 200f - 65f, ny, 130f, 130f)
         place(bBack, 40f, 60f, 110f, 110f)
         place(bPause, 40f, 60f, 110f, 110f)
         val py = H * 0.42f
@@ -356,6 +366,10 @@ class Game(context: Context) : World.Listener {
         val next = min(save.levelDone + 1, Levels.COUNT)
         nextStr = L.f(L.LEVEL_N, next)
         dimTitle = L.f(L.DIMENSION, 2)
+        dimTitle3 = L.f(L.DIMENSION, 3)
+        missionsToday()
+        buildMissions()
+        chestLabelMin = -1
         bEndless.label = if (save.best > 0) L.f(L.ENDLESS_BEST, save.best) else L.t(L.ENDLESS)
         achBadge = Achievements.claimableCount(save)
         var r = 0
@@ -378,7 +392,7 @@ class Game(context: Context) : World.Listener {
         levelStr = if (level > 0) L.f(L.LEVEL_N, level) else ""
         progVal = -1
         go(Screen.PLAYING)
-        if (level >= Levels.DIM2_FROM && Levels.dimension(level) == 2) showToast(L.t(L.DIM2_HINT))
+        if (level >= Levels.DIM2_FROM) showToast(L.t(if (Levels.dimension(level) == 3) L.DIM3_HINT else L.DIM2_HINT))
         if (save.shieldStarts > 0) {
             save.shieldStarts--
             save.flush()
@@ -390,6 +404,98 @@ class Game(context: Context) : World.Listener {
     private fun leaveRun() {
         world.reset(0)
         go(if (runLevel > 0) Screen.MAP else Screen.MENU)
+    }
+
+    // ===================================================================== Missionen
+
+    private fun missionsToday() {
+        val d = today()
+        if (save.missionDay != d) {
+            save.missionDay = d
+            save.missionClaimed = 0
+            for (i in 0 until 3) save.missionProg[i] = 0
+            save.flush()
+        }
+        Missions.prepare(d)
+    }
+
+    /** Fortschritt melden. absolute = true: Wert ist ein Höchststand (Endlos-Punkte). */
+    private fun mission(type: Int, amount: Int, absolute: Boolean = false) {
+        missionsToday()
+        for (k in 0 until 3) {
+            if (Missions.type[k] != type) continue
+            val g = Missions.goal[k]
+            val before = save.missionProg[k]
+            val now = if (absolute) max(before, amount) else before + amount
+            save.missionProg[k] = min(now, g)
+            if (before < g && save.missionProg[k] >= g) {
+                sound.play(Sound.CROWN)
+                showToast(L.t(L.T_MISSION))
+            }
+        }
+        buildMissions()
+    }
+
+    private fun buildMissions() {
+        var badge = 0
+        for (k in 0 until 3) {
+            missionDescStr[k] = Missions.desc(k)
+            missionProgStr[k] = "${save.missionProg[k]} / ${Missions.goal[k]}"
+            if (save.missionProg[k] >= Missions.goal[k] && save.missionClaimed and (1 shl k) == 0) badge++
+        }
+        missionBadge = badge
+    }
+
+    private fun missionTap(y: Float) {
+        for (k in 0 until 3) {
+            val top = 260f + k * 300f
+            if (y < top || y > top + 270f) continue
+            if (save.missionProg[k] >= Missions.goal[k] && save.missionClaimed and (1 shl k) == 0) {
+                val r = Missions.REWARD[k]
+                save.missionClaimed = save.missionClaimed or (1 shl k)
+                save.missionsDone++
+                save.stars += r
+                save.flush()
+                buildMissions()
+                sound.play(Sound.BONUS)
+                sound.vibrate(40)
+                showToast(L.f(L.T_PLUS_STARS, r, L.stars(r)))
+            }
+        }
+    }
+
+    // ===================================================================== Truhe
+
+    private fun chestReady() = System.currentTimeMillis() >= save.chestReady
+
+    private fun updateChestLabel() {
+        if (chestReady()) {
+            if (chestLabelMin != 0) { chestLabelMin = 0; bChest.label = L.t(L.CHEST) }
+            return
+        }
+        val mins = ((save.chestReady - System.currentTimeMillis()) / 60000L).toInt() + 1
+        if (mins != chestLabelMin) {
+            chestLabelMin = mins
+            bChest.label = "${mins / 60}:${(mins % 60).toString().padStart(2, '0')} h"
+        }
+    }
+
+    private fun openChest() {
+        if (!chestReady()) {
+            val mins = ((save.chestReady - System.currentTimeMillis()) / 60000L).toInt() + 1
+            sound.play(Sound.ERROR)
+            showToast(L.f(L.T_CHEST_WAIT, mins / 60, mins % 60))
+            return
+        }
+        val r = 8 + (Math.random() * 13).toInt()
+        save.stars += r
+        save.chests++
+        save.chestReady = System.currentTimeMillis() + 4L * 60L * 60L * 1000L
+        save.flush()
+        chestLabelMin = -1
+        sound.play(Sound.BONUS)
+        sound.vibrate(40)
+        showToast(L.f(L.T_CHEST, r, L.stars(r)))
     }
 
     // ===================================================================== Glücksrad
@@ -421,6 +527,7 @@ class Game(context: Context) : World.Listener {
             else -> if (save.shieldStarts < Skins.SHIELD_MAX) save.shieldStarts++ else save.stars += 30
         }
         save.spins++
+        mission(Missions.SPIN, 1)
         save.flush()
         val cur = ((wheelAngle % 360f) + 360f) % 360f
         val desired = ((-prize * 45f) % 360f + 360f) % 360f
@@ -476,14 +583,21 @@ class Game(context: Context) : World.Listener {
 
     override fun onCapture(perfect: Boolean, streak: Int) {
         sound.play(Sound.CAPTURE, 1f + 0.1f * min(streak, 6))
+        mission(Missions.PLANETS, 1)
+        if (perfect) mission(Missions.PERFECTS, 1)
+        if (runLevel == 0) mission(Missions.ENDLESS, world.score, true)
         if (perfect) sound.play(Sound.PERFECT, 1f, 0.8f)
         sound.vibrate(15)
     }
 
-    override fun onStar() = sound.play(Sound.STAR)
+    override fun onStar() {
+        sound.play(Sound.STAR)
+        mission(Missions.STARS, 1)
+    }
 
     override fun onPowerup(type: Int) {
         save.powerups++
+        mission(Missions.POWERUPS, 1)
         sound.play(Sound.POWER)
         sound.vibrate(30)
         showToast(L.t(if (type == World.P_SHIELD) L.T_SHIELD else L.T_MAGNET))
@@ -509,6 +623,7 @@ class Game(context: Context) : World.Listener {
     override fun onGoal() {
         sound.play(Sound.WIN)
         sound.vibrate(80)
+        mission(Missions.LEVELS, 1)
         commitRun()
         firstClear = runLevel > save.levelDone
         levelReward = if (firstClear) Levels.reward(runLevel) else 0
@@ -656,6 +771,7 @@ class Game(context: Context) : World.Listener {
                     Screen.SHOP -> shopTap(x, y)
                     Screen.MAP -> mapTap(x, y)
                     Screen.ACHIEVE -> achTap(x, y)
+                    Screen.MISSIONS -> missionTap(y)
                     else -> {}
                 }
             }
@@ -678,6 +794,7 @@ class Game(context: Context) : World.Listener {
         Screen.SETTINGS -> setBtns
         Screen.MAP, Screen.STATS, Screen.ACHIEVE -> backBtns
         Screen.WHEEL -> wheelBtns
+        Screen.MISSIONS -> backBtns
     }
 
     private fun onButton(id: Int) {
@@ -720,6 +837,8 @@ class Game(context: Context) : World.Listener {
             bChallenge.id -> startRun(0, today() * 7919L + 17L)
             bWheel.id -> go(Screen.WHEEL)
             bSpin.id -> startSpin()
+            bMissions.id -> go(Screen.MISSIONS)
+            bChest.id -> openChest()
             bReset.id -> openDialog(
                 D_RESET, L.t(L.RESET_TITLE),
                 arrayOf(L.t(L.RESET_LINE_1), L.t(L.RESET_LINE_2)), L.t(L.DELETE), L.t(L.CANCEL)
@@ -927,7 +1046,7 @@ class Game(context: Context) : World.Listener {
         if (y + achScroll < achTop || i !in Achievements.list.indices || x < 40f || x > 960f) return
         if (Achievements.done(i, save) && !Achievements.claimed(i, save)) {
             val a = Achievements.list[i]
-            save.achClaimed = save.achClaimed or (1 shl i)
+            save.achClaimed = save.achClaimed or (1L shl i)
             save.stars += a.reward
             save.flush()
             buildAch()
@@ -946,7 +1065,8 @@ class Game(context: Context) : World.Listener {
             "${save.levelDone} / ${Levels.COUNT}", "${save.totalCrowns} / ${Levels.COUNT * 3}",
             save.best.toString(), save.games.toString(), save.planets.toString(), save.perfects.toString(),
             save.bestStreak.toString(), save.starsCollected.toString(), save.powerups.toString(),
-            save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(), if (mins >= 60) L.f(L.TIME_HM, mins / 60, mins % 60) else L.f(L.TIME_M, mins)
+            save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(),
+            save.missionsDone.toString(), save.chests.toString(), if (mins >= 60) L.f(L.TIME_HM, mins / 60, mins % 60) else L.f(L.TIME_M, mins)
         )
     }
 
@@ -975,6 +1095,7 @@ class Game(context: Context) : World.Listener {
             Screen.STATS -> drawStats(c)
             Screen.ACHIEVE -> drawAch(c)
             Screen.WHEEL -> drawWheel(c)
+            Screen.MISSIONS -> drawMissions(c)
         }
 
         if (save.showFps) {
@@ -1095,12 +1216,20 @@ class Game(context: Context) : World.Listener {
         if (save.challengeDay != today()) gfx.circle(c, bChallenge.x + bChallenge.w - 14f, bChallenge.y + 14f, 14f, Gfx.RED)
         else gfx.icon(c, Gfx.I_CHECK, bChallenge.x + bChallenge.w - 18f, bChallenge.y + 18f, 14f, Gfx.GREEN)
         if (freeSpin()) gfx.circle(c, bWheel.x + bWheel.w - 14f, bWheel.y + 14f, 14f, Gfx.RED)
+        updateChestLabel()
+        drawBtn(c, bChest)
+        if (chestReady()) gfx.circle(c, bChest.x + bChest.w - 14f, bChest.y + 14f, 14f, Gfx.RED)
 
-        drawBtn(c, bShop); drawBtn(c, bAch); drawBtn(c, bStats); drawBtn(c, bSettings)
+        drawBtn(c, bShop); drawBtn(c, bMissions); drawBtn(c, bAch); drawBtn(c, bStats); drawBtn(c, bSettings)
+        if (missionBadge > 0) {
+            val bx = bMissions.x + bMissions.w - 18f; val by = bMissions.y + 18f
+            gfx.circle(c, bx, by, 22f, Gfx.RED)
+            gfx.text(c, levelNum[missionBadge], bx, by + 9f, 26f, Color.WHITE)
+        }
         if (achBadge > 0) {
-            val bx = bAch.x + bAch.w - 22f; val by = bAch.y + 22f
-            gfx.circle(c, bx, by, 24f, Gfx.RED)
-            gfx.text(c, levelNum[min(achBadge, Levels.COUNT)], bx, by + 10f, 28f, Color.WHITE)
+            val bx = bAch.x + bAch.w - 18f; val by = bAch.y + 18f
+            gfx.circle(c, bx, by, 22f, Gfx.RED)
+            gfx.text(c, levelNum[min(achBadge, Levels.COUNT)], bx, by + 9f, 26f, Color.WHITE)
         }
         gfx.text(c, "v$VERSION_NAME · Engelcode", cx, H - 30f, 26f, Gfx.DIM, false, alpha = 150)
     }
@@ -1266,12 +1395,12 @@ class Game(context: Context) : World.Listener {
             val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
             gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
-            if (s == 15) {
+            if (s == 15 || s == 20) {
                 // Übergang in die Spiegelwelt
                 val dy = by - r - 150f
-                gfx.glass(c, 120f, dy - 70f, 880f, dy + 60f, 50f, border = 0xFFF15BB5.toInt())
-                gfx.text(c, dimTitle, W / 2f, dy - 12f, 42f, 0xFFF15BB5.toInt(), maxW = 720f)
-                gfx.text(c, L.t(L.DIM_NAMES[1]), W / 2f, dy + 34f, 32f, Color.WHITE, false, maxW = 720f)
+                gfx.glass(c, 120f, dy - 70f, 880f, dy + 60f, 50f, border = if (s == 15) 0xFFF15BB5.toInt() else 0xFF2EE5C8.toInt())
+                gfx.text(c, if (s == 15) dimTitle else dimTitle3, W / 2f, dy - 12f, 42f, if (s == 15) 0xFFF15BB5.toInt() else 0xFF2EE5C8.toInt(), maxW = 720f)
+                gfx.text(c, L.t(L.DIM_NAMES[if (s == 15) 1 else 2]), W / 2f, dy + 34f, 32f, Color.WHITE, false, maxW = 720f)
             }
         }
         for (i in 1..Levels.COUNT) {
@@ -1502,6 +1631,59 @@ class Game(context: Context) : World.Listener {
             gfx.text(c, statLabels[i], 80f, y + 60f, 36f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 560f)
             gfx.text(c, statValues[i], 920f, y + 62f, 42f, Color.WHITE, align = Paint.Align.RIGHT)
         }
+    }
+
+    // ---------------------------------------------------------------- Missionen
+
+    private val missionIcons = intArrayOf(-1, Gfx.I_CHECK, Gfx.I_TARGET, Gfx.I_CROWN, Gfx.I_INFINITY, Gfx.I_SHIELD, Gfx.I_WHEEL)
+
+    private fun drawMissions(c: Canvas) {
+        header(c, L.t(L.MISSIONS))
+        starPill(c, save.stars)
+        var allDone = true
+        for (k in 0 until 3) {
+            val top = 260f + k * 300f
+            val g = Missions.goal[k]
+            val p = save.missionProg[k]
+            val done = p >= g
+            val claimed = save.missionClaimed and (1 shl k) != 0
+            if (!claimed) allDone = false
+            gfx.glass(c, 40f, top, 960f, top + 270f, 40f, border = if (done && !claimed) Gfx.GOLD else Color.WHITE)
+            gfx.circle(c, 135f, top + 105f, 58f, if (done) Gfx.GOLD else Gfx.PANEL2)
+            val ic = missionIcons[Missions.type[k]]
+            if (ic < 0) gfx.starShape(c, 135f, top + 105f, 30f, 0f, if (done) Gfx.BG else Gfx.GOLD)
+            else gfx.icon(c, ic, 135f, top + 105f, 28f, if (done) Gfx.BG else Color.WHITE)
+            gfx.text(c, missionDescStr[k], 225f, top + 95f, 40f, Color.WHITE, align = Paint.Align.LEFT, maxW = 700f)
+            val bw = 470f
+            gfx.roundRect(c, 225f, top + 135f, 225f + bw, top + 155f, 10f, Gfx.PANEL2)
+            gfx.roundRect(c, 225f, top + 135f, 225f + max(20f, bw * p / g), top + 155f, 10f, if (done) Gfx.GOLD else Gfx.ACCENT)
+            gfx.text(c, missionProgStr[k], 715f, top + 155f, 30f, Gfx.DIM, false, Paint.Align.LEFT)
+            when {
+                claimed -> {
+                    gfx.circle(c, 500f, top + 218f, 30f, Gfx.GREEN)
+                    gfx.icon(c, Gfx.I_CHECK, 500f, top + 218f, 16f, Gfx.BG)
+                }
+                done -> {
+                    gfx.roundRect(c, 300f, top + 180f, 700f, top + 252f, 36f, Gfx.GOLD)
+                    gfx.text(c, L.t(L.CLAIM) + "  +" + Missions.REWARD[k], 500f, top + 228f, 34f, Gfx.BG, maxW = 360f)
+                }
+                else -> {
+                    gfx.starShape(c, 470f, top + 214f, 16f, 0f, Gfx.GOLD)
+                    gfx.text(c, "+" + Missions.REWARD[k], 500f, top + 228f, 34f, Gfx.GOLD, align = Paint.Align.LEFT)
+                }
+            }
+        }
+        // Zeit bis zu neuen Missionen
+        val now = System.currentTimeMillis()
+        val off = TimeZone.getDefault().getOffset(now)
+        val minsLeft = (((today() + 1) * 86_400_000L - (now + off)) / 60000L).toInt()
+        if (minsLeft != missionTimerMin) {
+            missionTimerMin = minsLeft
+            missionTimerStr = L.f(L.MISSION_NEW_IN, minsLeft / 60, minsLeft % 60)
+        }
+        val y = 260f + 3 * 300f + 40f
+        if (allDone) gfx.text(c, L.t(L.MISSION_DONE_ALL), W / 2f, y, 36f, Gfx.GREEN, maxW = 880f)
+        gfx.text(c, missionTimerStr, W / 2f, y + 60f, 32f, Gfx.DIM, false, maxW = 880f)
     }
 
     // ---------------------------------------------------------------- Glücksrad

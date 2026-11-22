@@ -29,6 +29,14 @@ object Skins {
     const val BIGBANG = 22
     const val PRISM = 23
     const val MIRROR = 24
+    const val FLOWER = 25
+    const val DONUT = 26
+    const val SHURIKEN = 27
+    const val CLOCK = 28
+    const val BEE = 29
+    const val GHOST = 30
+    const val ORB = 31
+    const val VOID = 32
 
     // Spur-Stile
     const val T_LINE = 0
@@ -46,6 +54,10 @@ object Skins {
     const val T_COMET = 12
     const val T_PIXEL = 13
     const val T_GALAXY = 14
+    const val T_WAVES = 15
+    const val T_CONFETTI = 16
+    const val T_SHADOW = 17
+    const val T_LASER = 18
 
     /**
      * reqLevel / reqCrowns: muss zusätzlich zum Preis erreicht sein.
@@ -102,7 +114,15 @@ object Skins {
         Skin(n("Pulsar", "Pulsar", "Пульсар"), 6500, c(0xFFFFFFFF), c(0xFF7FE7FF), PULSAR, c(0xFF7FE7FF), reqLevel = 120),
         Skin(n("Urknall", "Big Bang", "Большой взрыв"), 0, c(0xFFFFFFFF), c(0xFFFFD166), BIGBANG, reqLevel = 150),
         Skin(n("Prisma", "Prism", "Призма"), 7500, c(0xFFFFFFFF), c(0xFFF15BB5), PRISM, c(0xFF4CC9F0), reqLevel = 170),
-        Skin(n("Spiegel", "Mirror", "Зеркало"), 0, c(0xFFE0F7FF), c(0xFF9BE564), MIRROR, c(0xFF7B61FF), reqLevel = 200)
+        Skin(n("Spiegel", "Mirror", "Зеркало"), 0, c(0xFFE0F7FF), c(0xFF9BE564), MIRROR, c(0xFF7B61FF), reqLevel = 200),
+        Skin(n("Blume", "Flower", "Цветок"), 800, c(0xFFFF8FB1), c(0xFFFF5C8A), FLOWER, c(0xFFFFD166)),
+        Skin(n("Donut", "Donut", "Пончик"), 1000, c(0xFFFF8FB1), c(0xFFFFB3C7), DONUT),
+        Skin(n("Biene", "Bee", "Пчела"), 1200, c(0xFFFFD166), c(0xFFFFB703), BEE, reqLevel = 25),
+        Skin(n("Shuriken", "Shuriken", "Сюрикен"), 1600, c(0xFFCFD8DC), c(0xFF4CC9F0), SHURIKEN, reqLevel = 45),
+        Skin(n("Uhr", "Clock", "Часы"), 2400, c(0xFFFFF3C4), c(0xFFFFD166), CLOCK, c(0xFFFFB703), reqCrowns = 100),
+        Skin(n("Geist", "Ghost", "Призрак"), 3000, c(0xFFE8FBFF), c(0xFF7FE7FF), GHOST, reqLevel = 140),
+        Skin(n("Kristallkugel", "Crystal ball", "Хрустальный шар"), 6000, c(0xFFB388FF), c(0xFF7FE7FF), ORB, c(0xFF4CC9F0), reqCrowns = 300),
+        Skin(n("Leere", "Void", "Пустота"), 0, c(0xFF05070D), c(0xFF2EE5C8), VOID, c(0xFF2EE5C8), reqLevel = 250)
     )
 
     val trails = arrayOf(
@@ -121,7 +141,11 @@ object Skins {
         Trail(n("Herzen", "Hearts", "Сердечки"), 1600, c(0xFFFF5C8A), T_HEARTS, reqLevel = 60),
         Trail(n("Kometenschweif", "Comet tail", "Хвост кометы"), 2000, c(0xFF7FE7FF), T_COMET, reqCrowns = 160),
         Trail(n("Pixel", "Pixels", "Пиксели"), 2700, 0, T_PIXEL, reqLevel = 95),
-        Trail(n("Galaxie", "Galaxy", "Галактика"), 4500, c(0xFFB388FF), T_GALAXY, reqLevel = 130)
+        Trail(n("Galaxie", "Galaxy", "Галактика"), 4500, c(0xFFB388FF), T_GALAXY, reqLevel = 130),
+        Trail(n("Wellen", "Waves", "Волны"), 1200, c(0xFF4CC9F0), T_WAVES),
+        Trail(n("Konfetti", "Confetti", "Конфетти"), 1500, 0, T_CONFETTI, reqLevel = 30),
+        Trail(n("Schatten", "Shadow", "Тень"), 2500, c(0xFF2EE5C8), T_SHADOW, reqLevel = 205),
+        Trail(n("Laser", "Laser", "Лазер"), 3000, c(0xFFFF1744), T_LASER, reqCrowns = 250)
     )
 
     const val REVIVE_PRICE = 120

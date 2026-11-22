@@ -470,7 +470,7 @@ class World(private val gfx: Gfx) {
             if (d < p.r + CAPTURE) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2 * (if (dim == 2) -0.55f else 1f)
+                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; else -> 1f })
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -493,7 +493,8 @@ class World(private val gfx: Gfx) {
         }
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
-        if (sp > 0.001f) { vx = vx / sp * FLY_SPEED; vy = vy / sp * FLY_SPEED }
+        val speed = if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED
+        if (sp > 0.001f) { vx = vx / sp * speed; vy = vy / sp * speed }
         plX += vx * h; plY += vy * h
 
         if (plX < -60f || plX > W + 60f ||
@@ -603,6 +604,10 @@ class World(private val gfx: Gfx) {
             else {
                 gfx.drawPlanet(c, p.type, p.colorIdx, p.x, p.y, p.r, reduced)
                 if (dim == 2) gfx.ring(c, p.x, p.y, p.r + 4f, Color.WHITE, 3f, 150 + (sin(time * 4f + p.phase) * 80f).toInt())
+                if (dim == 3) {
+                    gfx.circle(c, p.x, p.y, p.r, Color.BLACK, 140)
+                    gfx.ring(c, p.x, p.y, p.r, 0xFF2EE5C8.toInt(), 3f, 160 + (sin(time * 2f + p.phase) * 60f).toInt())
+                }
             }
             if (p.goal) drawGoalMarker(c, p)
         }
@@ -670,7 +675,7 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, if (dim == 2) gfx.nebula2[i] else gfx.nebula[i], nebX[i], y, 720f)
+                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
             }
         }
         drawStarfield(c)
