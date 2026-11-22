@@ -20,8 +20,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 12
-        const val VERSION_NAME = "0.9.5"
+        const val VERSION_CODE = 13
+        const val VERSION_NAME = "0.9.6"
         const val W = 1000f
 
         // Knopf-Stile
@@ -1626,7 +1626,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             save.best.toString(), save.games.toString(), save.planets.toString(), save.perfects.toString(),
             save.bestStreak.toString(), save.starsCollected.toString(), save.powerups.toString(),
             save.revivesUsed.toString(), save.challengesDone.toString(), save.spins.toString(),
-            save.missionsDone.toString(), save.chests.toString(), if (mins >= 60) L.f(L.TIME_HM, mins / 60, mins % 60) else L.f(L.TIME_M, mins)
+            save.missionsDone.toString(), save.chests.toString(), save.redirects.toString(), save.skips.toString(), if (mins >= 60) L.f(L.TIME_HM, mins / 60, mins % 60) else L.f(L.TIME_M, mins)
         )
     }
 
@@ -2260,11 +2260,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun drawStats(c: Canvas) {
         header(c, L.t(L.STATS))
-        for (i in statLabels.indices) {
-            val y = 235f + i * 108f
-            gfx.glass(c, 40f, y, 960f, y + 92f, 30f)
-            gfx.text(c, statLabels[i], 80f, y + 60f, 36f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 560f)
-            gfx.text(c, statValues[i], 920f, y + 62f, 42f, Color.WHITE, align = Paint.Align.RIGHT)
+        val n = min(statLabels.size, statValues.size)
+        val step = min(108f, (H - 260f) / n)
+        val k = step / 108f
+        for (i in 0 until n) {
+            val y = 235f + i * step
+            gfx.glass(c, 40f, y, 960f, y + 92f * k, 30f * k)
+            gfx.text(c, statLabels[i], 80f, y + 60f * k, 36f * k, Gfx.DIM, false, Paint.Align.LEFT, maxW = 560f)
+            gfx.text(c, statValues[i], 920f, y + 62f * k, 42f * k, Color.WHITE, align = Paint.Align.RIGHT)
         }
     }
 
