@@ -17,4 +17,49 @@ object Platform {
     fun showInstall() {
         try { js("if (window.orbitShowInstall) window.orbitShowInstall()") } catch (_: Throwable) {}
     }
+
+    fun http(method: String, url: String, body: String?, cb: (String?) -> Unit) {
+        try {
+            val init: dynamic = js("({})")
+            init.method = method
+            if (body != null) { init.body = body; init.headers = js("({'Content-Type':'application/json'})") }
+            val f: dynamic = js("fetch")
+            f(url, init).then({ r: dynamic ->
+                if (r.ok as Boolean) r.text().then({ t: dynamic -> cb(t as String) }) else cb(null)
+                null
+            }, { _: dynamic -> cb(null) })
+        } catch (_: Throwable) { cb(null) }
+    }
+
+    fun drain() {}
+
+    fun askText(title: String, current: String, maxLen: Int, cb: (String?) -> Unit) {
+        val r = window.prompt(title, current) ?: return
+        cb(r.take(maxLen))
+    }
+
+    fun prefsExport(): String {
+        val ls = kotlinx.browser.localStorage
+        val sb = StringBuilder("{")
+        var first = true
+        for (i in 0 until ls.length) {
+            val k = ls.key(i) ?: continue
+            if (!k.startsWith("orbit.")) continue
+            val v = ls.getItem(k) ?: continue
+            if (!first) sb.append(','); first = false
+            sb.append(Json.q(k.removePrefix("orbit."))).append(':').append(Json.q(v))
+        }
+        return sb.append('}').toString()
+    }
+
+    fun prefsImport(data: String) {
+        val m = Json.map(Json.parse(data))
+        if (m.isEmpty()) return
+        val ls = kotlinx.browser.localStorage
+        val old = (0 until ls.length).mapNotNull { ls.key(it) }.filter { it.startsWith("orbit.") }
+        for (k in old) ls.removeItem(k)
+        for ((k, v) in m) ls.setItem("orbit.$k", Json.str(v))
+    }
+
+    fun restart() { window.location.reload() }
 }

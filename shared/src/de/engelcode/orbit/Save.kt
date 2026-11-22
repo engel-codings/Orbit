@@ -5,6 +5,22 @@ import android.content.Context
 /** Spielstand und Einstellungen (bleiben bei Updates erhalten). */
 class Save(context: Context) {
 
+    companion object {
+        private val LONGS = setOf("achClaimedL", "challengeDay", "chestReady", "lastDay", "missionDay", "ownedSkinsL", "wheelDay", "tt0", "tt1", "tt2", "tt3")
+        /** Datentyp eines gespeicherten Wertes (für den Cloud-Speicher). */
+        fun typeOf(k: String, v: String): Char = when {
+            k in LONGS -> 'l'
+            k == "playTime" -> 'f'
+            k == "crowns" -> 's'
+            v == "true" || v == "false" -> 'b'
+            v.toIntOrNull() != null -> 'i'
+            v.toLongOrNull() != null -> 'l'
+            v.toFloatOrNull() != null -> 'f'
+            else -> 's'
+        }
+    }
+
+
     private val p = context.getSharedPreferences("orbit", Context.MODE_PRIVATE)
 
     // Fortschritt

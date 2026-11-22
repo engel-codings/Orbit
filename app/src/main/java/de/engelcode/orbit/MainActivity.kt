@@ -13,6 +13,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Platform.activity = this
+        CrashGuard.init(this)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         window.addFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN or
@@ -36,6 +38,16 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (!gameView.onBack()) super.onBackPressed()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        CrashGuard.setAlive(true)
+    }
+
+    override fun onPause() {
+        CrashGuard.setAlive(false)
+        super.onPause()
     }
 
     override fun onDestroy() {

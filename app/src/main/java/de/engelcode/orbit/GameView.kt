@@ -65,6 +65,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         thread = null
     }
 
+    private var infoT = 0f
+
     override fun run() {
         var last = System.nanoTime()
         while (running) {
@@ -74,7 +76,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             if (dt > 0.05f) dt = 0.05f
 
             val canvas = try {
-                if (Build.VERSION.SDK_INT >= 26) holder.lockHardwareCanvas() else holder.lockCanvas()
+                if (Build.VERSION.SDK_INT >= 26 && !CrashGuard.softRender) holder.lockHardwareCanvas() else holder.lockCanvas()
             } catch (_: Exception) {
                 null
             }
@@ -84,9 +86,16 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             }
             try {
                 synchronized(game) {
-                    game.update(dt)
-                    game.draw(canvas)
+                    try {
+                        Platform.drain()
+                        game.update(dt)
+                        game.draw(canvas)
+                    } catch (e: Throwable) {
+                        CrashGuard.caught(e)
+                    }
                 }
+                infoT += dt
+                if (infoT > 3f) { infoT = 0f; CrashGuard.info = game.debugInfo(); CrashGuard.saveInfo() }
             } finally {
                 try { holder.unlockCanvasAndPost(canvas) } catch (_: Exception) {}
             }
@@ -97,7 +106,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val a = event.actionMasked
         val i = event.actionIndex
-        synchronized(game) { game.onTouch(a, event.getX(i), event.getY(i)) }
+        synchronized(game) { try { game.onTouch(a, event.getX(i), event.getY(i)) } catch (e: Throwable) { CrashGuard.caught(e) } }
         return true
     }
 }

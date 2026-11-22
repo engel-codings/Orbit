@@ -158,6 +158,63 @@ object L {
         a("Alles ist schneller", "Everything is faster", "Всё быстрее")
     )
     val ENDLESS_TITLE = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ ИГРЫ")
+    val ONLINE = a("ONLINE", "ONLINE", "ОНЛАЙН")
+    val LEADERBOARD = a("BESTENLISTE", "LEADERBOARD", "ТАБЛИЦА ЛИДЕРОВ")
+    val LB_TABS = arrayOf(a("LEVEL", "LEVEL", "УРОВЕНЬ"), a("ENDLOS", "ENDLESS", "БЕСКОНЕЧНО"), a("SIEGE", "WINS", "ПОБЕДЫ"))
+    val VS_QUICK = a("1v1 SCHNELLSPIEL", "1v1 QUICK MATCH", "1 НА 1: БЫСТРАЯ ИГРА")
+    val FRIENDS = a("FREUNDE", "FRIENDS", "ДРУЗЬЯ")
+    val ACCOUNT = a("KONTO", "ACCOUNT", "АККАУНТ")
+    val LOGIN = a("ANMELDEN", "LOG IN", "ВОЙТИ")
+    val REGISTER = a("REGISTRIEREN", "REGISTER", "РЕГИСТРАЦИЯ")
+    val LOGOUT = a("ABMELDEN", "LOG OUT", "ВЫЙТИ")
+    val RENAME = a("NAME ÄNDERN", "CHANGE NAME", "СМЕНИТЬ ИМЯ")
+    val ASK_NAME = a("Benutzername (3–16 Zeichen)", "Username (3–16 characters)", "Имя пользователя (3–16 символов)")
+    val ASK_NEW_NAME = a("Neuer Benutzername", "New username", "Новое имя пользователя")
+    val ASK_PW = a("Passwort (mind. 4 Zeichen)", "Password (at least 4 characters)", "Пароль (минимум 4 символа)")
+    val ASK_FRIEND = a("Benutzername deines Freundes", "Your friend's username", "Имя пользователя друга")
+    val NET_NAME_TAKEN = a("Dieser Name ist schon vergeben", "This name is already taken", "Это имя уже занято")
+    val NET_OFFLINE = a("Keine Verbindung zum Server", "No connection to the server", "Нет связи с сервером")
+    val NET_WRONG = a("Name oder Passwort falsch", "Wrong name or password", "Неверное имя или пароль")
+    val NET_NOT_FOUND = a("Spieler nicht gefunden", "Player not found", "Игрок не найден")
+    val NET_FRIEND_ADDED = a("{0} ist jetzt dein Freund", "{0} is now your friend", "{0} теперь твой друг")
+    val NET_GONE = a("Das Spiel gibt es nicht mehr", "This match no longer exists", "Этой игры больше нет")
+    val NET_NO_ANSWER = a("Keine Antwort auf die Einladung", "No answer to the invitation", "Нет ответа на приглашение")
+    val NET_BAD_NAME = a("Name: 3–16 Buchstaben oder Zahlen", "Name: 3–16 letters or numbers", "Имя: 3–16 букв или цифр")
+    val NET_BAD_PW = a("Passwort: mindestens 4 Zeichen", "Password: at least 4 characters", "Пароль: минимум 4 символа")
+    val NET_LOGIN_NEEDED = a("Melde dich zuerst an", "Please log in first", "Сначала войди в аккаунт")
+    val NET_WELCOME = a("Willkommen, {0}!", "Welcome, {0}!", "Добро пожаловать, {0}!")
+    val NET_RENAMED = a("Neuer Name: {0}", "New name: {0}", "Новое имя: {0}")
+    val NET_LOADING = a("Lade…", "Loading…", "Загрузка…")
+    val NET_CLOUD = a("Spielstand online gespeichert (iPhone & Android)", "Progress saved online (iPhone & Android)", "Прогресс сохранён онлайн (iPhone и Android)")
+    val NET_GUEST = a("Nicht angemeldet", "Not logged in", "Вход не выполнен")
+    val NET_GUEST_INFO = a("Melde dich an für Bestenliste, 1v1 und Freunde", "Log in for leaderboard, 1v1 and friends", "Войди для таблицы лидеров, 1 на 1 и друзей")
+    val NET_PW_HINT = a("Tipp: Benutze kein wichtiges Passwort", "Tip: don't use an important password", "Совет: не используй важный пароль")
+    val NET_LOGGED_OUT = a("Abgemeldet", "Logged out", "Ты вышел из аккаунта")
+    val QUEUE_SEARCH = a("Suche Gegner…", "Searching for opponent…", "Поиск соперника…")
+    val QUEUE_HINT = a("Sobald ein anderer Spieler 1v1 wählt, geht es los", "As soon as another player picks 1v1, it starts", "Игра начнётся, как только другой игрок выберет 1 на 1")
+    val INVITE_WAIT = a("Warte auf {0}…", "Waiting for {0}…", "Ждём {0}…")
+    val INVITE_SENT = a("Einladung gesendet", "Invitation sent", "Приглашение отправлено")
+    val ADD_FRIEND = a("+ FREUND HINZUFÜGEN", "+ ADD FRIEND", "+ ДОБАВИТЬ ДРУГА")
+    val DUEL = a("DUELL", "DUEL", "ДУЭЛЬ")
+    val NET_ON = a("online", "online", "в сети")
+    val NET_OFF = a("offline", "offline", "не в сети")
+    val INVITE_TITLE = a("Duell-Einladung!", "Duel invitation!", "Вызов на дуэль!")
+    val INVITE_TEXT = a("{0} fordert dich heraus", "{0} challenges you", "{0} бросает тебе вызов")
+    val ACCEPT = a("ANNEHMEN", "ACCEPT", "ПРИНЯТЬ")
+    val DECLINE = a("ABLEHNEN", "DECLINE", "ОТКЛОНИТЬ")
+    val REMOVE_FRIEND = a("Freund entfernen?", "Remove friend?", "Удалить друга?")
+    val REMOVE = a("ENTFERNEN", "REMOVE", "УДАЛИТЬ")
+    val VS_YOU = a("DU", "YOU", "ТЫ")
+    val VS_WIN = a("GEWONNEN!", "YOU WIN!", "ПОБЕДА!")
+    val VS_LOSE = a("VERLOREN", "YOU LOSE", "ПОРАЖЕНИЕ")
+    val VS_DRAW = a("UNENTSCHIEDEN", "DRAW", "НИЧЬЯ")
+    val VS_WAITING = a("Warte, bis {0} fertig ist…", "Waiting for {0} to finish…", "Ждём, пока {0} закончит…")
+    val VS_LEFT = a("Gegner hat das Spiel verlassen", "Opponent left the match", "Соперник покинул игру")
+    val VS_RULES = a("Gleiche Strecke – wer mehr Punkte schafft, gewinnt", "Same course – most points wins", "Одна трасса – побеждает тот, у кого больше очков")
+    val VS_AGAIN = a("NOCHMAL", "AGAIN", "ЕЩЁ РАЗ")
+    val NO_FRIENDS = a("Noch keine Freunde – füge welche hinzu!", "No friends yet – add some!", "Друзей пока нет – добавь кого-нибудь!")
+    val RANK_YOU = a("Dein Platz: {0}", "Your rank: {0}", "Твоё место: {0}")
+    val NET_GOOGLE = a("Konto gilt auf iPhone und Android", "Account works on iPhone and Android", "Аккаунт работает на iPhone и Android")
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
@@ -218,13 +275,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 100 neue Level – jetzt 400!", "• 100 new levels – now 400!", "• 100 новых уровней – теперь 400!"),
-        a("• Dimension 5: Frostwelt", "• Dimension 5: Frost world", "• Измерение 5: Ледяной мир"),
-        a("• Dimension 6: Hyperraum", "• Dimension 6: Hyperspace", "• Измерение 6: Гиперпространство"),
-        a("• 10 neue Himmelskörper", "• 10 new celestial bodies", "• 10 новых небесных тел"),
-        a("• 10 neue Skins und 6 neue Spuren", "• 10 new skins and 6 new trails", "• 10 новых скинов и 6 новых следов"),
-        a("• Neue Erfolge und Zeitrennen-Strecke", "• New achievements and time trial course", "• Новые достижения и трасса"),
-        a("• Fehler behoben: Explosionen im Menü", "• Fixed: explosion sounds in the menu", "• Исправлено: звуки взрывов в меню")
+        a("• ONLINE: Konto mit Login & Cloud-Speicher", "• ONLINE: account with login & cloud save", "• ОНЛАЙН: аккаунт со входом и облачным сохранением"),
+        a("• Weltweite Bestenliste (live)", "• Worldwide leaderboard (live)", "• Мировая таблица лидеров (в реальном времени)"),
+        a("• 1v1 gegen echte Spieler", "• 1v1 against real players", "• 1 на 1 против реальных игроков"),
+        a("• Freundesliste und Duell-Einladungen", "• Friends list and duel invitations", "• Список друзей и вызовы на дуэль"),
+        a("• iPhone und Android spielen zusammen", "• iPhone and Android play together", "• iPhone и Android играют вместе"),
+        a("• Absturz-Schutz für ältere Handys", "• Crash protection for older phones", "• Защита от вылетов на старых телефонах")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

@@ -17,11 +17,11 @@ import kotlin.random.Random
  * ORBIT – Bildschirme, Menüs, Shop, Level-Karte, Erfolge, Einstellungen.
  * Die eigentliche Spielwelt steckt in World.kt.
  */
-class Game(context: Context) : World.Listener {
+class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 11
-        const val VERSION_NAME = "0.9.0"
+        const val VERSION_CODE = 12
+        const val VERSION_NAME = "0.9.5"
         const val W = 1000f
 
         // Knopf-Stile
@@ -40,6 +40,8 @@ class Game(context: Context) : World.Listener {
         private const val D_RESET = 2
         private const val D_DAILY = 3
         private const val D_NEWS = 4
+        private const val D_INVITE = 5
+        private const val D_REMOVE = 6
 
         private const val CHALLENGE_GOAL = 15
         private const val CHALLENGE_REWARD = 60
@@ -56,7 +58,7 @@ class Game(context: Context) : World.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -109,7 +111,25 @@ class Game(context: Context) : World.Listener {
     private val bMissions = Btn(38, "", S_ROUND, Gfx.I_LIST)
     private val bChest = Btn(39, "", S_GLASS, Gfx.I_CHEST)
 
-    private val menuBtns = arrayOf(bPlay, bEndless, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bStats, bSettings)
+    private val bOnline = Btn(60, "", S_GLASS, Gfx.I_GLOBE)
+    private val bLogin = Btn(61, "", S_PRIMARY)
+    private val bRegister = Btn(62, "", S_GLASS)
+    private val bRename = Btn(63, "", S_GLASS)
+    private val bLogout = Btn(64, "", S_GLASS)
+    private val bBoard = Btn(65, "", S_GLASS, Gfx.I_TROPHY)
+    private val bQuick = Btn(66, "", S_PRIMARY)
+    private val bFriendsB = Btn(67, "", S_GLASS, Gfx.I_HEART)
+    private val bAddFriend = Btn(68, "", S_PRIMARY)
+    private val bVsAgain = Btn(69, "", S_PRIMARY)
+    private val bVsBack = Btn(70, "", S_GLASS)
+    private val bLb = Array(3) { Btn(71 + it, "", S_INVISIBLE) }
+    private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB)
+    private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB)
+    private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2])
+    private val friendBtns = arrayOf(bBack, bAddFriend)
+    private val vsBtns = arrayOf(bVsAgain, bVsBack)
+
+    private val menuBtns = arrayOf(bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bStats, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
@@ -255,8 +275,13 @@ class Game(context: Context) : World.Listener {
         world.quality = save.gfx
         world.shakeOn = save.shake
         L.set(if (save.lang < 0) L.systemDefault() else save.lang)
+        val np = context.getSharedPreferences("orbitnet", Context.MODE_PRIVATE)
+        Net.init({ np.getString(it, "") ?: "" }, { k, v -> np.edit().putString(k, v).apply() })
+        Net.listener = this
         applyTexts()
     }
+
+    fun debugInfo(): String = "screen=" + screen + " level=" + runLevel + " dim=" + runDim + " fps=" + fpsShown + " vs=" + versus + " gfx=" + save.gfx
 
     private fun reqText(lv: Int, cr: Int) = when {
         lv > 0 -> L.f(L.REQ_LEVEL, lv)
@@ -270,6 +295,12 @@ class Game(context: Context) : World.Listener {
         bMissions.label = L.t(L.MISSIONS)
         bShop.label = L.t(L.SHOP); bAch.label = L.t(L.ACHIEVEMENTS); bStats.label = L.t(L.STATS); bSettings.label = L.t(L.OPTIONS)
         bChallenge.label = L.t(L.CHALLENGE); bWheel.label = L.t(L.WHEEL)
+        bOnline.label = L.t(L.ONLINE)
+        bLogin.label = L.t(L.LOGIN); bRegister.label = L.t(L.REGISTER)
+        bRename.label = L.t(L.RENAME); bLogout.label = L.t(L.LOGOUT)
+        bBoard.label = L.t(L.LEADERBOARD); bQuick.label = L.t(L.VS_QUICK); bFriendsB.label = L.t(L.FRIENDS)
+        bAddFriend.label = L.t(L.ADD_FRIEND); bVsAgain.label = L.t(L.VS_AGAIN); bVsBack.label = L.t(L.ONLINE)
+        for (i in 0 until 3) bLb[i].label = L.t(L.LB_TABS[i])
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
         bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
         bReset.label = L.t(L.RESET_BTN)
@@ -316,7 +347,8 @@ class Game(context: Context) : World.Listener {
             Screen.PLAYING -> if (!world.won) go(Screen.PAUSED)
             Screen.PAUSED -> go(Screen.PLAYING)
             Screen.GAMEOVER, Screen.LEVELDONE -> leaveRun()
-            else -> go(Screen.MENU)
+            Screen.VSRESULT -> if (vsFinal) go(Screen.ONLINE)
+            else -> backFrom()
         }
         sound.play(Sound.CLICK)
         return true
@@ -354,7 +386,19 @@ class Game(context: Context) : World.Listener {
         val cx = W / 2f
         val pcy = playCY()
         place(bPlay, cx - 160f, pcy - 160f, 320f, 320f)
-        place(bEndless, cx - 240f, pcy + 330f, 480f, 110f)
+        place(bEndless, 40f, pcy + 330f, 450f, 110f)
+        place(bOnline, 510f, pcy + 330f, 450f, 110f)
+        place(bLogin, 70f, 410f, 420f, 110f)
+        place(bRegister, 510f, 410f, 420f, 110f)
+        place(bRename, 70f, 410f, 420f, 110f)
+        place(bLogout, 510f, 410f, 420f, 110f)
+        place(bBoard, 70f, 600f, 860f, 150f)
+        place(bQuick, 70f, 790f, 860f, 150f)
+        place(bFriendsB, 70f, 980f, 860f, 150f)
+        place(bAddFriend, 70f, 230f, 860f, 115f)
+        place(bVsAgain, cx - 290f, H * 0.64f, 580f, 135f)
+        place(bVsBack, cx - 290f, H * 0.64f + 160f, 580f, 120f)
+        for (i in 0 until 3) place(bLb[i], 50f + i * 300f, 215f, 300f, 92f)
         place(bChallenge, 40f, pcy + 465f, 293f, 105f)
         place(bWheel, 353f, pcy + 465f, 293f, 105f)
         place(bChest, 666f, pcy + 465f, 293f, 105f)
@@ -396,6 +440,8 @@ class Game(context: Context) : World.Listener {
             Screen.SETTINGS -> layoutSettings()
             Screen.ENDLESS_SEL -> buildEndlessTexts()
             Screen.MENU -> refreshMenuTexts()
+            Screen.LEADER -> { shopScroll = 0f; lbDirty = true; Net.loadBoard(); netT = 0f }
+            Screen.FRIENDS -> { shopScroll = 0f; Net.loadFriends(); netT = 0f }
             else -> {}
         }
     }
@@ -424,7 +470,7 @@ class Game(context: Context) : World.Listener {
         world.captureMul = 1f + 0.08f * save.upg[1]
         world.magnetBonus = 4f * save.upg[2]
         world.aimMul = 1f + 0.4f * save.upg[4]
-        challengeRun = seed != 0L
+        challengeRun = seed != 0L && !versus
         challengeVal = -1
         runLevel = level
         runTime = 0f
@@ -445,7 +491,7 @@ class Game(context: Context) : World.Listener {
             save.redirectHint = true; save.flush()
             showToast(L.t(L.T_REDIRECT_HINT))
         }
-        if (save.shieldStarts > 0) {
+        if (save.shieldStarts > 0 && !versus) {
             save.shieldStarts--
             save.flush()
             world.shield = true
@@ -454,6 +500,7 @@ class Game(context: Context) : World.Listener {
     }
 
     private fun leaveRun() {
+        if (versus) { Net.report(world.score, true); go(Screen.VSRESULT); return }
         world.reset(0)
         val tt = ttCourse >= 0
         ttCourse = -1
@@ -565,6 +612,267 @@ class Game(context: Context) : World.Listener {
             gfx.text(c, L.t(L.TT_NAMES[k]), x + 107f, y + 112f, 27f, if (open) Color.WHITE else Gfx.DIM, maxW = 195f)
             gfx.text(c, ttInfoStr[k], x + 107f, y + 155f, 22f, Gfx.DIM, false, maxW = 195f)
             gfx.text(c, ttBestStr[k], x + 107f, y + 198f, 21f, if (open) Gfx.GOLD else Gfx.DIM, false, maxW = 195f)
+        }
+    }
+
+    // ===================================================================== Online
+
+    private var versus = false
+    private var vsFinal = false
+    private var vsTitle = ""
+    private var vsReward = 0
+    private var vsCol = Color.WHITE
+    private var queueInvite = false
+    private var invPending = false
+    private var invFrom = ""
+    private var invMid = ""
+    private var invName = ""
+    private var remPid = ""
+    private var lbTab = 0
+    private var lbDirty = true
+    private var lbList: List<Net.Entry> = emptyList()
+    private var myRank = 0
+    private var netT = 0f
+    private var cloudT = 0f
+    private var cloudSig = ""
+    private var oppVal = -1
+    private var oppDeadShown = false
+    private var oppStr = ""
+    private val LB_TOP = 345f
+    private val LB_STEP = 112f
+    private val FR_TOP = 380f
+    private val FR_STEP = 150f
+
+    private fun clampList(v: Float, n: Int, top: Float, step: Float): Float {
+        val content = top + n * step + 220f
+        return v.coerceIn(0f, max(0f, content - H))
+    }
+
+    private fun backFrom() {
+        when (screen) {
+            Screen.LEADER, Screen.FRIENDS -> go(Screen.ONLINE)
+            Screen.QUEUE -> { Net.leaveQueue(); Net.cancelInvite(); go(if (queueInvite) Screen.FRIENDS else Screen.ONLINE) }
+            else -> go(Screen.MENU)
+        }
+    }
+
+    private fun askCreds(register: Boolean) {
+        Platform.askText(L.t(L.ASK_NAME), "", 16) { n ->
+            if (n == null) return@askText
+            if (!Net.validName(n)) { showToast(L.t(L.NET_BAD_NAME)); return@askText }
+            Platform.askText(L.t(L.ASK_PW) + (if (register) " – " + L.t(L.NET_PW_HINT) else ""), "", 32) { pw ->
+                if (pw == null) return@askText
+                if (pw.length < 4) { showToast(L.t(L.NET_BAD_PW)); return@askText }
+                val done: (Boolean) -> Unit = { ok -> if (ok) showToast(L.f(L.NET_WELCOME, Net.name)) }
+                if (register) Net.register(n, pw, done) else Net.login(n, pw, done)
+            }
+        }
+    }
+
+    private fun updateOnline(dt: Float) {
+        if (invPending && dialog == D_NONE && screen != Screen.PLAYING && screen != Screen.PAUSED &&
+            screen != Screen.VSRESULT && screen != Screen.QUEUE) {
+            invPending = false
+            openDialog(D_INVITE, L.t(L.INVITE_TITLE), arrayOf(L.f(L.INVITE_TEXT, invName)), L.t(L.ACCEPT), L.t(L.DECLINE))
+        }
+        netT += dt
+        if (screen == Screen.LEADER && netT > 5f) { netT = 0f; Net.loadBoard() }
+        if (screen == Screen.FRIENDS && netT > 8f) { netT = 0f; Net.loadFriends() }
+        if (Net.loggedIn && screen != Screen.PLAYING) {
+            cloudT += dt
+            if (cloudT > 20f) {
+                cloudT = 0f
+                val sig = "${save.stars}_${save.levelDone}_${save.totalCrowns}_${save.best}_${save.games}_${save.ownedSkins}_${save.ownedTrails}"
+                if (sig != cloudSig) { cloudSig = sig; Net.pushProfile(); Net.pushSave() }
+            }
+        }
+    }
+
+    private fun finishVersus() {
+        vsFinal = true
+        val me = world.score
+        val op = Net.oppScore
+        val left = !Net.oppDead
+        val won = left || me > op
+        val draw = !left && me == op
+        vsReward = if (draw) 20 else if (won) 40 else 10
+        vsTitle = when { draw -> L.t(L.VS_DRAW); won -> L.t(L.VS_WIN); else -> L.t(L.VS_LOSE) }
+        vsCol = if (draw) Gfx.GOLD else if (won) Gfx.GREEN else Gfx.RED
+        save.stars += vsReward
+        save.flush()
+        Net.result(won, draw)
+        Net.endMatch()
+        versus = false
+        sound.play(if (won) Sound.WIN else Sound.ERROR)
+        if (left) showToast(L.t(L.VS_LEFT))
+        cloudT = 99f
+    }
+
+    // Net.Listener
+    override fun netToast(msg: String) = showToast(msg)
+
+    override fun netMatch(mid: String, role: String, seed: Long, opp: String) {
+        Net.startMatch(mid, role, opp)
+        versus = true
+        vsFinal = false
+        oppVal = -1
+        closeDialog()
+        startRun(0, seed, 1)
+        showToast(L.t(L.VS_RULES))
+    }
+
+    override fun netInvite(fromPid: String, name: String, mid: String) {
+        invFrom = fromPid; invMid = mid; invName = name; invPending = true
+        sound.play(Sound.BONUS)
+    }
+
+    override fun netCloudLoaded(data: String) {
+        val m = Json.map(Json.parse(data))
+        val cloudLevel = Json.str(m["levelDone"]).toIntOrNull() ?: 0
+        val cloudStars = Json.str(m["stars"]).toIntOrNull() ?: 0
+        if (cloudLevel > save.levelDone || (cloudLevel == save.levelDone && cloudStars >= save.stars)) {
+            Platform.prefsImport(data)
+            Platform.restart()
+        } else { Net.pushProfile(); Net.pushSave() }
+    }
+
+    override fun netChanged() { lbDirty = true }
+
+    override fun netProfile(): String = "\"best\":" + save.best + ",\"level\":" + save.levelDone + ",\"crowns\":" + save.totalCrowns
+
+    override fun netExport(): String { save.flush(); return Platform.prefsExport() }
+
+    private fun friendTap(x: Float, y: Float) {
+        val yy = y + shopScroll - FR_TOP
+        if (yy < 0f || y < FR_TOP - 20f) return
+        val i = (yy / FR_STEP).toInt()
+        if (i !in Net.friends.indices || yy - i * FR_STEP > FR_STEP - 15f) return
+        val f = Net.friends[i]
+        if (x > 660f) {
+            Net.invite(f)
+            queueInvite = true
+            showToast(L.t(L.INVITE_SENT))
+            go(Screen.QUEUE)
+        } else {
+            remPid = f.pid
+            openDialog(D_REMOVE, L.t(L.REMOVE_FRIEND), arrayOf(f.name), L.t(L.REMOVE), L.t(L.CANCEL))
+        }
+    }
+
+    private fun drawOnline(c: Canvas) {
+        header(c, L.t(L.ONLINE))
+        starPill(c, save.stars)
+        gfx.glass(c, 50f, 230f, 950f, 550f, 44f, border = if (Net.loggedIn) Gfx.GREEN else Color.WHITE)
+        gfx.circle(c, 140f, 320f, 55f, if (Net.loggedIn) Gfx.ACCENT else Gfx.PANEL2)
+        gfx.text(c, if (Net.loggedIn) Net.name.take(1).uppercase() else "?", 140f, 340f, 56f, if (Net.loggedIn) Gfx.BG else Gfx.DIM)
+        gfx.text(c, if (Net.loggedIn) Net.name else L.t(L.NET_GUEST), 220f, 315f, 46f, Color.WHITE, align = Paint.Align.LEFT, maxW = 700f)
+        gfx.text(c, L.t(if (Net.loggedIn) L.NET_CLOUD else L.NET_GUEST_INFO), 220f, 362f, 25f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 700f)
+        for (b in if (Net.loggedIn) onlineInBtns else onlineOutBtns) if (b !== bBack) drawBtn(c, b)
+        gfx.text(c, L.t(L.NET_GOOGLE), W / 2f, 1200f, 26f, Gfx.DIM, false, maxW = 860f)
+        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), W / 2f, 1250f, 30f, Gfx.ACCENT)
+    }
+
+    private fun lbValue(e: Net.Entry) = when (lbTab) { 0 -> e.level; 1 -> e.best; else -> e.wins }
+
+    private fun drawLeader(c: Canvas) {
+        dim(c, 150)
+        if (lbDirty) {
+            lbDirty = false
+            lbList = Net.board.sortedWith(compareByDescending<Net.Entry> { lbValue(it) }.thenByDescending { it.crowns })
+            myRank = lbList.indexOfFirst { it.pid == Net.pid } + 1
+        }
+        c.save()
+        c.clipRect(0f, LB_TOP - 20f, W, H - 150f)
+        for (i in lbList.indices) {
+            val y = LB_TOP + i * LB_STEP - shopScroll
+            if (y > H || y + LB_STEP < LB_TOP - 20f) continue
+            val e = lbList[i]
+            val me = e.pid == Net.pid
+            gfx.glass(c, 50f, y, 950f, y + LB_STEP - 14f, 32f, border = if (me) Gfx.ACCENT else Color.WHITE)
+            val medal = when (i) { 0 -> Gfx.GOLD; 1 -> 0xFFC0C8D2.toInt(); 2 -> 0xFFCD8B4E.toInt(); else -> Gfx.PANEL2 }
+            gfx.circle(c, 115f, y + 49f, 33f, medal)
+            gfx.text(c, levelNum[min(i + 1, Levels.COUNT)], 115f, y + 61f, if (i < 99) 32f else 24f, if (i < 3) Gfx.BG else Color.WHITE)
+            gfx.text(c, e.name, 175f, y + 63f, 36f, if (me) Gfx.ACCENT else Color.WHITE, align = Paint.Align.LEFT, maxW = 560f)
+            gfx.text(c, lbValue(e).toString(), 910f, y + 63f, 38f, Gfx.GOLD, align = Paint.Align.RIGHT)
+        }
+        if (lbList.isEmpty()) gfx.text(c, L.t(L.NET_LOADING), W / 2f, LB_TOP + 120f, 34f, Gfx.DIM)
+        c.restore()
+        gfx.roundRect(c, -10f, -10f, W + 10f, LB_TOP - 20f, 0f, Gfx.BG, 245)
+        drawBtn(c, bBack)
+        gfx.text(c, L.t(L.LEADERBOARD), W / 2f, 132f, 50f, Color.WHITE, maxW = 560f)
+        gfx.glass(c, 50f, 215f, 950f, 307f, 46f)
+        val tb = bLb[lbTab]
+        val sh = tb.shader
+        if (sh != null) gfx.gradRoundRect(c, tb.x + 6f, tb.y + 6f, tb.x + tb.w - 6f, tb.y + tb.h - 6f, 40f, sh)
+        for (i in 0 until 3) gfx.text(c, bLb[i].label, bLb[i].x + 150f, 272f, 30f, if (i == lbTab) Color.WHITE else Gfx.DIM, maxW = 260f)
+        if (Net.loggedIn && myRank > 0) {
+            gfx.glass(c, 50f, H - 140f, 950f, H - 40f, 50f, border = Gfx.ACCENT)
+            gfx.text(c, L.f(L.RANK_YOU, myRank), W / 2f, H - 75f, 36f, Color.WHITE)
+        }
+    }
+
+    private fun drawFriends(c: Canvas) {
+        dim(c, 150)
+        c.save()
+        c.clipRect(0f, FR_TOP - 20f, W, H)
+        val fl = Net.friends
+        for (i in fl.indices) {
+            val y = FR_TOP + i * FR_STEP - shopScroll
+            if (y > H || y + FR_STEP < FR_TOP - 20f) continue
+            val f = fl[i]
+            val on = Net.serverNow > 0L && f.seen > Net.serverNow - 180_000L
+            gfx.glass(c, 50f, y, 950f, y + FR_STEP - 18f, 36f)
+            gfx.circle(c, 125f, y + 66f, 44f, Gfx.ACCENT)
+            gfx.text(c, f.name.take(1).uppercase(), 125f, y + 82f, 44f, Gfx.BG)
+            gfx.circle(c, 158f, y + 98f, 13f, if (on) Gfx.GREEN else Gfx.PANEL2)
+            gfx.text(c, f.name, 195f, y + 62f, 38f, Color.WHITE, align = Paint.Align.LEFT, maxW = 450f)
+            gfx.text(c, L.f(L.LEVEL_N, f.level) + " · " + L.t(if (on) L.NET_ON else L.NET_OFF), 195f, y + 105f, 26f, if (on) Gfx.GREEN else Gfx.DIM, false, Paint.Align.LEFT, maxW = 450f)
+            gfx.roundRect(c, 680f, y + 28f, 920f, y + 106f, 39f, Gfx.ORANGE)
+            gfx.text(c, L.t(L.DUEL), 800f, y + 79f, 30f, Gfx.BG, maxW = 220f)
+        }
+        if (fl.isEmpty()) gfx.text(c, L.t(L.NO_FRIENDS), W / 2f, FR_TOP + 120f, 32f, Gfx.DIM, false, maxW = 860f)
+        c.restore()
+        gfx.roundRect(c, -10f, -10f, W + 10f, FR_TOP - 20f, 0f, Gfx.BG, 245)
+        drawBtn(c, bBack)
+        gfx.text(c, L.t(L.FRIENDS), W / 2f, 132f, 54f, Color.WHITE, maxW = 560f)
+        drawBtn(c, bAddFriend)
+    }
+
+    private fun drawQueue(c: Canvas) {
+        header(c, if (queueInvite) L.t(L.DUEL) else L.t(L.VS_QUICK))
+        val cx = W / 2f; val cy = H * 0.42f
+        for (k in 0 until 3) {
+            val f = ((time * 0.6f + k / 3f) % 1f)
+            gfx.ring(c, cx, cy, 90f + f * 220f, Gfx.ACCENT, 6f, (220 * (1f - f)).toInt())
+        }
+        gfx.circle(c, cx, cy, 80f, Gfx.ACCENT)
+        gfx.icon(c, Gfx.I_TARGET, cx, cy, 36f, Color.WHITE)
+        gfx.text(c, L.t(L.QUEUE_SEARCH), cx, cy + 380f, 48f, Color.WHITE, maxW = 860f)
+        if (!queueInvite) {
+            val sec = Net.queueTime.toInt()
+            gfx.text(c, "${sec / 60}:" + (if (sec % 60 < 10) "0" else "") + "${sec % 60}", cx, cy + 450f, 40f, Gfx.GOLD)
+            gfx.text(c, L.t(L.QUEUE_HINT), cx, cy + 530f, 28f, Gfx.DIM, false, maxW = 860f)
+        } else gfx.text(c, L.t(L.INVITE_SENT), cx, cy + 450f, 32f, Gfx.GOLD, maxW = 860f)
+    }
+
+    private fun drawVsResult(c: Canvas) {
+        dim(c, 190)
+        val cx = W / 2f
+        val top = H * 0.16f
+        gfx.glass(c, 70f, top, 930f, top + 620f, 50f, border = if (vsFinal) vsCol else Color.WHITE)
+        if (vsFinal) gfx.text(c, vsTitle, cx, top + 110f, 64f, vsCol, maxW = 780f)
+        else gfx.text(c, L.f(L.VS_WAITING, Net.oppName), cx, top + 105f, 36f, Gfx.DIM, false, maxW = 780f)
+        gfx.text(c, L.t(L.VS_YOU), 300f, top + 220f, 32f, Gfx.ACCENT, maxW = 300f)
+        gfx.text(c, Net.oppName, 700f, top + 220f, 32f, Gfx.ORANGE, maxW = 330f)
+        gfx.text(c, world.score.toString(), 300f, top + 370f, 120f, Color.WHITE)
+        gfx.text(c, Net.oppScore.toString(), 700f, top + 370f, 120f, if (Net.oppDead || vsFinal) Color.WHITE else Gfx.DIM)
+        gfx.text(c, ":", cx, top + 350f, 90f, Gfx.DIM)
+        if (vsFinal) {
+            val r = "+$vsReward"
+            val tw = gfx.textWidth(r, 46f)
+            gfx.starShape(c, cx - tw / 2f - 30f, top + 505f, 22f, 0f, Gfx.GOLD)
+            gfx.text(c, r, cx + 10f, top + 522f, 46f, Gfx.GOLD)
+            drawBtn(c, bVsAgain); drawBtn(c, bVsBack)
         }
     }
 
@@ -804,6 +1112,7 @@ class Game(context: Context) : World.Listener {
         sound.play(Sound.DEATH)
         sound.vibrate(160)
         commitRun()
+        if (versus) { Net.report(world.score, true); go(Screen.VSRESULT); return }
         if (ttCourse >= 0) {
             ttTime += 5f
             showToast(L.t(L.TT_PENALTY))
@@ -858,11 +1167,14 @@ class Game(context: Context) : World.Listener {
         if (musicTimer <= 0f) { musicTimer = 0.5f; sound.syncMusic() }
         if (toastT > 0f) toastT -= dt
 
+        Net.update(dt, screen != Screen.PLAYING && screen != Screen.PAUSED)
+        updateOnline(dt)
         when (screen) {
             Screen.PAUSED -> {}
             Screen.PLAYING -> {
                 world.update(dt, true)
                 runTime += dt
+                if (versus) Net.report(world.score, false)
                 if (ttCourse >= 0 && winTimer <= 0f) ttTime += dt
                 if (challengeRun && world.captures >= CHALLENGE_GOAL && save.challengeDay != today()) {
                     save.challengeDay = today()
@@ -886,6 +1198,10 @@ class Game(context: Context) : World.Listener {
             Screen.WHEEL -> {
                 world.update(dt, false)
                 updateWheel(dt)
+            }
+            Screen.VSRESULT -> {
+                world.update(dt, false)
+                if (!vsFinal && (Net.oppDead || Net.oppSeenAge > 20f)) finishVersus()
             }
             else -> world.update(dt, false)
         }
@@ -952,11 +1268,13 @@ class Game(context: Context) : World.Listener {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dialog != D_NONE) return
-                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE) return
+                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS) return
                 if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
                 if (dragging) when (screen) {
                     Screen.MAP -> mapScroll = clampMap(scrollStart + (y - downY))
                     Screen.ACHIEVE -> achScroll = clampAch(scrollStart - (y - downY))
+                    Screen.LEADER -> shopScroll = clampList(scrollStart - (y - downY), lbList.size, LB_TOP, LB_STEP)
+                    Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
                     else -> shopScroll = clampShop(scrollStart - (y - downY))
                 }
             }
@@ -974,6 +1292,7 @@ class Game(context: Context) : World.Listener {
                     Screen.ACHIEVE -> achTap(x, y)
                     Screen.MISSIONS -> missionTap(y)
                     Screen.ENDLESS_SEL -> endlessTap(x, y)
+                    Screen.FRIENDS -> friendTap(x, y)
                     else -> {}
                 }
             }
@@ -996,7 +1315,11 @@ class Game(context: Context) : World.Listener {
         Screen.SETTINGS -> setBtns
         Screen.MAP, Screen.STATS, Screen.ACHIEVE -> backBtns
         Screen.WHEEL -> wheelBtns
-        Screen.MISSIONS, Screen.ENDLESS_SEL -> backBtns
+        Screen.MISSIONS, Screen.ENDLESS_SEL, Screen.QUEUE -> backBtns
+        Screen.ONLINE -> if (Net.loggedIn) onlineInBtns else onlineOutBtns
+        Screen.LEADER -> leaderBtns
+        Screen.FRIENDS -> friendBtns
+        Screen.VSRESULT -> { bVsAgain.visible = vsFinal; bVsBack.visible = vsFinal; vsBtns }
     }
 
     private fun onButton(id: Int) {
@@ -1008,7 +1331,27 @@ class Game(context: Context) : World.Listener {
             bAch.id -> go(Screen.ACHIEVE)
             bStats.id -> go(Screen.STATS)
             bSettings.id -> go(Screen.SETTINGS)
-            bBack.id -> go(Screen.MENU)
+            bBack.id -> backFrom()
+            bOnline.id -> go(Screen.ONLINE)
+            bLogin.id -> askCreds(false)
+            bRegister.id -> askCreds(true)
+            bRename.id -> Platform.askText(L.t(L.ASK_NEW_NAME), Net.name, 16) { n ->
+                if (n == null) return@askText
+                if (!Net.validName(n)) { showToast(L.t(L.NET_BAD_NAME)); return@askText }
+                Net.rename(n) { ok -> if (ok) { showToast(L.f(L.NET_RENAMED, Net.name)); Net.loadBoard() } }
+            }
+            bLogout.id -> { Net.logout(); showToast(L.t(L.NET_LOGGED_OUT)) }
+            bBoard.id -> go(Screen.LEADER)
+            bQuick.id, bVsAgain.id -> {
+                if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_LOGIN_NEEDED)); go(Screen.ONLINE) }
+                else { Net.pushProfile(); Net.joinQueue(); queueInvite = false; go(Screen.QUEUE) }
+            }
+            bFriendsB.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_LOGIN_NEEDED)) } else go(Screen.FRIENDS)
+            bAddFriend.id -> Platform.askText(L.t(L.ASK_FRIEND), "", 16) { n -> if (!n.isNullOrBlank()) Net.addFriend(n) }
+            bVsBack.id -> go(Screen.ONLINE)
+            bLb[0].id -> { lbTab = 0; lbDirty = true; shopScroll = 0f }
+            bLb[1].id -> { lbTab = 1; lbDirty = true; shopScroll = 0f }
+            bLb[2].id -> { lbTab = 2; lbDirty = true; shopScroll = 0f }
             bPause.id -> go(Screen.PAUSED)
             bResume.id -> go(Screen.PLAYING)
             bRestart.id -> { commitRun(); startRun(runLevel) }
@@ -1097,6 +1440,8 @@ class Game(context: Context) : World.Listener {
             D_BUY -> if (yes) buy(pendingTab, pendingItem)
             D_RESET -> if (yes) { save.resetProgress(); refreshMenuTexts(); showToast(L.t(L.T_RESET)) }
             D_DAILY -> claimDaily()
+            D_INVITE -> if (yes) Net.acceptInvite(invFrom, invMid) else Net.declineInvite(invFrom)
+            D_REMOVE -> if (yes) Net.removeFriend(remPid)
             else -> {}
         }
     }
@@ -1294,7 +1639,7 @@ class Game(context: Context) : World.Listener {
         c.scale(scale, scale)
 
         when (screen) {
-            Screen.PLAYING, Screen.PAUSED, Screen.GAMEOVER, Screen.LEVELDONE -> world.draw(c, save.skin, save.trail)
+            Screen.PLAYING, Screen.PAUSED, Screen.GAMEOVER, Screen.LEVELDONE, Screen.VSRESULT -> world.draw(c, save.skin, save.trail)
             else -> world.drawBackground(c)
         }
 
@@ -1312,6 +1657,11 @@ class Game(context: Context) : World.Listener {
             Screen.WHEEL -> drawWheel(c)
             Screen.MISSIONS -> drawMissions(c)
             Screen.ENDLESS_SEL -> drawEndlessSel(c)
+            Screen.ONLINE -> drawOnline(c)
+            Screen.LEADER -> drawLeader(c)
+            Screen.FRIENDS -> drawFriends(c)
+            Screen.QUEUE -> drawQueue(c)
+            Screen.VSRESULT -> drawVsResult(c)
         }
 
         if (save.showFps) {
@@ -1428,6 +1778,8 @@ class Game(context: Context) : World.Listener {
 
         gfx.text(c, nextStr, cx, pcy + 290f, 46f, Color.WHITE, maxW = 700f)
         drawBtn(c, bEndless)
+        drawBtn(c, bOnline)
+        if (invPending) gfx.circle(c, bOnline.x + bOnline.w - 14f, bOnline.y + 14f, 14f, Gfx.RED)
         drawBtn(c, bChallenge); drawBtn(c, bWheel)
         if (save.challengeDay != today()) gfx.circle(c, bChallenge.x + bChallenge.w - 14f, bChallenge.y + 14f, 14f, Gfx.RED)
         else gfx.icon(c, Gfx.I_CHECK, bChallenge.x + bChallenge.w - 18f, bChallenge.y + 18f, 14f, Gfx.GREEN)
@@ -1454,6 +1806,15 @@ class Game(context: Context) : World.Listener {
 
     private fun drawHud(c: Canvas) {
         drawBtn(c, bPause)
+        if (versus) {
+            if (Net.oppScore != oppVal || Net.oppDead != oppDeadShown) {
+                oppVal = Net.oppScore; oppDeadShown = Net.oppDead
+                oppStr = Net.oppName + ": " + oppVal + if (oppDeadShown) " ✕" else ""
+            }
+            val tw = min(gfx.textWidth(oppStr, 32f), 520f)
+            gfx.glass(c, W / 2f - tw / 2f - 40f, 300f, W / 2f + tw / 2f + 40f, 375f, 37f, border = if (oppDeadShown) Gfx.RED else Gfx.ORANGE)
+            gfx.text(c, oppStr, W / 2f, 350f, 32f, if (oppDeadShown) Gfx.DIM else Gfx.ORANGE, maxW = 520f)
+        }
         if (world.redirects != redirVal) { redirVal = world.redirects; redirStr = redirVal.toString() }
         gfx.glass(c, 40f, H - 150f, 200f, H - 50f, 50f, border = if (redirVal > 0) Gfx.ACCENT else Color.WHITE)
         gfx.icon(c, Gfx.I_TARGET, 95f, H - 100f, 22f, if (redirVal > 0) Gfx.ACCENT else Gfx.DIM)
