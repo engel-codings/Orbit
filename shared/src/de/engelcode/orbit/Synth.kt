@@ -4,6 +4,7 @@ import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
 
 /**
@@ -31,6 +32,10 @@ object Synth {
         Sound.CROWN -> crown()
         Sound.SHIELD -> shield()
         Sound.MUSIC2 -> music2()
+        Sound.MUSIC3 -> music3()
+        Sound.MUSIC4 -> music4()
+        Sound.EXPLODE -> explode()
+        Sound.BOOST -> boost()
         else -> music()
     }
 
@@ -260,6 +265,97 @@ object Synth {
                 val dt = ((t - j * 0.25) % len + len) % len
                 if (dt < 0.6) s += sin(TAU * arp[j] * dt) * exp(-dt * 7) * att(dt, 0.004) * 0.055
             }
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    private fun explode(): FloatArray {
+        val d = 0.7; val b = buf(d)
+        val rnd = kotlin.random.Random(7)
+        var lp = 0.0
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val n = rnd.nextDouble() * 2 - 1
+            lp += (n - lp) * (0.08 + 0.3 * exp(-t * 8))
+            val boom = sin(TAU * (90 - 50 * t) * t) * exp(-t * 6)
+            b[i] = ((lp * 1.6 + boom * 0.7) * exp(-t * 5) * att(t, 0.002) * 0.6).toFloat()
+        }
+        return b
+    }
+
+    private fun boost(): FloatArray {
+        val d = 0.35; val b = buf(d); var ph = 0.0
+        for (i in b.indices) {
+            val t = i / SR.toDouble(); val k = t / d
+            ph += TAU * (400 + 1400 * k * k) / SR
+            b[i] = ((sin(ph) + 0.3 * sin(ph * 2)) * (1 - k) * att(t) * 0.35).toFloat()
+        }
+        return b
+    }
+
+    /** Ruhige, schwebende Flächen („Nebel“). */
+    private fun music3(): FloatArray {
+        val len = 16.0
+        val b = buf(len)
+        fun q(f: Double) = kotlin.math.round(f * len) / len
+        val chords = arrayOf(
+            doubleArrayOf(220.0, 261.63, 329.63, 392.0),
+            doubleArrayOf(174.61, 220.0, 261.63, 329.63),
+            doubleArrayOf(196.0, 246.94, 293.66, 369.99),
+            doubleArrayOf(164.81, 207.65, 246.94, 329.63)
+        ).map { c -> DoubleArray(4) { q(c[it]) } }
+        val bell = doubleArrayOf(659.25, 783.99, 880.0, 987.77, 1174.66, 987.77, 880.0, 783.99)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            var s = 0.0
+            for (k in 0 until 4) {
+                val local = ((t - k * 4 + 1 + len) % len)
+                if (local < 6.0) {
+                    val env = when {
+                        local < 2.0 -> (1 - kotlin.math.cos(PI * local / 2)) / 2
+                        local > 4.0 -> (1 - kotlin.math.cos(PI * (6 - local) / 2)) / 2
+                        else -> 1.0
+                    }
+                    var p = 0.0
+                    for (n in 0 until 4) p += sin(TAU * chords[k][n] * t + sin(TAU * 0.25 * t) * 0.3)
+                    s += p * 0.03 * env
+                }
+            }
+            val jc = floor(t / 1.0).toInt()
+            for (o in 0..1) {
+                val j = ((jc - o) % 16 + 16) % 16
+                val dt = ((t - j * 1.0) % len + len) % len
+                if (dt < 2.0 && j % 2 == 0) s += sin(TAU * bell[(j / 2) % 8] * dt) * exp(-dt * 2.5) * att(dt, 0.005) * 0.05
+            }
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Schnelles Chiptune-Stück („Arcade“). */
+    private fun music4(): FloatArray {
+        val len = 12.8
+        val b = buf(len)
+        val step = 0.2 // 16tel bei 75 BPM-Viertel ≈ schnelles Gefühl
+        val lead = intArrayOf(0, 4, 7, 12, 7, 4, 0, 4, 5, 9, 12, 9, 7, 4, 2, 4)
+        val roots = doubleArrayOf(130.81, 110.0, 87.31, 98.0)
+        fun sq(x: Double) = if (sin(x) >= 0) 1.0 else -1.0
+        val rnd = kotlin.random.Random(3)
+        val noise = DoubleArray(2000) { rnd.nextDouble() * 2 - 1 }
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val j = floor(t / step).toInt()
+            val dt = t - j * step
+            val bar = (j / 16) % 4
+            val r = roots[bar]
+            var s = 0.0
+            val f = r * 2 * 2.0.pow(lead[j % 16] / 12.0)
+            s += sq(TAU * f * dt) * exp(-dt * 9) * att(dt, 0.002) * 0.045
+            val bf = if (j % 2 == 0) r else r * 2
+            s += sq(TAU * bf / 2 * dt) * exp(-dt * 5) * att(dt, 0.002) * 0.06
+            if (j % 4 == 0) s += sin(TAU * (120 - 300 * dt) * dt) * exp(-dt * 18) * 0.25
+            if (j % 4 == 2) s += noise[(dt * SR).toInt() % 2000] * exp(-dt * 30) * 0.08
             b[i] = s.toFloat()
         }
         return b

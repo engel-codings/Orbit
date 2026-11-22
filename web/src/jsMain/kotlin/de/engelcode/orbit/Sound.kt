@@ -26,7 +26,12 @@ class Sound(context: Context, private val save: Save) {
         const val SHIELD = 13
         const val MUSIC = 14
         const val MUSIC2 = 15
-        const val COUNT = 16
+        const val EXPLODE = 16
+        const val BOOST = 17
+        const val MUSIC3 = 18
+        const val MUSIC4 = 19
+        const val COUNT = 20
+        fun trackId(t: Int) = when (t) { 1 -> MUSIC2; 2 -> MUSIC3; 3 -> MUSIC4; else -> MUSIC }
         private const val MUSIC_VOL = 0.35
 
         private var instance: Sound? = null
@@ -83,7 +88,7 @@ class Sound(context: Context, private val save: Save) {
     fun syncMusic() {
         if (ac == null) return
         val wanted = save.music && !appPaused
-        val track = if (save.musicTrack == 1) MUSIC2 else MUSIC
+        val track = trackId(save.musicTrack)
         if (musicSrc != null && (!wanted || musicPlaying != track)) {
             try { musicSrc.stop() } catch (_: Throwable) {}
             musicSrc = null

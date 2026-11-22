@@ -103,7 +103,7 @@ object Levels {
     fun goalBody(level: Int) = if (level % 10 == 0) section(level) + 2 else B_NONE
 
     /** Anzahl der Planeten bis zum Ziel. */
-    fun planetCount(level: Int) = min(5 + (level - 1) / 3, 40)
+    fun planetCount(level: Int) = min(6 + level / 4, 80)
 
     fun difficulty(level: Int) = min(1.3f, (level - 1) / 85f)
 
@@ -121,4 +121,8 @@ object Levels {
     const val HOLES_FROM = 12
     const val POWERUPS_FROM = 8
     const val METEORS_FROM = 25
+    const val BOOST_FROM = 5
+    const val ROCKS_FROM = 15
+    const val WORM_FROM = 30
+    const val LASER_FROM = 40
 }

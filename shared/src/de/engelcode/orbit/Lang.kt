@@ -151,9 +151,30 @@ object L {
         a("Keine Schwerkraft", "No gravity", "Нет гравитации"),
         a("Sonnenwind treibt dich ab", "Solar wind pushes you", "Солнечный ветер сносит тебя")
     )
-    val ENDLESS_TITLE = a("ENDLOS-MODUS", "ENDLESS MODE", "БЕСКОНЕЧНЫЙ РЕЖИМ")
+    val ENDLESS_TITLE = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ ИГРЫ")
+    val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
+    val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
+    val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
+    val TT_NAMES = arrayOf(a("Kurze Strecke", "Short course", "Короткая трасса"), a("Mittlere Strecke", "Medium course", "Средняя трасса"), a("Lange Strecke", "Long course", "Длинная трасса"))
+    val TT_LEVELS = a("{0} {1} am Stück", "{0} {1} in a row", "{0} {1} подряд")
+    val TT_BEST = a("Bestzeit: {0}", "Best time: {0}", "Лучшее время: {0}")
+    val TT_NONE = a("Noch keine Zeit", "No time yet", "Времени пока нет")
+    val TT_PENALTY = a("+5 Sekunden", "+5 seconds", "+5 секунд")
+    val TT_DONE = a("ZIEL ERREICHT!", "FINISHED!", "ФИНИШ!")
+    val TT_NEW_BEST = a("NEUE BESTZEIT!", "NEW BEST TIME!", "НОВЫЙ РЕКОРД!")
+    val LEVEL_OF = a("LEVEL {0} / {1}", "LEVEL {0} / {1}", "УРОВЕНЬ {0} / {1}")
+    val UPG_NAMES = arrayOf(a("Umlenken", "Redirect", "Смена курса"), a("Fangzone", "Capture zone", "Зона захвата"),
+        a("Magnet-Dauer", "Magnet time", "Время магнита"), a("Sternen-Bonus", "Star bonus", "Бонус звёзд"), a("Zielhilfe", "Aim assist", "Прицел"))
+    val UPG_DESC = arrayOf(
+        a("+1 Umlenkung pro Lauf (im Flug tippen)", "+1 redirect per run (tap in flight)", "+1 смена курса за забег (нажми в полёте)"),
+        a("Planeten fangen dich früher", "Planets catch you earlier", "Планеты ловят тебя раньше"),
+        a("+4 Sekunden Magnet", "+4 seconds of magnet", "+4 секунды магнита"),
+        a("+10 % Sterne pro Stufe", "+10% stars per level", "+10 % звёзд за уровень"),
+        a("Längere Ziellinie", "Longer aim line", "Длиннее линия прицела"))
+    val ITEM_UPG = a("{0} – Stufe {1}", "{0} – level {1}", "{0} – уровень {1}")
+    val MAX = a("MAX", "MAX", "МАКС")
     val ENDLESS_LOCKED = a("Erreiche zuerst Level {0}", "Reach level {0} first", "Сначала дойди до уровня {0}")
-    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"))
+    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"), a("Nebel", "Nebula", "Туманность"), a("Arcade", "Arcade", "Аркада"))
     val DIM3_HINT = a("Die Leere: keine Schwerkraft – ziele genau!", "The Void: no gravity – aim precisely!", "Пустота: нет гравитации – целься точно!")
     val DIM2_HINT = a("Spiegelwelt: Planeten stoßen dich ab!", "Mirror world: planets push you away!", "Зеркальный мир: планеты отталкивают тебя!")
 
@@ -190,12 +211,13 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 300 Level: Dimension 4 „Sonnensturm“", "• 300 levels: dimension 4 “Solar storm”", "• 300 уровней: измерение 4 «Солнечная буря»"),
-        a("• Endlos-Modus in jeder Dimension", "• Endless mode in every dimension", "• Бесконечный режим в каждом измерении"),
-        a("• Zweites Musikstück „Puls“", "• Second music track “Pulse”", "• Второй музыкальный трек «Пульс»"),
-        a("• 50 Skins und 24 Spuren", "• 50 skins and 24 trails", "• 50 скинов и 24 следа"),
-        a("• 44 Erfolge", "• 44 achievements", "• 44 достижения"),
-        a("• Grafik-Stufe „Mittel“, neues App-Icon", "• “Medium” graphics, new app icon", "• Графика «Средняя», новая иконка")
+        a("• Alle 300 Level überarbeitet und länger", "• All 300 levels reworked and longer", "• Все 300 уровней переработаны и длиннее"),
+        a("• Planeten überspringen = Sprung-Bonus", "• Skipping planets = skip bonus", "• Пропуск планет = бонус"),
+        a("• Umlenken: im Flug tippen", "• Redirect: tap in flight", "• Смена курса: нажми в полёте"),
+        a("• Boost-Ringe, Asteroiden, Wurmlöcher, Laser", "• Boost rings, asteroids, wormholes, lasers", "• Ускорители, астероиды, червоточины, лазеры"),
+        a("• Explosionen und mehr Action", "• Explosions and more action", "• Взрывы и больше экшена"),
+        a("• Shop: neue Fähigkeiten", "• Shop: new skills", "• Магазин: новые навыки"),
+        a("• Zeitrennen und 4 Musikstücke", "• Time trial and 4 music tracks", "• Гонка на время и 4 трека")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe
@@ -217,7 +239,7 @@ object L {
     val T_CHEST = a("Truhe geöffnet: +{0} {1}!", "Chest opened: +{0} {1}!", "Сундук открыт: +{0} {1}!")
 
     // ------------------------------------------------------------- Shop
-    val TABS = arrayOf(a("SKINS", "SKINS", "СКИНЫ"), a("SPUREN", "TRAILS", "СЛЕДЫ"), a("EXTRAS", "EXTRAS", "БОНУСЫ"))
+    val TABS = arrayOf(a("SKINS", "SKINS", "СКИНЫ"), a("SPUREN", "TRAILS", "СЛЕДЫ"), a("EXTRAS", "EXTRAS", "БОНУСЫ"), a("KÖNNEN", "SKILLS", "НАВЫКИ"))
     val REQ_LEVEL = a("Ab Level {0}", "From level {0}", "С уровня {0}")
     val REQ_CROWNS = a("{0} {1} nötig", "{0} {1} needed", "Нужно {0} {1}")
     val ACTIVE = a("AKTIV", "ACTIVE", "ВЫБРАН")
@@ -261,6 +283,8 @@ object L {
         a("Glücksrad", "Lucky wheel", "Колесо удачи"),
         a("Missionen", "Missions", "Миссии"),
         a("Truhen", "Chests", "Сундуки"),
+        a("Umlenkungen", "Redirects", "Смены курса"),
+        a("Übersprungene Planeten", "Planets skipped", "Пропущено планет"),
         a("Spielzeit", "Play time", "Время игры")
     )
     val TIME_HM = a("{0} h {1} min", "{0} h {1} min", "{0} ч {1} мин")

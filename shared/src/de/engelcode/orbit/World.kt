@@ -27,6 +27,11 @@ class World(private val gfx: Gfx) {
         fun onGoal()
         fun onPowerup(type: Int)
         fun onShieldBreak()
+        fun onSkip(n: Int) {}
+        fun onRedirect() {}
+        fun onBoost() {}
+        fun onWormhole() {}
+        fun onExplosion() {}
     }
 
     companion object {
@@ -69,6 +74,11 @@ class World(private val gfx: Gfx) {
     private class Star { var x = 0f; var y = 0f; var spin = 0f; var active = false }
     private class Hole { var x = 0f; var y = 0f; var spin = 0f; var active = false }
     private class Power { var x = 0f; var y = 0f; var spin = 0f; var type = 0; var active = false }
+    private class Rock { var x = 0f; var y = 0f; var r = 0f; var spin = 0f; var active = false }
+    private class Laser { var y = 0f; var x1 = 0f; var x2 = 0f; var phase = 0f; var active = false }
+    private class Worm { var ax = 0f; var ay = 0f; var bx = 0f; var by = 0f; var spin = 0f; var active = false }
+    private class Ring { var x = 0f; var y = 0f; var spin = 0f; var active = false }
+    private class Comet { var x = 0f; var y = 0f; var vx = 0f; var vy = 0f; var t = 0f; var active = false }
     private class Meteor { var x = 0f; var y = 0f; var vx = 0f; var r = 0f; var spin = 0f; var active = false }
     private class Particle {
         var x = 0f; var y = 0f; var vx = 0f; var vy = 0f
@@ -93,6 +103,24 @@ class World(private val gfx: Gfx) {
     private val particles = Array(MAX_PARTICLES) { Particle() }
     private val powers = Array(MAX_POWER) { Power() }
     private val meteors = Array(MAX_METEORS) { Meteor() }
+
+    private val rocks = Array(30) { Rock() }
+    private val lasers = Array(3) { Laser() }
+    private val worms = Array(2) { Worm() }
+    private val rings = Array(4) { Ring() }
+    private val comets = Array(4) { Comet() }
+    private var cometTimer = 3f
+    private var boostT = 0f
+    private var wormCool = 0f
+
+    // Fähigkeiten (aus Upgrades)
+    var redirects = 1
+    var captureMul = 1f
+    var magnetBonus = 0f
+    var aimMul = 1f
+    var skippedTotal = 0; private set
+    var redirectsUsed = 0; private set
+    var wormsUsed = 0; private set
 
     var shield = false
     var magnetT = 0f; private set
@@ -186,6 +214,12 @@ class World(private val gfx: Gfx) {
         for (h in holes) h.active = false
         for (p in powers) p.active = false
         for (m in meteors) m.active = false
+        for (r in rocks) r.active = false
+        for (l in lasers) l.active = false
+        for (w in worms) w.active = false
+        for (r in rings) r.active = false
+        for (c in comets) c.active = false
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
@@ -319,6 +353,48 @@ class World(private val gfx: Gfx) {
                 break
             }
         }
+        // Neue Elemente: Boost-Ring, Asteroiden, Wurmloch, Laser (stufenweise freigeschaltet)
+        if (!isGoal) {
+            val lv = if (level > 0) level else genCount
+            val my = (lastGenY + y) / 2f
+            val mx = (lastGenX + x) / 2f
+            if (lv >= Levels.BOOST_FROM && rng.nextFloat() < 0.3f) {
+                for (r in rings) if (!r.active) {
+                    r.x = (mx + (rng.nextFloat() - 0.5f) * 300f).coerceIn(90f, W - 90f); r.y = my + (rng.nextFloat() - 0.5f) * 80f
+                    if (dist(r.x, r.y, holeX, holeY) > 180f) r.active = true
+                    break
+                }
+            }
+            val f = rng.nextFloat()
+            if (lv >= Levels.ROCKS_FROM && f < 0.22f + 0.15f * d) {
+                val side = if (mx < W / 2f) 1f else -1f
+                val cx = (mx + side * (200f + rng.nextFloat() * 120f)).coerceIn(80f, W - 80f)
+                val n = 3 + rng.nextInt(3)
+                var made = 0
+                for (r in rocks) if (!r.active && made < n) {
+                    r.x = (cx + (rng.nextFloat() - 0.5f) * 170f).coerceIn(30f, W - 30f)
+                    r.y = my + (rng.nextFloat() - 0.5f) * 150f
+                    r.r = 16f + rng.nextFloat() * 14f; r.spin = rng.nextFloat() * 6f
+                    if (dist(r.x, r.y, x, y) > p.r + CAPTURE + 40f && dist(r.x, r.y, lastGenX, lastGenY) > 230f) r.active = true
+                    made++
+                }
+            } else if (lv >= Levels.LASER_FROM && f < 0.42f + 0.1f * d) {
+                for (l in lasers) if (!l.active) {
+                    val left = rng.nextFloat() < 0.5f
+                    l.y = my; l.x1 = if (left) 0f else W * 0.3f; l.x2 = if (left) W * 0.7f else W
+                    l.phase = rng.nextFloat() * 3f
+                    if (kotlin.math.abs(my - y) > p.r + CAPTURE + 30f) l.active = true
+                    break
+                }
+            } else if (lv >= Levels.WORM_FROM && f < 0.55f) {
+                for (w in worms) if (!w.active) {
+                    w.ax = (if (mx < W / 2f) mx + 260f else mx - 260f).coerceIn(90f, W - 90f); w.ay = my
+                    w.bx = (W - w.ax).coerceIn(90f, W - 90f); w.by = y - p.r - 260f
+                    w.active = true
+                    break
+                }
+            }
+        }
         lastGenX = x
         lastGenY = y
         genCount++
@@ -341,6 +417,29 @@ class World(private val gfx: Gfx) {
         current = null
         flyTime = 0f
         listener?.onLaunch()
+        return true
+    }
+
+    /** Fähigkeit „Umlenken“: im Flug zum nächsten Planeten vor dir lenken. */
+    fun redirect(): Boolean {
+        if (current != null || dead || won || redirects <= 0) return false
+        if (flyTime < 0.2f) return false
+        var best: Planet? = null
+        var bd = Float.MAX_VALUE
+        for (p in planets) {
+            if (!p.active || p === lastPlanet || p.y > plY + 60f) continue
+            val d = dist(p.x, p.y, plX, plY)
+            if (d < bd) { bd = d; best = p }
+        }
+        val t = best ?: return false
+        val dx = t.x - plX; val dy = t.y - plY
+        val d = sqrt(dx * dx + dy * dy)
+        vx = dx / d * FLY_SPEED; vy = dy / d * FLY_SPEED
+        flyTime = 0f
+        redirects--
+        redirectsUsed++
+        burst(plX, plY, Gfx.ACCENT, 18, 300f)
+        listener?.onRedirect()
         return true
     }
 
@@ -415,12 +514,22 @@ class World(private val gfx: Gfx) {
                 if (dx * dx + dy * dy < 65f * 65f) {
                     pw.active = false
                     powerupsTaken++
-                    if (pw.type == P_SHIELD) shield = true else magnetT = MAGNET_TIME
+                    if (pw.type == P_SHIELD) shield = true else magnetT = MAGNET_TIME + magnetBonus
                     burst(pw.x, pw.y, if (pw.type == P_SHIELD) Gfx.SHIELD else Gfx.RED, 18, 320f)
                     listener?.onPowerup(pw.type)
                 }
             }
             if (pw.y > camY + worldH + 200f) pw.active = false
+        }
+        for (i in meteors.indices) {
+            val a = meteors[i]; if (!a.active) continue
+            for (j in i + 1 until meteors.size) {
+                val b = meteors[j]; if (!b.active) continue
+                if (dist(a.x, a.y, b.x, b.y) < a.r + b.r) {
+                    explode((a.x + b.x) / 2f, (a.y + b.y) / 2f)
+                    a.active = false; b.active = false
+                }
+            }
         }
         for (m in meteors) if (m.active) {
             m.x += m.vx * dt
@@ -429,6 +538,25 @@ class World(private val gfx: Gfx) {
             if (m.x < -120f) m.x = W + 120f
             if (m.y > camY + worldH + 300f) m.active = false
         }
+
+        if (boostT > 0f) boostT -= dt
+        if (wormCool > 0f) wormCool -= dt
+        for (r in rocks) if (r.active) { r.spin += dt; if (r.y > camY + worldH + 300f) r.active = false }
+        for (l in lasers) if (l.active && l.y > camY + worldH + 300f) l.active = false
+        for (w in worms) if (w.active) { w.spin += dt * 3f; if (w.ay > camY + worldH + 300f && w.by > camY + worldH + 300f) w.active = false }
+        for (r in rings) if (r.active) {
+            r.spin += dt * 2f
+            if (playing && !dead && current == null && dist(r.x, r.y, plX, plY) < 55f) {
+                r.active = false
+                boostT = 1.2f
+                score += 2
+                popT = 0.9f; popX = r.x; popY = r.y - 40f; popStr = "BOOST +2"
+                burst(r.x, r.y, Gfx.GOLD, 20, 400f)
+                listener?.onBoost()
+            }
+            if (r.y > camY + worldH + 300f) r.active = false
+        }
+        updateComets(dt)
 
         // Kamera
         val anchor = current ?: lastPlanet
@@ -472,7 +600,7 @@ class World(private val gfx: Gfx) {
             val dx = p.x - plX; val dy = p.y - plY
             val d2 = dx * dx + dy * dy
             val d = sqrt(d2)
-            if (d < p.r + CAPTURE) { capture(p, d); return true }
+            if (d < p.r + CAPTURE * captureMul) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
                 val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; else -> 1f })
@@ -496,16 +624,40 @@ class World(private val gfx: Gfx) {
             val rr = m.r + 12f
             if (dx * dx + dy * dy < rr * rr) { die(); return false }
         }
+        for (r in rocks) {
+            if (!r.active) continue
+            val rr = r.r + 12f
+            val dx = r.x - plX; val dy = r.y - plY
+            if (dx * dx + dy * dy < rr * rr) { r.active = false; explode(r.x, r.y); die(); return false }
+        }
+        for (l in lasers) {
+            if (!l.active || !laserOn(l)) continue
+            if (kotlin.math.abs(plY - l.y) < 9f && plX > l.x1 && plX < l.x2) { die(); return false }
+        }
+        if (wormCool <= 0f) for (w in worms) {
+            if (!w.active) continue
+            if (dist(w.ax, w.ay, plX, plY) < 45f) {
+                burst(plX, plY, 0xFF7B61FF.toInt(), 20, 350f)
+                plX = w.bx; plY = w.by
+                trailCount = 0
+                wormCool = 0.6f
+                flyTime = 0f
+                wormsUsed++
+                burst(plX, plY, Gfx.ORANGE, 20, 350f)
+                listener?.onWormhole()
+                break
+            }
+        }
         if (dim == 4) ax += windX
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
-        val speed = if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED
+        val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * (if (boostT > 0f) 1.35f else 1f)
         if (sp > 0.001f) { vx = vx / sp * speed; vy = vy / sp * speed }
         plX += vx * h; plY += vy * h
 
         if (plX < -60f || plX > W + 60f ||
-            plY > camY + worldH + 80f || plY < camY - worldH * 0.6f ||
-            flyTime > 2.6f
+            plY > camY + worldH + 80f || plY < camY - worldH * 1.5f ||
+            flyTime > 5f
         ) {
             die()
             return false
@@ -521,15 +673,23 @@ class World(private val gfx: Gfx) {
         orbitTarget = p.r + ORBIT_GAP
         dir = if (rx * vy - ry * vx >= 0f) 1f else -1f
 
+        val skipped = (p.order - (lastPlanet?.order ?: p.order) - 1).coerceAtLeast(0)
         val perfect = d < p.r + 72f
         if (perfect) {
             streak++; perfects++
             if (streak > bestStreak) bestStreak = streak
         } else streak = 0
         val pts = if (perfect) 1 + min(streak, 4) else 1
-        score += pts
+        score += pts + skipped * 2
         captures++
-        if (perfect) {
+        if (skipped > 0) {
+            skippedTotal += skipped
+            popT = 1f; popX = plX; popY = plY - 40f
+            popStr = L.f(L.SKIP_POP, skipped * 2)
+            burst(plX, plY, Gfx.GOLD, 16, 340f)
+            listener?.onSkip(skipped)
+        }
+        if (perfect && skipped == 0) {
             popT = 0.9f; popX = plX; popY = plY - 40f
             popStr = L.f(L.PERFECT_POP, pts)
         }
@@ -541,6 +701,48 @@ class World(private val gfx: Gfx) {
             burst(p.x, p.y, Gfx.GREEN, 50, 600f)
             burst(p.x, p.y, Gfx.GOLD, 40, 500f)
             listener?.onGoal()
+        }
+    }
+
+    private fun laserOn(l: Laser) = ((time + l.phase) % 2.4f) < 1.3f
+
+    /** Explosion mit Partikeln und Wackeln. */
+    private fun explode(x: Float, y: Float) {
+        burst(x, y, Gfx.ORANGE, 26, 520f)
+        burst(x, y, Gfx.GOLD, 16, 380f)
+        burst(x, y, Color.WHITE, 10, 260f)
+        shake = max(shake, 0.45f)
+        listener?.onExplosion()
+    }
+
+    /** Hintergrund-Action: zwei Kometen stoßen zusammen und explodieren. */
+    private fun updateComets(dt: Float) {
+        if (reduced) return
+        cometTimer -= dt
+        if (cometTimer <= 0f) {
+            cometTimer = 4f + Random.nextFloat() * 5f
+            val tx = 150f + Random.nextFloat() * (W - 300f)
+            val ty = camY + worldH * (0.15f + Random.nextFloat() * 0.5f)
+            var k = 0
+            for (c in comets) if (!c.active && k < 2) {
+                val sx = if (k == 0) -80f else W + 80f
+                val sy = ty - 200f + Random.nextFloat() * 120f
+                c.x = sx; c.y = sy
+                c.vx = (tx - sx) / 1.4f; c.vy = (ty - sy) / 1.4f
+                c.t = 1.4f; c.active = true
+                k++
+            }
+        }
+        var boom = false; var bx = 0f; var by = 0f
+        for (c in comets) if (c.active) {
+            c.x += c.vx * dt; c.y += c.vy * dt; c.t -= dt
+            if (c.t <= 0f) { c.active = false; boom = true; bx = c.x; by = c.y }
+        }
+        if (boom) {
+            burst(bx, by, Gfx.ORANGE, 22, 450f)
+            burst(bx, by, Color.WHITE, 10, 250f)
+            shake = max(shake, 0.25f)
+            listener?.onExplosion()
         }
     }
 
@@ -625,6 +827,46 @@ class World(private val gfx: Gfx) {
             gfx.starShape(c, s.x, s.y, 22f + sin(time * 5f + s.spin) * 3f, s.spin * 57.3f, Gfx.GOLD)
         }
 
+        for (cm in comets) if (cm.active) {
+            for (k in 1..5) gfx.circle(c, cm.x - cm.vx * 0.02f * k, cm.y - cm.vy * 0.02f * k, 9f - k * 1.4f, Gfx.ORANGE, 200 - k * 35)
+            gfx.circle(c, cm.x, cm.y, 8f, Color.WHITE)
+        }
+        for (r in rings) if (r.active && r.y > top && r.y < bottom) {
+            gfx.ring(c, r.x, r.y, 46f + sin(time * 6f + r.spin) * 3f, Gfx.GOLD, 7f, 230)
+            gfx.ring(c, r.x, r.y, 34f, Color.WHITE, 2f, 120)
+            gfx.icon(c, Gfx.I_SPEED, r.x, r.y, 14f, Gfx.GOLD)
+        }
+        for (rk in rocks) if (rk.active && rk.y > top && rk.y < bottom) {
+            gfx.circle(c, rk.x, rk.y, rk.r, 0xFF5D4E42.toInt())
+            gfx.circle(c, rk.x + cos(rk.spin) * rk.r * 0.35f, rk.y + sin(rk.spin) * rk.r * 0.35f, rk.r * 0.3f, 0xFF3E342C.toInt())
+            gfx.ring(c, rk.x, rk.y, rk.r, Gfx.ORANGE, 2f, 90)
+        }
+        for (l in lasers) if (l.active && l.y > top && l.y < bottom) {
+            val on = laserOn(l)
+            gfx.circle(c, l.x1.coerceAtLeast(14f), l.y, 14f, Gfx.RED)
+            gfx.circle(c, l.x2.coerceAtMost(W - 14f), l.y, 14f, Gfx.RED)
+            gfx.line.color = Gfx.RED
+            if (on) {
+                gfx.line.alpha = 120; gfx.line.strokeWidth = 16f
+                c.drawLine(l.x1, l.y, l.x2, l.y, gfx.line)
+                gfx.line.color = Color.WHITE; gfx.line.alpha = 255; gfx.line.strokeWidth = 4f
+                c.drawLine(l.x1, l.y, l.x2, l.y, gfx.line)
+            } else {
+                gfx.line.alpha = 70; gfx.line.strokeWidth = 3f
+                var xx = l.x1
+                while (xx < l.x2) { c.drawLine(xx, l.y, min(xx + 18f, l.x2), l.y, gfx.line); xx += 36f }
+            }
+        }
+        for (w in worms) if (w.active) {
+            for (k in 0 until 3) {
+                gfx.ring(c, w.ax, w.ay, 26f + k * 12f, 0xFF7B61FF.toInt(), 4f, 220 - k * 60)
+                gfx.ring(c, w.bx, w.by, 26f + k * 12f, Gfx.ORANGE, 4f, 220 - k * 60)
+            }
+            gfx.circle(c, w.ax, w.ay, 18f, Color.BLACK)
+            gfx.circle(c, w.bx, w.by, 18f, Color.BLACK)
+            gfx.starShape(c, w.ax, w.ay, 14f, w.spin * 60f, 0xFFB388FF.toInt())
+            gfx.starShape(c, w.bx, w.by, 14f, -w.spin * 60f, Gfx.GOLD)
+        }
         for (pw in powers) {
             if (!pw.active || pw.y < top || pw.y > bottom) continue
             val col = if (pw.type == P_SHIELD) Gfx.SHIELD else Gfx.RED
@@ -749,7 +991,7 @@ class World(private val gfx: Gfx) {
         val tx = -sin(angle) * dir
         val ty = cos(angle) * dir
         for (i in 1..6) {
-            val d = 30f + i * 26f
+            val d = 30f + i * 26f * aimMul
             gfx.circle(c, plX + tx * d, plY + ty * d, 5f - i * 0.4f, Color.WHITE, 150 - i * 22)
         }
     }

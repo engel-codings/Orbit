@@ -20,6 +20,10 @@ object Achievements {
     private const val SPINS = 13
     private const val MISSIONS = 14
     private const val CHESTS = 15
+    private const val REDIRECTS = 16
+    private const val SKIPS = 17
+    private const val WORMS = 18
+    private const val TT = 19
 
     class Ach(private val titles: Array<String>, val kind: Int, val goal: Int, val reward: Int) {
         val title: String get() = titles[L.cur]
@@ -71,7 +75,11 @@ object Achievements {
         Ach(n("Endlos-Profi", "Endless pro", "Профи бесконечности"), BEST, 250, 400),
         Ach(n("Sammelwut", "Collecting frenzy", "Страсть к коллекциям"), SKINS, 35, 800),
         Ach(n("Truhen-König", "Chest king", "Король сундуков"), CHESTS, 60, 300),
-        Ach(n("Missions-Legende", "Mission legend", "Легенда миссий"), MISSIONS, 100, 600)
+        Ach(n("Missions-Legende", "Mission legend", "Легенда миссий"), MISSIONS, 100, 600),
+        Ach(n("Kurskorrektur", "Course correction", "Коррекция курса"), REDIRECTS, 50, 200),
+        Ach(n("Überflieger", "High flyer", "Высокий полёт"), SKIPS, 50, 250),
+        Ach(n("Wurmloch-Reisender", "Wormhole traveller", "Путник червоточин"), WORMS, 20, 200),
+        Ach(n("Rennfahrer", "Racer", "Гонщик"), TT, 10, 300)
     )
 
     private val DESC = arrayOf(
@@ -90,7 +98,11 @@ object Achievements {
         n("Schaffe {0} Tages-Challenges", "Complete {0} daily challenges", "Пройди {0} ежедневных испытаний"),
         n("Drehe {0}-mal am Glücksrad", "Spin the lucky wheel {0} times", "Крути колесо удачи {0} раз"),
         n("Erfülle {0} Missionen", "Complete {0} missions", "Выполни {0} миссий"),
-        n("Öffne {0} Truhen", "Open {0} chests", "Открой {0} сундуков")
+        n("Öffne {0} Truhen", "Open {0} chests", "Открой {0} сундуков"),
+        n("Lenke {0}-mal um", "Redirect {0} times", "Смени курс {0} раз"),
+        n("Überspringe {0} Planeten", "Skip {0} planets", "Пропусти {0} планет"),
+        n("Reise {0}-mal durch Wurmlöcher", "Travel through {0} wormholes", "Пройди через {0} червоточин"),
+        n("Beende {0} Zeitrennen", "Finish {0} time trials", "Заверши {0} гонок на время")
     )
     private val FIRST_PLANET = n("Erreiche deinen ersten Planeten", "Reach your first planet", "Достигни первой планеты")
 
@@ -116,6 +128,10 @@ object Achievements {
         SPINS -> s.spins
         MISSIONS -> s.missionsDone
         CHESTS -> s.chests
+        REDIRECTS -> s.redirects
+        SKIPS -> s.skips
+        WORMS -> s.worms
+        TT -> s.ttDone
         else -> (s.playTime / 60f).toInt()
     }
 

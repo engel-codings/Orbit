@@ -41,6 +41,13 @@ class Save(context: Context) {
     val lowGfx get() = gfx == 2
     var shake = p.getBoolean("shake", true)
     var musicTrack = p.getInt("musicTrack", 0)
+    val upg = IntArray(5) { p.getInt("upg$it", 0) }
+    val ttBest = LongArray(3) { p.getLong("tt$it", 0L) }
+    var ttDone = p.getInt("ttDone", 0)
+    var redirects = p.getInt("redirects", 0)
+    var skips = p.getInt("skips", 0)
+    var worms = p.getInt("worms", 0)
+    var redirectHint = p.getBoolean("redirectHint", false)
     /** Endlos-Rekord je Dimension (1–4). */
     val bestDim = IntArray(4) { if (it == 0) p.getInt("bestD1", best) else p.getInt("bestD${it + 1}", 0) }
 
@@ -116,6 +123,9 @@ class Save(context: Context) {
             .putBoolean("sound", sound).putBoolean("music", music)
             .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
             .putInt("gfx", gfx).putBoolean("shake", shake).putInt("musicTrack", musicTrack)
+            .putInt("upg0", upg[0]).putInt("upg1", upg[1]).putInt("upg2", upg[2]).putInt("upg3", upg[3]).putInt("upg4", upg[4])
+            .putLong("tt0", ttBest[0]).putLong("tt1", ttBest[1]).putLong("tt2", ttBest[2]).putInt("ttDone", ttDone)
+            .putInt("redirects", redirects).putInt("skips", skips).putInt("worms", worms).putBoolean("redirectHint", redirectHint)
             .putInt("bestD1", bestDim[0]).putInt("bestD2", bestDim[1]).putInt("bestD3", bestDim[2]).putInt("bestD4", bestDim[3])
             .putInt("challengesDone", challengesDone).putInt("spins", spins)
             .putLong("challengeDay", challengeDay).putLong("wheelDay", wheelDay)
@@ -137,6 +147,9 @@ class Save(context: Context) {
         recount()
         achClaimed = 0L
         for (i in 0 until 4) bestDim[i] = 0
+        for (i in 0 until 5) upg[i] = 0
+        for (i in 0 until 3) ttBest[i] = 0L
+        ttDone = 0; redirects = 0; skips = 0; worms = 0
         missionDay = 0L; missionClaimed = 0; missionsDone = 0; chestReady = 0L; chests = 0
         for (i in 0 until 3) missionProg[i] = 0
         games = 0; planets = 0; perfects = 0; bestStreak = 0
