@@ -61,7 +61,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT, DM }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -146,6 +146,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val bChatWrite = Btn(90, "", S_PRIMARY)
     private val profileBtns = arrayOf(bBack, bPName, bPAvatar, bPPhoto, bPPub, bPFriends, bPChat, bPStats, bPAccount)
     private val chatBtns = arrayOf(bBack, bChatWrite)
+    private val bDmWrite = Btn(92, "", S_PRIMARY)
+    private val bDmPhoto = Btn(93, "", S_GLASS)
+    private val bDmDuel = Btn(94, "", S_GLASS)
+    private val bDmRemove = Btn(95, "", S_INVISIBLE)
+    private val dmBtns = arrayOf(bBack, bDmWrite, bDmPhoto, bDmDuel)
     private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB, bChatB)
     private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bChatB)
     private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2], bLb[3])
@@ -331,6 +336,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         bProfile.label = L.t(L.PROFILE); bPName.label = L.t(L.RENAME); bPAvatar.label = L.t(L.AVATAR)
         bPFriends.label = L.t(L.FRIENDS); bPChat.label = L.t(L.CHAT); bPStats.label = L.t(L.STATS)
         bChatB.label = L.t(L.CHAT); bChatWrite.label = L.t(L.CHAT_WRITE)
+        bDmWrite.label = L.t(L.CHAT_WRITE); bDmPhoto.label = L.t(L.DM_PHOTO); bDmDuel.label = L.t(L.DUEL)
         refreshProfileLabels()
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
         bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
@@ -446,6 +452,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
         place(bPStats, 70f, 1300f, 860f, 125f)
         place(bPAccount, 70f, 1460f, 860f, 130f)
         place(bChatWrite, 70f, H - 160f, 860f, 120f)
+        place(bDmWrite, 70f, H - 160f, 620f, 120f)
+        place(bDmPhoto, 710f, H - 160f, 220f, 120f)
+        place(bDmDuel, W - 270f, 70f, 230f, 95f)
         place(bChallenge, 40f, pcy + 465f, 293f, 105f)
         place(bWheel, 353f, pcy + 465f, 293f, 105f)
         place(bChest, 666f, pcy + 465f, 293f, 105f)
@@ -490,6 +499,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.LEADER -> { shopScroll = 0f; lbDirty = true; Net.loadBoard(); netT = 0f }
             Screen.FRIENDS -> { shopScroll = 0f; Net.loadFriends(); netT = 0f }
             Screen.CHAT -> { shopScroll = 0f; Net.loadChat(); netT = 0f; chatDirty = true }
+            Screen.DM -> { shopScroll = 0f; netT = 0f; chatDirty = true }
             else -> {}
         }
     }
@@ -701,6 +711,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private fun backFrom() {
         when (screen) {
             Screen.LEADER -> go(Screen.ONLINE)
+            Screen.DM -> go(Screen.FRIENDS)
             Screen.FRIENDS, Screen.CHAT, Screen.AVATARS -> go(if (backToProfile) Screen.PROFILE else Screen.ONLINE)
             Screen.STATS -> go(Screen.PROFILE)
             Screen.QUEUE -> { Net.leaveQueue(); Net.cancelInvite(); go(if (queueInvite) Screen.FRIENDS else Screen.ONLINE) }
@@ -718,6 +729,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (screen == Screen.LEADER && netT > 5f) { netT = 0f; Net.loadBoard() }
         if (screen == Screen.FRIENDS && netT > 8f) { netT = 0f; Net.loadFriends() }
         if (screen == Screen.CHAT && netT > 3f) { netT = 0f; Net.loadChat() }
+        if (screen == Screen.DM && netT > 3f) { netT = 0f; Net.loadDm() }
         if (screen == Screen.QUEUE && !queueInvite) queueWait += dt else queueWait = 0f
         if (screen == Screen.QUEUE && !queueInvite && queueWait > 12f) {
             queueWait = 0f
@@ -811,9 +823,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
             queueInvite = true
             showToast(L.t(L.INVITE_SENT))
             go(Screen.QUEUE)
-        } else {
+        } else if (x < 170f) {
             remPid = f.pid
             openDialog(D_REMOVE, L.t(L.REMOVE_FRIEND), arrayOf(f.name), L.t(L.REMOVE), L.t(L.CANCEL))
+        } else {
+            Net.openDm(f.pid, f.name)
+            go(Screen.DM)
         }
     }
 
@@ -1037,13 +1052,16 @@ class Game(context: Context) : World.Listener, Net.Listener {
         return out.take(6)
     }
 
+    private fun chatSrc() = if (screen == Screen.DM) Net.dm else Net.chat
+
     private fun layoutChat() {
-        val sig = Net.chat.size.toString() + (Net.chat.lastOrNull()?.id ?: "")
+        val src = chatSrc()
+        val sig = screen.name + src.size + (src.lastOrNull()?.id ?: "")
         if (!chatDirty && sig == chatSig) return
         chatDirty = false; chatSig = sig
-        chatLines = Net.chat.map { m ->
-            val ls = wrap(m.text, 32f, 700f)
-            ChatLine(m, ls, 70f + ls.size * 42f + 26f)
+        chatLines = src.map { m ->
+            val ls = if (m.text.isEmpty()) emptyList() else wrap(m.text, 32f, 700f)
+            ChatLine(m, ls, 70f + ls.size * 42f + (if (m.img.isNotEmpty()) 270f else 0f) + 26f)
         }
         chatTotalH = chatLines.sumOf { it.h.toDouble() }.toFloat()
     }
@@ -1065,17 +1083,38 @@ class Game(context: Context) : World.Listener, Net.Listener {
             drawAvatar(c, 80f, y + 50f, 40f, m.av, if (me) myPhoto() else photoFor(m.uid, m.ph))
             gfx.text(c, m.name, 170f, y + 50f, 26f, if (me) Gfx.ACCENT else Gfx.GOLD, align = Paint.Align.LEFT, maxW = 600f)
             for ((i, l) in cl.lines.withIndex()) gfx.text(c, l, 170f, y + 96f + i * 42f, 32f, Color.WHITE, false, Paint.Align.LEFT, maxW = 760f)
+            if (m.img.isNotEmpty()) {
+                val bmp = dmImage(m)
+                val iy = y + 76f + cl.lines.size * 42f
+                if (bmp != null) { avRect.set(170f, iy, 420f, iy + 250f); c.drawBitmap(bmp, null, avRect, null) }
+                else gfx.roundRect(c, 170f, iy, 420f, iy + 250f, 20f, Gfx.PANEL2, 200)
+            }
         }
-        if (chatLines.isEmpty()) gfx.text(c, L.t(if (Net.chatLoaded) L.CHAT_EMPTY else L.NET_LOADING), W / 2f, H * 0.45f, 32f, Gfx.DIM, false, maxW = 860f)
+        val dmMode = screen == Screen.DM
+        if (chatLines.isEmpty()) gfx.text(c, L.t(if (dmMode) (if (Net.dmLoaded) L.DM_EMPTY else L.NET_LOADING) else if (Net.chatLoaded) L.CHAT_EMPTY else L.NET_LOADING), W / 2f, H * 0.45f, 32f, Gfx.DIM, false, maxW = 860f)
         c.restore()
         gfx.roundRect(c, -10f, -10f, W + 10f, CHAT_TOP - 10f, 0f, Gfx.BG, 245)
         drawBtn(c, bBack)
-        gfx.text(c, L.t(L.CHAT_TITLE), W / 2f, 132f, 50f, Color.WHITE, maxW = 600f)
-        gfx.text(c, L.t(L.CHAT_HINT), W / 2f, 250f, 24f, Gfx.DIM, false, maxW = 880f)
-        drawBtn(c, bChatWrite)
+        if (dmMode) {
+            gfx.text(c, Net.dmName, W / 2f - 60f, 132f, 44f, Color.WHITE, maxW = 480f)
+            drawBtn(c, bDmDuel); drawBtn(c, bDmWrite); drawBtn(c, bDmPhoto)
+        } else {
+            gfx.text(c, L.t(L.CHAT_TITLE), W / 2f, 132f, 50f, Color.WHITE, maxW = 600f)
+            gfx.text(c, L.t(L.CHAT_HINT), W / 2f, 250f, 24f, Gfx.DIM, false, maxW = 880f)
+            drawBtn(c, bChatWrite)
+        }
+    }
+
+    private val dmImgs = HashMap<String, Bitmap>()
+    private val dmReq = HashSet<String>()
+    private fun dmImage(m: Net.Msg): Bitmap? {
+        dmImgs[m.id]?.let { return it }
+        if (dmReq.add(m.id)) Platform.decodeImage(m.img) { b -> if (b != null) dmImgs[m.id] = b }
+        return null
     }
 
     private fun chatTap(y: Float) {
+        if (screen == Screen.DM) return
         val bottom = H - 190f
         if (y < CHAT_TOP || y > bottom) return
         var yy = bottom + shopScroll
@@ -1164,6 +1203,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         drawBtn(c, bBack)
         gfx.text(c, L.t(L.FRIENDS), W / 2f, 132f, 54f, Color.WHITE, maxW = 560f)
         drawBtn(c, bAddFriend)
+        gfx.text(c, L.f(L.MY_CODE, Net.myCode) + "  ·  " + L.t(L.DM_TAP), W / 2f, FR_TOP - 25f, 22f, Gfx.DIM, false, maxW = 880f)
     }
 
     private fun drawQueue(c: Canvas) {
@@ -1608,14 +1648,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dialog != D_NONE) return
-                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT) return
+                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT && screen != Screen.DM) return
                 if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
                 if (dragging) when (screen) {
                     Screen.MAP -> mapScroll = clampMap(scrollStart + (y - downY))
                     Screen.ACHIEVE -> achScroll = clampAch(scrollStart - (y - downY))
                     Screen.LEADER -> shopScroll = clampList(scrollStart - (y - downY), lbList.size, LB_TOP, LB_STEP)
                     Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
-                    Screen.CHAT -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
+                    Screen.CHAT, Screen.DM -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
                     else -> shopScroll = clampShop(scrollStart - (y - downY))
                 }
             }
@@ -1635,7 +1675,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     Screen.ENDLESS_SEL -> endlessTap(x, y)
                     Screen.FRIENDS -> friendTap(x, y)
                     Screen.LEADER -> leaderTap(y)
-                    Screen.CHAT -> chatTap(y)
+                    Screen.CHAT, Screen.DM -> chatTap(y)
                     Screen.AVATARS -> avatarTap(x, y)
                     else -> {}
                 }
@@ -1665,6 +1705,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Screen.PROFILE -> { refreshProfileLabels(); profileBtns }
         Screen.AVATARS -> backBtns
         Screen.CHAT -> chatBtns
+        Screen.DM -> dmBtns
         Screen.LEADER -> leaderBtns
         Screen.FRIENDS -> friendBtns
         Screen.VSRESULT -> { bVsAgain.visible = vsFinal; bVsBack.visible = vsFinal; vsBtns }
@@ -1706,6 +1747,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bPStats.id -> go(Screen.STATS)
             bPAccount.id -> if (Net.loggedIn) { Net.logout(); showToast(L.t(L.NET_LOGGED_OUT)); go(Screen.WELCOME) } else registerForm()
             bChatWrite.id -> chatForm()
+            bDmWrite.id -> Platform.showForm(FormSpec(Net.dmName, "", listOf(FormField("t", L.t(L.CHAT_WRITE), FormField.TEXT, "", 300)), L.t(L.CHAT_SEND))) { a, v ->
+                if (a == "submit") { Net.sendDm(v["t"] ?: ""); shopScroll = 0f }
+            }
+            bDmPhoto.id -> Platform.pickImage { b64 -> if (b64 != null && b64.length < 60000) { Net.sendDm("", b64); shopScroll = 0f } }
+            bDmDuel.id -> { Net.inviteAny(Net.dmWith, Net.dmName); queueInvite = true; showToast(L.t(L.INVITE_SENT)); go(Screen.QUEUE) }
             bLb[3].id -> { lbTab = 3; lbDirty = true; shopScroll = 0f }
             bForgot.id -> resetForm()
             bBoard.id -> go(Screen.LEADER)
@@ -1714,8 +1760,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 else { Net.pushProfile(); Net.joinQueue(); queueInvite = false; go(Screen.QUEUE) }
             }
             bFriendsB.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { backToProfile = false; go(Screen.FRIENDS) }
-            bAddFriend.id -> Platform.showForm(FormSpec(L.t(L.ADD_FRIEND).removePrefix("+ "), "", listOf(FormField("n", L.t(L.ASK_FRIEND), max = 16)), "OK")) { a, v ->
-                if (a == "submit" && !v["n"].isNullOrBlank()) Net.addFriend(v["n"]!!)
+            bAddFriend.id -> Platform.showForm(FormSpec(L.t(L.SEARCH), L.f(L.MY_CODE, Net.myCode), listOf(FormField("n", L.t(L.SEARCH_HINT), max = 16)), "OK")) { a, v ->
+                if (a == "submit" && !v["n"].isNullOrBlank()) Net.searchAdd(v["n"]!!)
             }
             bVsBack.id -> go(Screen.ONLINE)
             bLb[0].id -> { lbTab = 0; lbDirty = true; shopScroll = 0f }
@@ -2040,6 +2086,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.PROFILE -> drawProfile(c)
             Screen.AVATARS -> drawAvatars(c)
             Screen.CHAT -> drawChat(c)
+            Screen.DM -> drawChat(c)
         }
 
         if (save.showFps) {

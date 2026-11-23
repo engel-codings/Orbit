@@ -341,7 +341,7 @@ object Net {
 
     // ------------------------------------------------------------------ Chat
 
-    class Msg(val id: String, val uid: String, val name: String, val av: Int, val ph: Boolean, val text: String, val t: Long)
+    class Msg(val id: String, val uid: String, val name: String, val av: Int, val ph: Boolean, val text: String, val t: Long, val img: String = "")
     val chat = ArrayList<Msg>()
     var chatLoaded = false; private set
     private var lastSend = 0L
@@ -375,6 +375,75 @@ object Net {
 
     fun inviteAny(uid: String, n: String) = invite(Friend(uid, n, 0, 0L))
 
+    // ------------------------------------------------------------------ Freundescode & Suche
+
+    /** 6-stelliger Freundescode aus der Spieler-ID. */
+    val myCode get() = codeOf(pid)
+    fun codeOf(uid: String): String {
+        var h = 7L
+        for (ch in uid) h = (h * 31 + ch.code) and 0xFFFFFFFFL
+        val al = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        val sb = StringBuilder()
+        var v = h
+        repeat(6) { sb.append(al[(v % al.length).toInt()]); v /= al.length }
+        return sb.toString()
+    }
+
+    fun pushCode() { if (active) put("codes/$myCode", Json.q(pid)) }
+
+    /** Sucht per Benutzername oder Freundescode und fügt als Freund hinzu. */
+    fun searchAdd(q: String) {
+        if (!loggedIn) return
+        val t = q.trim()
+        get("names/${keyOf(t)}") { v ->
+            val uid = Json.str(v)
+            if (uid.isNotEmpty()) { addFriendId(uid, t); loadFriends(); return@get }
+            get("codes/${t.uppercase().replace(" ", "")}") { c ->
+                val u2 = Json.str(c)
+                if (u2.isEmpty()) { listener?.netToast(L.t(L.NET_NOT_FOUND)); return@get }
+                get("players/$u2/name") { n -> addFriendId(u2, Json.str(n).ifEmpty { t }); loadFriends() }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Private Nachrichten
+
+    val dm = ArrayList<Msg>()
+    var dmWith = ""; private set
+    var dmName = ""; private set
+    var dmLoaded = false; private set
+    private fun pair(a: String, b: String) = if (a < b) a + "_" + b else b + "_" + a
+
+    fun openDm(uid: String, n: String) { dmWith = uid; dmName = n; dm.clear(); dmLoaded = false; loadDm() }
+
+    fun loadDm() {
+        if (!active || dmWith.isEmpty()) return
+        val w = dmWith
+        Platform.http("GET", "$BASE/dms/${pair(pid, w)}.json?orderBy=%22%24key%22&limitToLast=60&auth=$token", null) { r ->
+            if (!ok(r) || w != dmWith) return@http
+            val list = ArrayList<Msg>()
+            for ((k, e) in Json.map(Json.parse(r!!))) {
+                val m = Json.map(e)
+                val mine = Json.str(m["uid"]) == pid
+                list.add(Msg(k, Json.str(m["uid"]), if (mine) name else dmName, Json.int(m["av"]), m["ph"] == true,
+                    Json.str(m["text"]), Json.long(m["t"]), Json.str(m["img"])))
+            }
+            list.sortBy { it.id }
+            dm.clear(); dm.addAll(list); dmLoaded = true
+            listener?.netChanged()
+        }
+    }
+
+    fun sendDm(text: String, img: String = "") {
+        if (!active || dmWith.isEmpty()) return
+        val t = text.trim().take(300)
+        if (t.isEmpty() && img.isEmpty()) return
+        val av = listener?.netAvatar() ?: 0
+        val ph = hasPhoto && (listener?.netPhotoPublic() ?: false)
+        Platform.http("POST", url("dms/${pair(pid, dmWith)}"),
+            "{\"uid\":${Json.q(pid)},\"av\":$av,\"ph\":$ph,\"text\":${Json.q(t)},\"img\":${Json.q(img)},\"t\":$SV}") { loadDm() }
+    }
+
     fun addFriendId(uid: String, n: String) {
         if (!loggedIn || uid == pid) return
         put("friends/$pid/$uid", "true")
@@ -388,9 +457,11 @@ object Net {
         if (!active) return
         val extra = listener?.netProfile() ?: ""
         patch("players/$pid", "{\"name\":${Json.q(name)},\"key\":${Json.q(key)},$extra,\"seen\":$SV}")
+        if (!codePushed) { codePushed = true; pushCode() }
     }
 
     var lastCloud = 0L; private set
+    private var codePushed = false
     fun pushSave() {
         if (!active) return
         val d = listener?.netExport() ?: return
