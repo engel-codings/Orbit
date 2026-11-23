@@ -1575,7 +1575,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
             MotionEvent.ACTION_DOWN -> {
                 downY = y; dragging = false
                 pressed = null
-                if (dialog != D_NONE) { pressed = hit(dlgBtns, x, y); return }
+                if (dialog != D_NONE) {
+                    pressed = hit(dlgBtns, x, y)
+                    if (pressed == null && (dialog == D_PLAYER || dialog == D_INVITE || dialog == D_REMOVE) && (y < dlgTop || y > dlgTop + dlgH)) closeDialog()
+                    return
+                }
                 if (screen == Screen.PLAYING) {
                     if (bPause.hit(x, y)) { pressed = bPause; return }
                     if (!world.redirect()) world.launch()
