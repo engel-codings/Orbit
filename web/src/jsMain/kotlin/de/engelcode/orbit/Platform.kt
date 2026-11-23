@@ -25,7 +25,8 @@ object Platform {
             if (body != null) { init.body = body; init.headers = js("({'Content-Type':'application/json'})") }
             val f: dynamic = js("fetch")
             f(url, init).then({ r: dynamic ->
-                if (r.ok as Boolean) r.text().then({ t: dynamic -> cb(t as String) }) else cb(null)
+                val ok = r.ok as Boolean
+                r.text().then({ t: dynamic -> cb(if (ok) t as String else "\u0000" + (t as String)) }, { _: dynamic -> cb(null) })
                 null
             }, { _: dynamic -> cb(null) })
         } catch (_: Throwable) { cb(null) }
@@ -33,7 +34,7 @@ object Platform {
 
     fun drain() {}
 
-    fun askText(title: String, current: String, maxLen: Int, cb: (String?) -> Unit) {
+    fun askText(title: String, current: String, maxLen: Int, secret: Boolean = false, cb: (String?) -> Unit) {
         val r = window.prompt(title, current) ?: return
         cb(r.take(maxLen))
     }

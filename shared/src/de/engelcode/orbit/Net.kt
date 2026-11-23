@@ -9,6 +9,7 @@ import kotlin.random.Random
  */
 object Net {
     const val BASE = "https://orbit-game-8f095-default-rtdb.europe-west1.firebasedatabase.app"
+    const val API_KEY = "AIzaSyDehLuW3rirZSso_FjJzf6P1vxOjFIoGRs"
     private const val SV = "{\".sv\":\"timestamp\"}"
 
     interface Listener {
@@ -23,30 +24,93 @@ object Net {
 
     var listener: Listener? = null
 
-    // Konto (lokal gemerkt)
+    // Konto (lokal gemerkt). pid = Firebase-Benutzer-ID
     var pid = ""; private set
     var name = ""; private set
+    var email = ""; private set
     private var key = ""
-    val loggedIn get() = pid.isNotEmpty()
-    private var prefs: Any? = null
+    private var refresh = ""
+    private var token = ""
+    private var tokenExp = 0L
+    private var refreshing = false
+    var guest = false; private set
+    /** Spieler hat beim Start „Als Gast spielen“ gewählt. */
+    var guestChosen = false; private set
+    /** Hat eine Online-ID (Gast oder Konto) – erscheint in der Bestenliste. */
+    val active get() = pid.isNotEmpty() && token.isNotEmpty()
+    /** Richtiges Konto mit E-Mail. */
+    val loggedIn get() = pid.isNotEmpty() && !guest
+    /** Start-Auswahl erledigt (Gast gewählt oder angemeldet). */
+    val chosen get() = loggedIn || guestChosen
     private var store: ((String, String) -> Unit)? = null
 
     fun init(get: (String) -> String, set: (String, String) -> Unit) {
-        pid = get("pid"); name = get("name"); key = get("key")
         store = set
+        refresh = get("rt")
+        if (refresh.isNotEmpty()) { pid = get("pid"); name = get("name"); key = get("key"); email = get("email"); guest = get("guest") == "1" }
+        else if (get("pid").isNotEmpty()) { set("pid", ""); set("name", ""); set("key", "") } // altes Konto (vor 0.9.7)
+        guestChosen = get("gc") == "1"
     }
 
     private fun remember() {
-        store?.invoke("pid", pid); store?.invoke("name", name); store?.invoke("key", key)
+        val st = store ?: return
+        st("pid", pid); st("name", name); st("key", key); st("rt", refresh); st("email", email); st("guest", if (guest) "1" else ""); st("gc", if (guestChosen) "1" else "")
     }
 
     // ------------------------------------------------------------------ REST
 
-    private fun url(path: String) = "$BASE/$path.json"
-    private fun get(path: String, cb: (Any?) -> Unit) = Platform.http("GET", url(path), null) { cb(it?.let { s -> Json.parse(s) }) }
-    private fun put(path: String, body: String, cb: (Boolean) -> Unit = {}) = Platform.http("PUT", url(path), body) { cb(it != null) }
-    private fun patch(path: String, body: String, cb: (Boolean) -> Unit = {}) = Platform.http("PATCH", url(path), body) { cb(it != null) }
+    private fun ok(r: String?) = r != null && !r.startsWith("\u0000")
+    private fun url(path: String) = "$BASE/$path.json" + if (token.isNotEmpty()) "?auth=$token" else ""
+    private fun get(path: String, cb: (Any?) -> Unit) = Platform.http("GET", url(path), null) { cb(if (ok(it)) Json.parse(it!!) else null) }
+    private fun put(path: String, body: String, cb: (Boolean) -> Unit = {}) = Platform.http("PUT", url(path), body) { cb(ok(it)) }
+    private fun patch(path: String, body: String, cb: (Boolean) -> Unit = {}) = Platform.http("PATCH", url(path), body) { cb(ok(it)) }
     private fun del(path: String) = Platform.http("DELETE", url(path), null) {}
+
+    private fun auth(op: String, body: String, cb: (Map<String, Any?>?, String) -> Unit) {
+        Platform.http("POST", "https://identitytoolkit.googleapis.com/v1/accounts:$op?key=$API_KEY", body) { r ->
+            if (r == null) { cb(null, "OFFLINE"); return@http }
+            if (r.startsWith("\u0000")) {
+                val msg = Json.str(Json.map(Json.map(Json.parse(r.substring(1)))["error"])["message"])
+                cb(null, msg.ifEmpty { "OFFLINE" }); return@http
+            }
+            cb(Json.map(Json.parse(r)), "")
+        }
+    }
+
+    private fun takeTokens(m: Map<String, Any?>) {
+        token = Json.str(m["idToken"] ?: m["id_token"])
+        val rt = Json.str(m["refreshToken"] ?: m["refresh_token"]); if (rt.isNotEmpty()) refresh = rt
+        val exp = Json.str(m["expiresIn"] ?: m["expires_in"]).toLongOrNull() ?: 3600L
+        tokenExp = Platform.now() + exp * 1000L
+    }
+
+    private fun refreshToken() {
+        if (refreshing || refresh.isEmpty()) return
+        refreshing = true
+        Platform.http("POST", "https://securetoken.googleapis.com/v1/token?key=$API_KEY",
+            "{\"grant_type\":\"refresh_token\",\"refresh_token\":${Json.q(refresh)}}") { r ->
+            refreshing = false
+            if (!ok(r)) {
+                if (r != null && (r.contains("TOKEN_EXPIRED") || r.contains("USER_DISABLED") || r.contains("USER_NOT_FOUND") || r.contains("INVALID_REFRESH_TOKEN"))) logout()
+                return@http
+            }
+            takeTokens(Json.map(Json.parse(r!!)))
+            remember()
+            pushProfile()
+        }
+    }
+
+    private fun authError(code: String) {
+        val t = when {
+            code.startsWith("EMAIL_EXISTS") -> L.NET_EMAIL_TAKEN
+            code.startsWith("INVALID_EMAIL") -> L.NET_BAD_EMAIL
+            code.startsWith("WEAK_PASSWORD") -> L.NET_BAD_PW
+            code.startsWith("EMAIL_NOT_FOUND") || code.startsWith("INVALID_PASSWORD") || code.startsWith("INVALID_LOGIN_CREDENTIALS") -> L.NET_WRONG
+            code.startsWith("TOO_MANY_ATTEMPTS") -> L.NET_TOO_MANY
+            else -> L.NET_OFFLINE
+        }
+        listener?.netToast(L.t(t))
+    }
 
     private fun keyOf(n: String) = n.trim().lowercase().replace(Regex("[.#$\\[\\]/]"), "_")
     private fun randId(n: Int): String {
@@ -60,70 +124,36 @@ object Net {
 
     var busy = false; private set
 
-    fun register(n: String, pw: String, done: (Boolean) -> Unit) {
+    fun register(mail: String, n: String, pw: String, done: (Boolean) -> Unit) {
         val k = keyOf(n)
         busy = true
-        get("users/$k") { v ->
-            if (v != null) { busy = false; listener?.netToast(L.t(L.NET_NAME_TAKEN)); done(false); return@get }
-            val salt = randId(12)
-            val newPid = randId(14)
-            val body = Json.obj("name" to n.trim(), "salt" to salt, "hash" to Sha256.hex(salt + pw), "pid" to newPid)
-            put("users/$k", body) { ok ->
-                busy = false
-                if (!ok) { listener?.netToast(L.t(L.NET_OFFLINE)); done(false); return@put }
-                pid = newPid; name = n.trim(); key = k; remember()
-                pushProfile(); pushSave()
-                listener?.netChanged()
-                done(true)
-            }
-        }
-    }
-
-    fun login(n: String, pw: String, done: (Boolean) -> Unit) {
-        val k = keyOf(n)
-        busy = true
-        get("users/$k") { v ->
-            val m = Json.map(v)
-            if (m.isEmpty()) { busy = false; listener?.netToast(L.t(L.NET_WRONG)); done(false); return@get }
-            if (Sha256.hex(Json.str(m["salt"]) + pw) != Json.str(m["hash"])) { busy = false; listener?.netToast(L.t(L.NET_WRONG)); done(false); return@get }
-            pid = Json.str(m["pid"]); name = Json.str(m["name"]); key = k; remember()
-            get("saves/$pid") { sv ->
-                busy = false
-                val data = Json.str(Json.map(sv)["d"])
-                listener?.netChanged()
-                done(true)
-                if (data.isNotEmpty()) listener?.netCloudLoaded(data) else { pushProfile(); pushSave() }
-            }
-        }
-    }
-
-    fun logout() {
-        if (inQueue) leaveQueue()
-        pid = ""; name = ""; key = ""; remember()
-        friends.clear()
-        listener?.netChanged()
-    }
-
-    fun rename(n: String, done: (Boolean) -> Unit) {
-        val nk = keyOf(n)
-        if (!loggedIn) return
-        if (nk == key) {
-            name = n.trim(); remember(); patch("players/$pid", Json.obj("name" to name)); patch("users/$key", Json.obj("name" to name))
-            listener?.netChanged(); done(true); return
-        }
-        busy = true
-        get("users/$nk") { v ->
-            if (v != null) { busy = false; listener?.netToast(L.t(L.NET_NAME_TAKEN)); done(false); return@get }
-            get("users/$key") { old ->
-                val m = Json.map(old)
-                if (m.isEmpty()) { busy = false; done(false); return@get }
-                val body = Json.obj("name" to n.trim(), "salt" to Json.str(m["salt"]), "hash" to Json.str(m["hash"]), "pid" to pid)
-                put("users/$nk", body) { ok ->
+        get("names/$k") { v ->
+            if (v != null && Json.str(v) != pid) { busy = false; listener?.netToast(L.t(L.NET_NAME_TAKEN)); done(false); return@get }
+            if (guest && active) {
+                // Gast-Konto einmalig übernehmen: gleiche ID, Fortschritt und Platz bleiben
+                auth("update", Json.obj("idToken" to token, "email" to mail.trim(), "password" to pw, "returnSecureToken" to true)) { m, err ->
+                    if (m == null) { busy = false; authError(err); done(false); return@auth }
+                    takeTokens(m)
+                    guest = false; email = mail.trim()
+                    remember()
                     busy = false
-                    if (!ok) { listener?.netToast(L.t(L.NET_OFFLINE)); done(false); return@put }
-                    del("users/$key")
-                    key = nk; name = n.trim(); remember()
-                    patch("players/$pid", Json.obj("name" to name))
+                    rename(n) { }
+                    pushSave()
+                    listener?.netChanged()
+                    done(true)
+                }
+                return@get
+            }
+            auth("signUp", Json.obj("email" to mail.trim(), "password" to pw, "returnSecureToken" to true)) { m, err ->
+                if (m == null) { busy = false; authError(err); done(false); return@auth }
+                takeTokens(m)
+                pid = Json.str(m["localId"]); email = mail.trim(); guest = false
+                put("names/$k", Json.q(pid)) { okName ->
+                    busy = false
+                    name = n.trim(); key = if (okName) k else ""
+                    if (!okName) name = n.trim() + "_" + randId(3)
+                    remember()
+                    pushProfile(); pushSave()
                     listener?.netChanged()
                     done(true)
                 }
@@ -131,17 +161,115 @@ object Net {
         }
     }
 
+    fun login(mail: String, pw: String, done: (Boolean) -> Unit) {
+        busy = true
+        auth("signInWithPassword", Json.obj("email" to mail.trim(), "password" to pw, "returnSecureToken" to true)) { m, err ->
+            if (m == null) { busy = false; authError(err); done(false); return@auth }
+            if (guest && active) dropGuest()
+            takeTokens(m)
+            pid = Json.str(m["localId"]); email = mail.trim(); guest = false
+            get("players/$pid") { pv ->
+                val pm = Json.map(pv)
+                name = Json.str(pm["name"]).ifEmpty { mail.substringBefore('@') }
+                key = Json.str(pm["key"])
+                remember()
+                get("saves/$pid") { sv ->
+                    busy = false
+                    val data = Json.str(Json.map(sv)["d"])
+                    listener?.netChanged()
+                    done(true)
+                    if (data.isNotEmpty()) listener?.netCloudLoaded(data) else { pushProfile(); pushSave() }
+                }
+            }
+        }
+    }
+
+    fun resetPassword(mail: String) {
+        auth("sendOobCode", Json.obj("requestType" to "PASSWORD_RESET", "email" to mail.trim())) { m, err ->
+            if (m == null && !err.startsWith("EMAIL_NOT_FOUND")) { authError(err); return@auth }
+            listener?.netToast(L.t(L.NET_RESET_SENT))
+        }
+    }
+
+    /** Gast-Eintrag aus der Bestenliste entfernen (beim Anmelden mit einem bestehenden Konto). */
+    private fun dropGuest() {
+        val t = token; val p = pid; val k = key
+        Platform.http("DELETE", "$BASE/players/$p.json?auth=$t", null) {}
+        Platform.http("DELETE", "$BASE/saves/$p.json?auth=$t", null) {}
+        if (k.isNotEmpty()) Platform.http("DELETE", "$BASE/names/$k.json?auth=$t", null) {}
+        Platform.http("POST", "https://identitytoolkit.googleapis.com/v1/accounts:delete?key=$API_KEY", Json.obj("idToken" to t)) {}
+    }
+
+    private var guestBusy = false
+    private var guestRetry = 0f
+
+    fun chooseGuest() {
+        guestChosen = true
+        remember()
+        guestRetry = 0f
+    }
+
+    /** Gast-ID erstellen: zufälliger Name, damit man sofort in der Bestenliste steht. */
+    private fun createGuest() {
+        if (guestBusy) return
+        guestBusy = true
+        auth("signUp", "{\"returnSecureToken\":true}") { m, _ ->
+            if (m == null) { guestBusy = false; guestRetry = 30f; return@auth }
+            takeTokens(m)
+            pid = Json.str(m["localId"]); guest = true; email = ""
+            val n = "Orbit-user-" + (10000 + Random.nextInt(90000))
+            val k = keyOf(n)
+            put("names/$k", Json.q(pid)) { okN ->
+                guestBusy = false
+                name = n; key = if (okN) k else ""
+                remember()
+                pushProfile()
+                listener?.netChanged()
+            }
+        }
+    }
+
+    fun logout() {
+        if (inQueue) leaveQueue()
+        pid = ""; name = ""; key = ""; email = ""; refresh = ""; token = ""; tokenExp = 0L; guest = false; guestChosen = false
+        remember()
+        friends.clear()
+        listener?.netChanged()
+    }
+
+    fun rename(n: String, done: (Boolean) -> Unit) {
+        if (!loggedIn) return
+        val nk = keyOf(n)
+        if (nk == key) {
+            name = n.trim(); remember(); patch("players/$pid", Json.obj("name" to name))
+            listener?.netChanged(); done(true); return
+        }
+        busy = true
+        get("names/$nk") { v ->
+            if (v != null) { busy = false; listener?.netToast(L.t(L.NET_NAME_TAKEN)); done(false); return@get }
+            put("names/$nk", Json.q(pid)) { okP ->
+                busy = false
+                if (!okP) { listener?.netToast(L.t(L.NET_OFFLINE)); done(false); return@put }
+                if (key.isNotEmpty()) del("names/$key")
+                key = nk; name = n.trim(); remember()
+                patch("players/$pid", Json.obj("name" to name, "key" to key))
+                listener?.netChanged()
+                done(true)
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ Profil & Cloud
 
     fun pushProfile() {
-        if (!loggedIn) return
+        if (!active) return
         val extra = listener?.netProfile() ?: ""
-        patch("players/$pid", "{\"name\":${Json.q(name)},$extra,\"seen\":$SV}")
+        patch("players/$pid", "{\"name\":${Json.q(name)},\"key\":${Json.q(key)},$extra,\"seen\":$SV}")
     }
 
     var lastCloud = 0L; private set
     fun pushSave() {
-        if (!loggedIn) return
+        if (!active) return
         val d = listener?.netExport() ?: return
         put("saves/$pid", "{\"d\":${Json.q(d)},\"t\":$SV}") { if (it) lastCloud = Platform.now() }
     }
@@ -198,14 +326,13 @@ object Net {
 
     fun addFriend(n: String) {
         if (!loggedIn) return
-        get("users/${keyOf(n)}") { v ->
-            val m = Json.map(v)
-            val fp = Json.str(m["pid"])
+        get("names/${keyOf(n)}") { v ->
+            val fp = Json.str(v)
             if (fp.isEmpty()) { listener?.netToast(L.t(L.NET_NOT_FOUND)); return@get }
             if (fp == pid) return@get
             put("friends/$pid/$fp", "true")
             put("friends/$fp/$pid", "true")
-            listener?.netToast(L.f(L.NET_FRIEND_ADDED, Json.str(m["name"])))
+            listener?.netToast(L.f(L.NET_FRIEND_ADDED, n.trim()))
             loadFriends()
         }
     }
@@ -269,7 +396,7 @@ object Net {
     var queueTime = 0f; private set
 
     fun joinQueue() {
-        if (!loggedIn || inQueue) return
+        if (!active || inQueue) return
         inQueue = true; queueTime = 0f; beat = 0f
         put("queue/$pid", "{\"name\":${Json.q(name)},\"t\":$SV}")
     }
@@ -382,7 +509,13 @@ object Net {
     // ------------------------------------------------------------------ Takt
 
     fun update(dt: Float, watchInvites: Boolean) {
-        if (!loggedIn) return
+        if (pid.isEmpty()) {
+            if (!guestChosen) return
+            guestRetry -= dt
+            if (guestRetry <= 0f && !busy) createGuest()
+            return
+        }
+        if (Platform.now() > tokenExp - 300_000L) { refreshToken(); if (token.isEmpty()) return }
         if (inQueue) {
             queueTime += dt
             beat += dt; pollT += dt
@@ -414,7 +547,7 @@ object Net {
     }
 
     fun result(won: Boolean, draw: Boolean) {
-        if (!loggedIn) return
+        if (!active) return
         val f = if (draw) "draws" else if (won) "wins" else "losses"
         get("players/$pid/$f") { v -> put("players/$pid/$f", (Json.int(v) + 1).toString()) }
     }

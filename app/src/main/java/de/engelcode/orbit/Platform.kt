@@ -38,7 +38,8 @@ object Platform {
                     c.setRequestProperty("Content-Type", "application/json")
                     c.outputStream.use { it.write(body.toByteArray()) }
                 }
-                if (c.responseCode in 200..299) c.inputStream.bufferedReader().use { it.readText() } else null
+                if (c.responseCode in 200..299) c.inputStream.bufferedReader().use { it.readText() }
+                else "\u0000" + (c.errorStream?.bufferedReader()?.use { it.readText() } ?: "")
             } catch (_: Throwable) { null }
             synchronized(pending) { pending.add { cb(res) } }
         }
@@ -54,7 +55,7 @@ object Platform {
     }
 
     /** Texteingabe (Name, Freundescode). */
-    fun askText(title: String, current: String, maxLen: Int, cb: (String?) -> Unit) {
+    fun askText(title: String, current: String, maxLen: Int, secret: Boolean = false, cb: (String?) -> Unit) {
         val a = activity ?: return
         a.runOnUiThread {
             try {
@@ -62,6 +63,8 @@ object Platform {
                 e.setText(current)
                 e.filters = arrayOf(InputFilter.LengthFilter(maxLen))
                 e.setSingleLine()
+                e.inputType = if (secret) android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    else android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
                 AlertDialog.Builder(a).setTitle(title).setView(e)
                     .setPositiveButton("OK") { _, _ -> val t = e.text.toString(); synchronized(pending) { pending.add { cb(t) } } }
                     .setNegativeButton("✕") { _, _ -> }
