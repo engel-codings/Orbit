@@ -619,7 +619,14 @@ object Net {
     private var botTarget = 0
     var botCaps = 0; private set
 
-    fun startBot(n: String, target: Int) {
+    private var botMin = 1.7f
+    private var botRange = 1.8f
+
+    /** Stufe 0 = leicht, 1 = mittel, 2 = etwas schwerer (aber nie zu schwer). */
+    fun startBot(n: String, tier: Int) {
+        val target = when (tier) { 0 -> 5 + Random.nextInt(8); 1 -> 10 + Random.nextInt(12); else -> 18 + Random.nextInt(14) }
+        botMin = when (tier) { 0 -> 2.1f; 1 -> 1.7f; else -> 1.35f }
+        botRange = when (tier) { 0 -> 1.8f; 1 -> 1.6f; else -> 1.3f }
         startMatch("bot", "a", n)
         botT = 0f; botNext = 2.5f; botTarget = target; botCaps = 0
     }
@@ -676,7 +683,7 @@ object Net {
             if (!oppDead && botT > botNext) {
                 botCaps++
                 oppScore += if (Random.nextFloat() < 0.25f) 2 else 1
-                botNext = botT + 1.7f + Random.nextFloat() * 1.8f
+                botNext = botT + botMin + Random.nextFloat() * botRange
                 if (oppScore >= botTarget) oppDead = true
             }
         } else if (mid.isNotEmpty()) {

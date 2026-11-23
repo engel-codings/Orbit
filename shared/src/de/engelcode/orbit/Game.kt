@@ -723,7 +723,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             queueWait = 0f
             Net.leaveQueue()
             val names = arrayOf("Nova", "Comet", "Luna", "Astro", "Pixel", "Orion", "Vega", "Zenit")
-            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], 6 + kotlin.random.Random.nextInt(22))
+            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], kotlin.random.Random.nextInt(3))
             versus = true; vsFinal = false; oppVal = -1
             startRun(0, kotlin.random.Random.nextLong(1, 1_000_000_000L), 1)
             showToast(L.t(L.VS_RULES))
