@@ -219,7 +219,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
@@ -406,6 +406,8 @@ class World(private val gfx: Gfx) {
     }
 
     private var hazardGap = 0
+    var ghostOrder = -1
+    var ghostName = ""
 
     /** Dimension 7 (Pulsar): Fangzone pulsiert zwischen klein und groß. */
     fun pulseMul() = if (dim == 7) 0.7f + 0.45f * (0.5f + 0.5f * sin(time * 2.4f)) else 1f
@@ -949,6 +951,17 @@ class World(private val gfx: Gfx) {
 
         if (popT > 0f) {
             gfx.text(c, popStr, popX, popY, 54f, Gfx.GOLD, alpha = (min(1f, popT / 0.4f) * 255f).toInt())
+        }
+        // Bot-Gegner als Geist sichtbar
+        if (ghostOrder >= 0) for (p in planets) {
+            if (!p.active || p.order != ghostOrder) continue
+            val a = time * 2.2f
+            val gx = p.x + cos(a) * (p.r + 34f); val gy = p.y + sin(a) * (p.r + 34f)
+            gfx.circle(c, gx, gy, 26f, Gfx.ORANGE, 70)
+            gfx.circle(c, gx, gy, 16f, Gfx.ORANGE, 200)
+            gfx.circle(c, gx, gy, 7f, Color.WHITE, 220)
+            gfx.text(c, ghostName, gx, gy - 38f, 26f, Gfx.ORANGE, alpha = 220)
+            break
         }
         c.restore()
     }

@@ -617,10 +617,11 @@ object Net {
     private var botT = 0f
     private var botNext = 0f
     private var botTarget = 0
+    var botCaps = 0; private set
 
     fun startBot(n: String, target: Int) {
         startMatch("bot", "a", n)
-        botT = 0f; botNext = 1.5f; botTarget = target
+        botT = 0f; botNext = 2.5f; botTarget = target; botCaps = 0
     }
 
     fun report(score: Int, dead: Boolean) {
@@ -673,8 +674,9 @@ object Net {
             oppSeenAge = 0f
             botT += dt
             if (!oppDead && botT > botNext) {
-                oppScore += 1 + Random.nextInt(3)
-                botNext = botT + 0.7f + Random.nextFloat() * 1.4f
+                botCaps++
+                oppScore += if (Random.nextFloat() < 0.25f) 2 else 1
+                botNext = botT + 1.7f + Random.nextFloat() * 1.8f
                 if (oppScore >= botTarget) oppDead = true
             }
         } else if (mid.isNotEmpty()) {

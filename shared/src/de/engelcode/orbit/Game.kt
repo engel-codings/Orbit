@@ -723,7 +723,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             queueWait = 0f
             Net.leaveQueue()
             val names = arrayOf("Nova", "Comet", "Luna", "Astro", "Pixel", "Orion", "Vega", "Zenit")
-            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], 12 + kotlin.random.Random.nextInt(45))
+            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], 6 + kotlin.random.Random.nextInt(22))
             versus = true; vsFinal = false; oppVal = -1
             startRun(0, kotlin.random.Random.nextLong(1, 1_000_000_000L), 1)
             showToast(L.t(L.VS_RULES))
@@ -1506,7 +1506,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.PLAYING -> {
                 world.update(dt, true)
                 runTime += dt
-                if (versus) Net.report(world.score, false)
+                if (versus) {
+                    Net.report(world.score, false)
+                    if (Net.isBot && !Net.oppDead) { world.ghostOrder = Net.botCaps; world.ghostName = Net.oppName } else world.ghostOrder = -1
+                }
                 if (ttCourse >= 0 && winTimer <= 0f) ttTime += dt
                 if (challengeRun && world.captures >= CHALLENGE_GOAL && save.challengeDay != today()) {
                     save.challengeDay = today()
