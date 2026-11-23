@@ -952,7 +952,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     !m.contains('@') || !m.contains('.') -> { showToast(L.t(L.NET_BAD_EMAIL)); registerForm(m, n) }
                     !Net.validName(n) -> { showToast(L.t(L.NET_BAD_NAME)); registerForm(m, n) }
                     pw.length < 6 -> { showToast(L.t(L.NET_BAD_PW)); registerForm(m, n) }
-                    else -> Net.register(m, n, pw) { ok -> if (ok) afterLogin() }
+                    else -> Net.checkEmail(m) { exists ->
+                        if (exists) { showToast(L.t(L.NET_EMAIL_TAKEN)); loginForm(m) }
+                        else Net.register(m, n, pw) { ok -> if (ok) afterLogin() }
+                    }
                 }
                 "google" -> doGoogle()
                 "login" -> loginForm(m)

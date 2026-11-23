@@ -190,6 +190,13 @@ object Net {
         }
     }
 
+    /** Prüft automatisch, ob es zu der E-Mail schon ein Konto gibt. */
+    fun checkEmail(mail: String, cb: (Boolean) -> Unit) {
+        auth("createAuthUri", Json.obj("identifier" to mail.trim(), "continueUri" to "https://engel-codings.github.io/Orbit/")) { m, _ ->
+            cb(m != null && m["registered"] == true)
+        }
+    }
+
     fun resetPassword(mail: String) {
         auth("sendOobCode", Json.obj("requestType" to "PASSWORD_RESET", "email" to mail.trim())) { m, err ->
             if (m == null && !err.startsWith("EMAIL_NOT_FOUND")) { authError(err); return@auth }
