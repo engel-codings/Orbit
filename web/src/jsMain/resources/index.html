@@ -53,6 +53,21 @@
   @keyframes bob { 0%,100% { margin-bottom: 0 } 50% { margin-bottom: 10px } }
   /* Schriften vorladen, damit sie beim ersten Bild schon da sind */
   .pre { position: absolute; left: -999px; top: -999px; font-size: 1px; }
+
+  .of-back { position: fixed; inset: 0; z-index: 9999; background: rgba(5,7,15,.82); display: flex; align-items: center; justify-content: center; padding: 18px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: ofIn .18s ease-out; }
+  @keyframes ofIn { from { opacity: 0 } to { opacity: 1 } }
+  .of-card { width: 100%; max-width: 420px; background: linear-gradient(#1e2550, #141936); border: 1px solid rgba(255,255,255,.25); border-radius: 26px; padding: 22px 22px 18px; box-shadow: 0 20px 60px rgba(0,0,0,.5); font-family: OutfitMd, ManropeSB, sans-serif; color: #fff; animation: ofUp .22s ease-out; }
+  @keyframes ofUp { from { transform: translateY(24px) scale(.97) } to { transform: none } }
+  .of-head { display: flex; align-items: center; }
+  .of-title { flex: 1; font-family: OutfitXB, ManropeXB, sans-serif; font-size: 26px; }
+  .of-x { color: #9aa3c7; font-size: 22px; padding: 4px 6px; cursor: pointer; }
+  .of-sub { color: #9aa3c7; font-size: 14px; margin: 4px 0 6px; }
+  .of-in { width: 100%; box-sizing: border-box; margin-top: 12px; background: #0d1230; border: 1px solid rgba(255,255,255,.2); border-radius: 16px; padding: 15px 16px; color: #fff; font: 17px OutfitMd, ManropeSB, sans-serif; outline: none; }
+  .of-in:focus { border-color: #4cc9f0; box-shadow: 0 0 0 3px rgba(76,201,240,.2); }
+  .of-btn { margin-top: 18px; width: 100%; border: 0; border-radius: 28px; padding: 15px; font: 18px OutfitXB, ManropeXB, sans-serif; color: #fff; background: linear-gradient(90deg, #4cc9f0, #7b61ff); cursor: pointer; }
+  .of-or { text-align: center; color: #6e779c; font-size: 13px; margin-top: 12px; }
+  .of-g { margin-top: 10px; width: 100%; border: 0; border-radius: 28px; padding: 14px; font: 17px OutfitXB, ManropeXB, sans-serif; color: #1f1f1f; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .of-link { text-align: center; color: #4cc9f0; font-size: 15px; margin-top: 14px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -154,6 +169,112 @@
     setTimeout(show, 1800);
   }
 })();
+</script>
+<script>
+// Modernes Formular (Anmelden, Registrieren, Name, Chat) – vom Spiel aufgerufen
+window.orbitForm = function (json, cb) {
+  var spec = JSON.parse(json), done = false;
+  var back = document.createElement('div'); back.className = 'of-back';
+  var card = document.createElement('div'); card.className = 'of-card'; back.appendChild(card);
+  function finish(action) {
+    if (done) return; done = true;
+    var vals = {}; inputs.forEach(function (x) { vals[x.k] = x.e.value; });
+    back.remove(); cb(action, JSON.stringify(vals));
+  }
+  var opened = Date.now();
+  back.addEventListener('click', function (e) { if (e.target === back && Date.now() - opened > 600) finish('cancel'); });
+  var head = document.createElement('div'); head.className = 'of-head';
+  var t = document.createElement('div'); t.className = 'of-title'; t.textContent = spec.title; head.appendChild(t);
+  var x = document.createElement('div'); x.className = 'of-x'; x.textContent = '✕'; x.onclick = function () { finish('cancel'); }; head.appendChild(x);
+  card.appendChild(head);
+  if (spec.subtitle) { var sb = document.createElement('div'); sb.className = 'of-sub'; sb.textContent = spec.subtitle; card.appendChild(sb); }
+  var inputs = [];
+  spec.fields.forEach(function (f) {
+    var e = document.createElement('input'); e.className = 'of-in';
+    e.type = f.type === 2 ? 'password' : (f.type === 1 ? 'email' : 'text');
+    e.placeholder = f.hint; e.value = f.value || ''; e.maxLength = f.max;
+    if (f.type === 1) { e.autocomplete = 'email'; e.autocapitalize = 'off'; }
+    if (f.type === 2) e.autocomplete = 'current-password';
+    e.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') finish('submit'); });
+    card.appendChild(e); inputs.push({ k: f.key, e: e });
+  });
+  var b = document.createElement('button'); b.className = 'of-btn'; b.textContent = spec.submit; b.onclick = function () { finish('submit'); };
+  card.appendChild(b);
+  if (spec.google) {
+    var or = document.createElement('div'); or.className = 'of-or'; or.textContent = spec.divider; card.appendChild(or);
+    var g = document.createElement('button'); g.className = 'of-g';
+    g.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+    var gt = document.createElement('span'); gt.textContent = spec.google; g.appendChild(gt);
+    g.onclick = function () { finish('google'); };
+    card.appendChild(g);
+  }
+  spec.links.forEach(function (l) {
+    var a = document.createElement('div'); a.className = 'of-link'; a.textContent = l[1]; a.onclick = function () { finish(l[0]); };
+    card.appendChild(a);
+  });
+  document.body.appendChild(back);
+  if (inputs.length) setTimeout(function () { inputs[0].e.focus(); }, 60);
+};
+
+// Google-Anmeldung über Firebase
+var ORBIT_FB = { apiKey: "AIzaSyDehLuW3rirZSso_FjJzf6P1vxOjFIoGRs", authDomain: "orbit-game-8f095.firebaseapp.com", projectId: "orbit-game-8f095" };
+function orbitLoadFirebase(done) {
+  if (window.firebase && firebase.auth) { done(); return; }
+  var s1 = document.createElement('script'); s1.src = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js';
+  s1.onload = function () {
+    var s2 = document.createElement('script'); s2.src = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js';
+    s2.onload = function () { if (!firebase.apps.length) firebase.initializeApp(ORBIT_FB); done(); };
+    s2.onerror = function () { done('load'); };
+    document.head.appendChild(s2);
+  };
+  s1.onerror = function () { done('load'); };
+  document.head.appendChild(s1);
+}
+window.orbitGoogle = function (cb) {
+  orbitLoadFirebase(function (err) {
+    if (err) { cb(null); return; }
+    var p = new firebase.auth.GoogleAuthProvider();
+    p.setCustomParameters({ prompt: 'select_account' });
+    firebase.auth().signInWithPopup(p).then(function (r) { cb(r.user.refreshToken); }).catch(function (e) {
+      if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment' || e.code === 'auth/cancelled-popup-request')) {
+        try { localStorage.setItem('orbitg.pending', '1'); } catch (x) {}
+        firebase.auth().signInWithRedirect(p);
+      } else cb(null);
+    });
+  });
+};
+window.orbitGooglePending = function (cb) {
+  var pend = null; try { pend = localStorage.getItem('orbitg.pending'); localStorage.removeItem('orbitg.pending'); } catch (x) {}
+  if (!pend) return;
+  orbitLoadFirebase(function (err) {
+    if (err) return;
+    firebase.auth().getRedirectResult().then(function (r) { if (r && r.user) cb(r.user.refreshToken); }).catch(function () {});
+  });
+};
+
+// Bild auswählen (quadratisch zugeschnitten, 128 px, JPEG)
+window.orbitPickImage = function (cb) {
+  var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = function () {
+    var f = inp.files && inp.files[0]; if (!f) { cb(null); return; }
+    var img = new Image();
+    img.onload = function () {
+      var s = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = 128; c.height = 128;
+      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
+      cb(c.toDataURL('image/jpeg', 0.78).split(',')[1]);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = function () { cb(null); };
+    img.src = URL.createObjectURL(f);
+  };
+  inp.click();
+};
+window.orbitDecodeImage = function (b64, cb) {
+  var img = new Image();
+  img.onload = function () { var c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); cb(c); };
+  img.onerror = function () { cb(null); };
+  img.src = 'data:image/jpeg;base64,' + b64;
+};
 </script>
 <script src="orbit.js"></script>
 </body>

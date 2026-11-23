@@ -144,8 +144,12 @@ object L {
         a("Die Leere", "The Void", "Пустота"),
         a("Sonnensturm", "Solar storm", "Солнечная буря"),
         a("Frostwelt", "Frost world", "Ледяной мир"),
-        a("Hyperraum", "Hyperspace", "Гиперпространство")
+        a("Hyperraum", "Hyperspace", "Гиперпространство"),
+        a("Pulsar", "Pulsar", "Пульсар"),
+        a("Schwarzes Loch", "Black hole", "Чёрная дыра")
     )
+    val DIM7_HINT = a("Pulsar: Die Fangzone pulsiert – triff den richtigen Moment!", "Pulsar: the capture zone pulses – time it right!", "Пульсар: зона захвата пульсирует – лови момент!")
+    val DIM8_HINT = a("Schwarzes Loch: Die Mitte zieht dich an!", "Black hole: the center pulls you in!", "Чёрная дыра: центр притягивает тебя!")
     val DIM5_HINT = a("Frostwelt: Die Kälte bremst deinen Flug!", "Frost world: the cold slows your flight!", "Ледяной мир: холод замедляет полёт!")
     val DIM6_HINT = a("Hyperraum: Alles ist schneller!", "Hyperspace: everything is faster!", "Гиперпространство: всё быстрее!")
     val DIM4_HINT = a("Sonnensturm: Der Wind treibt dich ab!", "Solar storm: the wind pushes you!", "Солнечная буря: ветер сносит тебя!")
@@ -155,12 +159,14 @@ object L {
         a("Keine Schwerkraft", "No gravity", "Нет гравитации"),
         a("Sonnenwind treibt dich ab", "Solar wind pushes you", "Солнечный ветер сносит тебя"),
         a("Kälte bremst dich", "The cold slows you", "Холод тормозит тебя"),
-        a("Alles ist schneller", "Everything is faster", "Всё быстрее")
+        a("Alles ist schneller", "Everything is faster", "Всё быстрее"),
+        a("Fangzone pulsiert", "Capture zone pulses", "Зона захвата пульсирует"),
+        a("Die Mitte zieht dich an", "The center pulls you", "Центр притягивает")
     )
     val ENDLESS_TITLE = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ ИГРЫ")
     val ONLINE = a("ONLINE", "ONLINE", "ОНЛАЙН")
     val LEADERBOARD = a("BESTENLISTE", "LEADERBOARD", "ТАБЛИЦА ЛИДЕРОВ")
-    val LB_TABS = arrayOf(a("LEVEL", "LEVEL", "УРОВЕНЬ"), a("ENDLOS", "ENDLESS", "БЕСКОНЕЧНО"), a("SIEGE", "WINS", "ПОБЕДЫ"))
+    val LB_TABS = arrayOf(a("LEVEL", "LEVEL", "УРОВЕНЬ"), a("ENDLOS", "ENDLESS", "БЕСКОНЕЧНО"), a("SIEGE", "WINS", "ПОБЕДЫ"), a("WOCHE", "WEEK", "НЕДЕЛЯ"))
     val VS_QUICK = a("1v1 SCHNELLSPIEL", "1v1 QUICK MATCH", "1 НА 1: БЫСТРАЯ ИГРА")
     val FRIENDS = a("FREUNDE", "FRIENDS", "ДРУЗЬЯ")
     val ACCOUNT = a("KONTO", "ACCOUNT", "АККАУНТ")
@@ -227,6 +233,37 @@ object L {
     val WELCOME_ACC = a("Konto: Spielstand auf iPhone & Android, Freunde und Duelle", "Account: progress on iPhone & Android, friends and duels", "Аккаунт: прогресс на iPhone и Android, друзья и дуэли")
     val NET_GUEST_ACC = a("Gast-Konto – registriere dich, um alles zu sichern", "Guest account – register to keep everything", "Гостевой аккаунт – зарегистрируйся, чтобы всё сохранить")
     val NET_FRIENDS_NEED = a("Für Freunde brauchst du ein Konto", "You need an account for friends", "Для друзей нужен аккаунт")
+    val PROFILE = a("PROFIL", "PROFILE", "ПРОФИЛЬ")
+    val CHAT = a("CHAT", "CHAT", "ЧАТ")
+    val CHAT_TITLE = a("Öffentlicher Chat", "Public chat", "Общий чат")
+    val CHAT_WRITE = a("Nachricht schreiben…", "Write a message…", "Написать сообщение…")
+    val CHAT_SEND = a("SENDEN", "SEND", "ОТПРАВИТЬ")
+    val CHAT_SLOW = a("Nicht so schnell 😉", "Not so fast 😉", "Не так быстро 😉")
+    val CHAT_EMPTY = a("Noch keine Nachrichten – sag Hallo!", "No messages yet – say hi!", "Сообщений пока нет – поздоровайся!")
+    val CHAT_HINT = a("Tippe auf einen Spieler zum Hinzufügen oder Herausfordern", "Tap a player to add or challenge them", "Нажми на игрока, чтобы добавить или вызвать его")
+    val PLAYER_WHAT = a("Was möchtest du tun?", "What do you want to do?", "Что ты хочешь сделать?")
+    val ADD = a("+ FREUND", "+ FRIEND", "+ ДРУГ")
+    val AVATAR = a("AVATAR", "AVATAR", "АВАТАР")
+    val AVATAR_PICK = a("Avatar wählen", "Choose avatar", "Выбери аватар")
+    val PHOTO_UP = a("FOTO HOCHLADEN", "UPLOAD PHOTO", "ЗАГРУЗИТЬ ФОТО")
+    val PHOTO_DEL = a("FOTO ENTFERNEN", "REMOVE PHOTO", "УДАЛИТЬ ФОТО")
+    val PHOTO_PUBLIC = a("Foto: öffentlich", "Photo: public", "Фото: публичное")
+    val PHOTO_PRIVATE = a("Foto: privat", "Photo: private", "Фото: личное")
+    val PHOTO_INFO = a("Öffentlich = alle sehen dein Foto in Bestenliste und Chat", "Public = everyone sees your photo in leaderboard and chat", "Публичное = все видят фото в таблице и чате")
+    val PHOTO_SAVED = a("Foto gespeichert", "Photo saved", "Фото сохранено")
+    val NET_GOOGLE_BTN = a("Mit Google anmelden", "Sign in with Google", "Войти через Google")
+    val NET_OR = a("oder", "or", "или")
+    val NET_GOOGLE_FAIL = a("Google-Anmeldung abgebrochen", "Google sign-in cancelled", "Вход через Google отменён")
+    val FORM_LOGIN_SUB = a("Schön, dass du wieder da bist!", "Good to see you again!", "Рады видеть тебя снова!")
+    val FORM_REG_SUB = a("Dein Fortschritt wird übernommen und online gesichert", "Your progress is kept and saved online", "Твой прогресс сохранится онлайн")
+    val FORM_NO_ACC = a("Noch kein Konto? Registrieren", "No account yet? Register", "Нет аккаунта? Регистрация")
+    val FORM_HAS_ACC = a("Schon ein Konto? Anmelden", "Already have an account? Log in", "Уже есть аккаунт? Войти")
+    val FORM_RESET_SUB = a("Wir schicken dir einen Link zum Zurücksetzen", "We'll send you a reset link", "Мы отправим ссылку для сброса")
+    val FORM_RESET_BTN = a("LINK SENDEN", "SEND LINK", "ОТПРАВИТЬ ССЫЛКУ")
+    val WEEK = a("WOCHE", "WEEK", "НЕДЕЛЯ")
+    val PROFILE_LEVEL = a("Level {0} · {1} Siege", "Level {0} · {1} wins", "Уровень {0} · побед: {1}")
+    val PROFILE_GUEST = a("Gast", "Guest", "Гость")
+    val SETTINGS_LANG = a("Sprache", "Language", "Язык")
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
@@ -287,12 +324,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• ONLINE: Konto mit Login & Cloud-Speicher", "• ONLINE: account with login & cloud save", "• ОНЛАЙН: аккаунт со входом и облачным сохранением"),
-        a("• Weltweite Bestenliste (live)", "• Worldwide leaderboard (live)", "• Мировая таблица лидеров (в реальном времени)"),
-        a("• 1v1 gegen echte Spieler", "• 1v1 against real players", "• 1 на 1 против реальных игроков"),
-        a("• Freundesliste und Duell-Einladungen", "• Friends list and duel invitations", "• Список друзей и вызовы на дуэль"),
-        a("• iPhone und Android spielen zusammen", "• iPhone and Android play together", "• iPhone и Android играют вместе"),
-        a("• Absturz-Schutz für ältere Handys", "• Crash protection for older phones", "• Защита от вылетов на старых телефонах")
+        a("• 500 Level und 2 neue Dimensionen", "• 500 levels and 2 new dimensions", "• 500 уровней и 2 новых измерения"),
+        a("• Ab Level 40 fairer: weniger Laser", "• Fairer from level 40: fewer lasers", "• С 40 уровня честнее: меньше лазеров"),
+        a("• Profil mit Avatar und eigenem Foto", "• Profile with avatar and your own photo", "• Профиль с аватаром и своим фото"),
+        a("• Öffentlicher Chat für alle Spieler", "• Public chat for all players", "• Общий чат для всех игроков"),
+        a("• Mit Google anmelden", "• Sign in with Google", "• Вход через Google"),
+        a("• Wochen-Bestenliste und 18 neue Skins & Spuren", "• Weekly leaderboard and 18 new skins & trails", "• Недельный рейтинг и 18 новых скинов и следов")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

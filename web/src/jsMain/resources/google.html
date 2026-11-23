@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit – Google-Anmeldung</title>
+<style>
+  @font-face { font-family: OutfitXB; src: url(fonts/Outfit-ExtraBold.ttf); }
+  @font-face { font-family: OutfitMd; src: url(fonts/Outfit-Medium.ttf); }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, #1c2350, #070914); color: #fff; font-family: OutfitMd, sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+  h1 { font-family: OutfitXB, sans-serif; font-size: 56px; margin: 0; letter-spacing: 1px; }
+  .sub { color: #4cc9f0; letter-spacing: 6px; font-size: 14px; margin-bottom: 40px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: 360px; margin: 14px auto 0; padding: 16px; border-radius: 30px; border: 0; font: 18px OutfitXB, sans-serif; cursor: pointer; text-decoration: none; }
+  .g { background: #fff; color: #1f1f1f; }
+  .back { background: linear-gradient(90deg, #4cc9f0, #7b61ff); color: #fff; }
+  #msg { color: #9aa3c7; margin-top: 22px; min-height: 22px; }
+</style>
+</head>
+<body>
+<div style="width:100%">
+  <h1>ORBIT</h1>
+  <div class="sub">PLANET JUMP</div>
+  <button class="btn g" id="go"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span id="gt">Mit Google anmelden</span></button>
+  <a class="btn back" id="back" style="display:none" href="#">Zurück zu Orbit</a>
+  <div id="msg"></div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+var l = (navigator.language || 'de').slice(0, 2);
+var T = l === 'ru' ? { g: 'Войти через Google', b: 'Вернуться в Orbit', ok: 'Готово! Возвращаемся в Orbit…', err: 'Не получилось. Попробуй ещё раз.' }
+  : l === 'de' ? { g: 'Mit Google anmelden', b: 'Zurück zu Orbit', ok: 'Fertig! Zurück zu Orbit…', err: 'Hat nicht geklappt. Bitte nochmal versuchen.' }
+  : { g: 'Sign in with Google', b: 'Back to Orbit', ok: 'Done! Returning to Orbit…', err: 'That did not work. Please try again.' };
+document.getElementById('gt').textContent = T.g;
+document.getElementById('back').textContent = T.b;
+firebase.initializeApp({ apiKey: "AIzaSyDehLuW3rirZSso_FjJzf6P1vxOjFIoGRs", authDomain: "orbit-game-8f095.firebaseapp.com", projectId: "orbit-game-8f095" });
+function done(rt) {
+  var url = 'intent://auth?rt=' + encodeURIComponent(rt) + '#Intent;scheme=orbit;package=de.engelcode.orbit;end';
+  var b = document.getElementById('back'); b.href = url; b.style.display = 'flex';
+  document.getElementById('go').style.display = 'none';
+  document.getElementById('msg').textContent = T.ok;
+  location.href = url;
+}
+document.getElementById('go').onclick = function () {
+  var p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ prompt: 'select_account' });
+  firebase.auth().signInWithPopup(p).then(function (r) { done(r.user.refreshToken); }).catch(function (e) {
+    if (e && e.code === 'auth/popup-blocked') firebase.auth().signInWithRedirect(p);
+    else document.getElementById('msg').textContent = T.err;
+  });
+};
+firebase.auth().getRedirectResult().then(function (r) { if (r && r.user) done(r.user.refreshToken); }).catch(function () {});
+</script>
+</body>
+</html>

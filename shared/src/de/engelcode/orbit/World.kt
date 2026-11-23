@@ -219,7 +219,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
@@ -342,7 +342,12 @@ class World(private val gfx: Gfx) {
 
         // Meteorit
         val metOn = if (level > 0) level >= Levels.METEORS_FROM else genCount >= 20
-        if (metOn && !isGoal && rng.nextFloat() < 0.12f + 0.2f * d) {
+        // Nach einem Hindernis kommt immer mindestens eine ruhige Lücke
+        val calm = hazardGap < 1
+        hazardGap++
+        var hazard = false
+        if (metOn && !isGoal && !calm && rng.nextFloat() < 0.1f + 0.14f * d) {
+            hazard = true
             for (m in meteors) if (!m.active) {
                 m.x = rng.nextFloat() * W
                 m.y = (lastGenY + y) / 2f + (rng.nextFloat() - 0.5f) * 160f
@@ -366,7 +371,11 @@ class World(private val gfx: Gfx) {
                 }
             }
             val f = rng.nextFloat()
-            if (lv >= Levels.ROCKS_FROM && f < 0.22f + 0.15f * d) {
+            if (calm || hazard) {
+                // ruhige Lücke: höchstens ein Wurmloch
+                if (lv >= Levels.WORM_FROM && f < 0.12f) spawnWorm(mx, my, y, p.r)
+            } else if (lv >= Levels.ROCKS_FROM && f < 0.16f + 0.1f * d) {
+                hazard = true
                 val side = if (mx < W / 2f) 1f else -1f
                 val cx = (mx + side * (200f + rng.nextFloat() * 120f)).coerceIn(80f, W - 80f)
                 val n = 3 + rng.nextInt(3)
@@ -378,7 +387,8 @@ class World(private val gfx: Gfx) {
                     if (dist(r.x, r.y, x, y) > p.r + CAPTURE + 40f && dist(r.x, r.y, lastGenX, lastGenY) > 230f) r.active = true
                     made++
                 }
-            } else if (lv >= Levels.LASER_FROM && f < 0.42f + 0.1f * d) {
+            } else if (lv >= Levels.LASER_FROM && f < 0.26f + 0.06f * d) {
+                hazard = true
                 for (l in lasers) if (!l.active) {
                     val left = rng.nextFloat() < 0.5f
                     l.y = my; l.x1 = if (left) 0f else W * 0.3f; l.x2 = if (left) W * 0.7f else W
@@ -386,19 +396,27 @@ class World(private val gfx: Gfx) {
                     if (kotlin.math.abs(my - y) > p.r + CAPTURE + 30f) l.active = true
                     break
                 }
-            } else if (lv >= Levels.WORM_FROM && f < 0.55f) {
-                for (w in worms) if (!w.active) {
-                    w.ax = (if (mx < W / 2f) mx + 260f else mx - 260f).coerceIn(90f, W - 90f); w.ay = my
-                    w.bx = (W - w.ax).coerceIn(90f, W - 90f); w.by = y - p.r - 260f
-                    w.active = true
-                    break
-                }
-            }
+            } else if (lv >= Levels.WORM_FROM && f < 0.45f) spawnWorm(mx, my, y, p.r)
         }
+        if (hazard) hazardGap = 0
         lastGenX = x
         lastGenY = y
         genCount++
         return true
+    }
+
+    private var hazardGap = 0
+
+    /** Dimension 7 (Pulsar): Fangzone pulsiert zwischen klein und groß. */
+    fun pulseMul() = if (dim == 7) 0.7f + 0.45f * (0.5f + 0.5f * sin(time * 2.4f)) else 1f
+
+    private fun spawnWorm(mx: Float, my: Float, y: Float, pr: Float) {
+        for (w in worms) if (!w.active) {
+            w.ax = (if (mx < W / 2f) mx + 260f else mx - 260f).coerceIn(90f, W - 90f); w.ay = my
+            w.bx = (W - w.ax).coerceIn(90f, W - 90f); w.by = y - pr - 260f
+            w.active = true
+            break
+        }
     }
 
     private fun dist(ax: Float, ay: Float, bx: Float, by: Float): Float {
@@ -599,15 +617,16 @@ class World(private val gfx: Gfx) {
         flyTime += h
         var ax = 0f
         var ay = 0f
+        val pulse = pulseMul()
         for (p in planets) {
             if (!p.active || p === lastPlanet) continue
             val dx = p.x - plX; val dy = p.y - plY
             val d2 = dx * dx + dy * dy
             val d = sqrt(d2)
-            if (d < p.r + CAPTURE * captureMul) { capture(p, d); return true }
+            if (d < p.r + CAPTURE * captureMul * pulse) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; 5 -> 1.15f; 6 -> 0.9f; else -> 1f })
+                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; 5 -> 1.15f; 6 -> 0.9f; 8 -> 1.05f; else -> 1f })
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -653,6 +672,7 @@ class World(private val gfx: Gfx) {
             }
         }
         if (dim == 4) ax += windX
+        if (dim == 8) ax += (W / 2f - plX) * 1.7f
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
         val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * (if (boostT > 0f) 1.35f else 1f) *
@@ -709,7 +729,7 @@ class World(private val gfx: Gfx) {
         }
     }
 
-    private fun laserOn(l: Laser) = ((time + l.phase) % 2.4f) < 1.3f
+    private fun laserOn(l: Laser) = ((time + l.phase) % 2.6f) < 1.0f
 
     /** Explosion mit Partikeln und Wackeln. */
     private fun explode(x: Float, y: Float) {
@@ -828,6 +848,11 @@ class World(private val gfx: Gfx) {
                     }
                 }
                 if (dim == 6) gfx.ring(c, p.x, p.y, p.r + 5f + sin(time * 9f + p.phase) * 3f, 0xFFE040FB.toInt(), 3f, 200)
+                if (dim == 7) {
+                    val pm = pulseMul()
+                    gfx.ring(c, p.x, p.y, p.r + CAPTURE * captureMul * pm, 0xFF64FFDA.toInt(), 3f, (60 + 140 * (pm - 0.7f) / 0.45f).toInt())
+                }
+                if (dim == 8) gfx.ring(c, p.x, p.y, p.r + 4f, 0xFFFF1744.toInt(), 3f, 150)
                 if (dim == 3) {
                     gfx.circle(c, p.x, p.y, p.r, Color.BLACK, 140)
                     gfx.ring(c, p.x, p.y, p.r, 0xFF2EE5C8.toInt(), 3f, 160 + (sin(time * 2f + p.phase) * 60f).toInt())
@@ -939,8 +964,25 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; 7 -> gfx.nebula7[i]; 8 -> gfx.nebula8[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
             }
+        }
+        if (dim == 8) {
+            // Schwarzes Loch in der Mitte: zieht alles zur Bildmitte
+            val cx = W / 2f
+            gfx.line.color = 0xFF7C4DFF.toInt(); gfx.line.strokeWidth = 3f
+            for (k in 0 until 18) {
+                val yy = ((k * 0.0556f) * worldH + time * 60f) % worldH
+                val off = 160f + (k % 3) * 70f - ((time * 90f + k * 37f) % 200f)
+                gfx.line.alpha = 90
+                c.drawLine(cx - off, yy, cx - off * 0.6f, yy + 18f, gfx.line)
+                c.drawLine(cx + off, yy, cx + off * 0.6f, yy + 18f, gfx.line)
+            }
+            gfx.line.color = 0xFF000000.toInt(); gfx.line.alpha = 140; gfx.line.strokeWidth = 26f
+            c.drawLine(cx, 0f, cx, worldH, gfx.line)
+            gfx.line.color = 0xFFFF1744.toInt(); gfx.line.alpha = 120; gfx.line.strokeWidth = 3f
+            c.drawLine(cx - 14f, 0f, cx - 14f, worldH, gfx.line)
+            c.drawLine(cx + 14f, 0f, cx + 14f, worldH, gfx.line)
         }
         if (dim == 4) {
             // sichtbare Windstreifen

@@ -20,6 +20,8 @@ object Net {
         fun netChanged()
         fun netProfile(): String   // JSON-Teil mit best/level/crowns
         fun netExport(): String
+        fun netAvatar(): Int
+        fun netPhotoPublic(): Boolean
     }
 
     var listener: Listener? = null
@@ -97,6 +99,7 @@ object Net {
             takeTokens(Json.map(Json.parse(r!!)))
             remember()
             pushProfile()
+            if (myPhoto.isEmpty()) loadMyPhoto()
         }
     }
 
@@ -192,8 +195,8 @@ object Net {
     }
 
     /** Gast-Eintrag aus der Bestenliste entfernen (beim Anmelden mit einem bestehenden Konto). */
-    private fun dropGuest() {
-        val t = token; val p = pid; val k = key
+    private fun dropGuest(t: String = token, p: String = pid, k: String = key) {
+        Platform.http("DELETE", "$BASE/avatars/$p.json?auth=$t", null) {}
         Platform.http("DELETE", "$BASE/players/$p.json?auth=$t", null) {}
         Platform.http("DELETE", "$BASE/saves/$p.json?auth=$t", null) {}
         if (k.isNotEmpty()) Platform.http("DELETE", "$BASE/names/$k.json?auth=$t", null) {}
@@ -238,7 +241,7 @@ object Net {
     }
 
     fun rename(n: String, done: (Boolean) -> Unit) {
-        if (!loggedIn) return
+        if (!active) return
         val nk = keyOf(n)
         if (nk == key) {
             name = n.trim(); remember(); patch("players/$pid", Json.obj("name" to name))
@@ -259,6 +262,126 @@ object Net {
         }
     }
 
+    // ------------------------------------------------------------------ Google
+
+    fun googleLogin(rt: String, done: (Boolean) -> Unit) {
+        busy = true
+        val oldT = token; val oldP = pid; val oldK = key; val oldName = name
+        val wasGuest = guest && active
+        Platform.http("POST", "https://securetoken.googleapis.com/v1/token?key=$API_KEY",
+            "{\"grant_type\":\"refresh_token\",\"refresh_token\":${Json.q(rt)}}") { r ->
+            if (!ok(r)) { busy = false; listener?.netToast(L.t(L.NET_OFFLINE)); done(false); return@http }
+            val m = Json.map(Json.parse(r!!))
+            takeTokens(m)
+            pid = Json.str(m["user_id"]); guest = false; email = "Google"
+            get("players/$pid") { pv ->
+                val pm = Json.map(pv)
+                if (pm.isNotEmpty()) {
+                    // bestehendes Konto
+                    name = Json.str(pm["name"]); key = Json.str(pm["key"])
+                    remember()
+                    if (wasGuest) dropGuest(oldT, oldP, oldK)
+                    get("saves/$pid") { sv ->
+                        busy = false
+                        val data = Json.str(Json.map(sv)["d"])
+                        listener?.netChanged(); done(true)
+                        if (data.isNotEmpty()) listener?.netCloudLoaded(data) else { pushProfile(); pushSave() }
+                    }
+                } else {
+                    // neues Konto: Gast-Fortschritt und Name einmalig übernehmen
+                    val n = if (wasGuest) oldName else "Orbit-user-" + (10000 + Random.nextInt(90000))
+                    val k = keyOf(n)
+                    val claim = {
+                        put("names/$k", Json.q(pid)) { okN ->
+                            busy = false
+                            name = n; key = if (okN) k else ""
+                            remember(); pushProfile(); pushSave()
+                            if (myPhoto.isNotEmpty()) setPhoto(myPhoto)
+                            listener?.netChanged(); done(true)
+                        }
+                    }
+                    if (wasGuest && oldK.isNotEmpty()) {
+                        Platform.http("DELETE", "$BASE/names/$oldK.json?auth=$oldT", null) { claim(); dropGuest(oldT, oldP, "") }
+                    } else { if (wasGuest) dropGuest(oldT, oldP, oldK); claim() }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Avatar & Foto
+
+    var myPhoto = ""; private set
+
+    fun setPhoto(b64: String) {
+        if (!active) return
+        myPhoto = b64
+        put("avatars/$pid", "{\"d\":${Json.q(b64)},\"pub\":${listener?.netPhotoPublic() ?: false}}")
+        pushProfile()
+    }
+
+    fun setPhotoPublic(pub: Boolean) {
+        if (!active || myPhoto.isEmpty()) { pushProfile(); return }
+        patch("avatars/$pid", "{\"pub\":$pub}") { pushProfile() }
+    }
+
+    fun removePhoto() {
+        myPhoto = ""
+        if (active) del("avatars/$pid")
+        pushProfile()
+    }
+
+    fun loadMyPhoto() {
+        if (!active) return
+        get("avatars/$pid/d") { v -> myPhoto = Json.str(v); listener?.netChanged() }
+    }
+
+    fun loadPhoto(uid: String, cb: (String) -> Unit) = get("avatars/$uid/d") { v -> cb(Json.str(v)) }
+
+    val hasPhoto get() = myPhoto.isNotEmpty()
+
+    // ------------------------------------------------------------------ Chat
+
+    class Msg(val id: String, val uid: String, val name: String, val av: Int, val ph: Boolean, val text: String, val t: Long)
+    val chat = ArrayList<Msg>()
+    var chatLoaded = false; private set
+    private var lastSend = 0L
+
+    fun loadChat() {
+        if (!active) return
+        Platform.http("GET", "$BASE/chat.json?orderBy=%22%24key%22&limitToLast=60&auth=$token", null) { r ->
+            if (!ok(r)) return@http
+            val list = ArrayList<Msg>()
+            for ((k, e) in Json.map(Json.parse(r!!))) {
+                val m = Json.map(e)
+                list.add(Msg(k, Json.str(m["uid"]), Json.str(m["name"]), Json.int(m["av"]), m["ph"] == true, Json.str(m["text"]), Json.long(m["t"])))
+            }
+            list.sortBy { it.id }
+            chat.clear(); chat.addAll(list)
+            chatLoaded = true
+            listener?.netChanged()
+        }
+    }
+
+    fun sendChat(text: String) {
+        val t = text.trim().take(200)
+        if (!active || t.isEmpty()) return
+        val now = Platform.now()
+        if (now - lastSend < 2500L) { listener?.netToast(L.t(L.CHAT_SLOW)); return }
+        lastSend = now
+        val av = listener?.netAvatar() ?: 0
+        val ph = hasPhoto && (listener?.netPhotoPublic() ?: false)
+        Platform.http("POST", url("chat"), "{\"uid\":${Json.q(pid)},\"name\":${Json.q(name)},\"av\":$av,\"ph\":$ph,\"text\":${Json.q(t)},\"t\":$SV}") { loadChat() }
+    }
+
+    fun inviteAny(uid: String, n: String) = invite(Friend(uid, n, 0, 0L))
+
+    fun addFriendId(uid: String, n: String) {
+        if (!loggedIn || uid == pid) return
+        put("friends/$pid/$uid", "true")
+        put("friends/$uid/$pid", "true")
+        listener?.netToast(L.f(L.NET_FRIEND_ADDED, n))
+    }
+
     // ------------------------------------------------------------------ Profil & Cloud
 
     fun pushProfile() {
@@ -276,7 +399,8 @@ object Net {
 
     // ------------------------------------------------------------------ Bestenliste
 
-    class Entry(val pid: String, val name: String, val level: Int, val best: Int, val wins: Int, val crowns: Int)
+    class Entry(val pid: String, val name: String, val level: Int, val best: Int, val wins: Int, val crowns: Int,
+                val av: Int, val ph: Boolean, val wk: Int, val wb: Int)
 
     val board = ArrayList<Entry>()
     var boardLoaded = false; private set
@@ -292,7 +416,8 @@ object Net {
             for ((k, e) in Json.map(v)) {
                 val m = Json.map(e)
                 val n = Json.str(m["name"]); if (n.isEmpty()) continue
-                board.add(Entry(k, n, Json.int(m["level"]), Json.int(m["best"]), Json.int(m["wins"]), Json.int(m["crowns"])))
+                board.add(Entry(k, n, Json.int(m["level"]), Json.int(m["best"]), Json.int(m["wins"]), Json.int(m["crowns"]),
+                    Json.int(m["av"]), m["ph"] == true, Json.int(m["wk"]), Json.int(m["wb"])))
             }
             boardLoaded = true
             listener?.netChanged()
@@ -349,7 +474,7 @@ object Net {
     private var inviteT = 0f
 
     fun invite(f: Friend) {
-        if (!loggedIn) return
+        if (!active) return
         val mid = pid + "_" + randId(6)
         val seed = Random.nextLong(1, 1_000_000_000L)
         put("matches/$mid", Json.obj("a" to pid, "b" to f.pid, "an" to name, "bn" to f.name, "seed" to seed, "go" to false))

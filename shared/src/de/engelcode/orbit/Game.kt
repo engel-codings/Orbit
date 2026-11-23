@@ -1,7 +1,9 @@
 package de.engelcode.orbit
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.RectF
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Shader
@@ -20,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 14
-        const val VERSION_NAME = "0.9.7"
+        const val VERSION_CODE = 15
+        const val VERSION_NAME = "1.0.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -42,6 +44,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         private const val D_NEWS = 4
         private const val D_INVITE = 5
         private const val D_REMOVE = 6
+        private const val D_PLAYER = 7
 
         private const val CHALLENGE_GOAL = 15
         private const val CHALLENGE_REWARD = 60
@@ -58,7 +61,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -122,19 +125,34 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val bAddFriend = Btn(68, "", S_PRIMARY)
     private val bVsAgain = Btn(69, "", S_PRIMARY)
     private val bVsBack = Btn(70, "", S_GLASS)
-    private val bLb = Array(3) { Btn(71 + it, "", S_INVISIBLE) }
+    private val bLb = Array(4) { if (it < 3) Btn(71 + it, "", S_INVISIBLE) else Btn(91, "", S_INVISIBLE) }
     private val bForgot = Btn(74, "", S_INVISIBLE)
     private val bWGuest = Btn(75, "", S_GLASS)
     private val bWLogin = Btn(76, "", S_PRIMARY)
     private val bWReg = Btn(77, "", S_GLASS)
-    private val welcomeBtns = arrayOf(bWGuest, bWLogin, bWReg)
-    private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB)
-    private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bForgot)
-    private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2])
+    private val bWLang = Btn(78, "", S_ROUND, Gfx.I_GLOBE)
+    private val bWGoogle = Btn(79, "", S_GLASS)
+    private val welcomeBtns = arrayOf(bWGuest, bWLogin, bWReg, bWLang, bWGoogle)
+    private val bProfile = Btn(80, "", S_ROUND, Gfx.I_CROWN)
+    private val bPName = Btn(81, "", S_GLASS)
+    private val bPAvatar = Btn(82, "", S_GLASS)
+    private val bPPhoto = Btn(83, "", S_GLASS)
+    private val bPPub = Btn(84, "", S_GLASS)
+    private val bPFriends = Btn(85, "", S_GLASS, Gfx.I_HEART)
+    private val bPChat = Btn(86, "", S_GLASS, Gfx.I_GLOBE)
+    private val bPStats = Btn(87, "", S_GLASS, Gfx.I_CHART)
+    private val bPAccount = Btn(88, "", S_PRIMARY)
+    private val bChatB = Btn(89, "", S_GLASS, Gfx.I_GLOBE)
+    private val bChatWrite = Btn(90, "", S_PRIMARY)
+    private val profileBtns = arrayOf(bBack, bPName, bPAvatar, bPPhoto, bPPub, bPFriends, bPChat, bPStats, bPAccount)
+    private val chatBtns = arrayOf(bBack, bChatWrite)
+    private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB, bChatB)
+    private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bChatB)
+    private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2], bLb[3])
     private val friendBtns = arrayOf(bBack, bAddFriend)
     private val vsBtns = arrayOf(bVsAgain, bVsBack)
 
-    private val menuBtns = arrayOf(bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bStats, bSettings)
+    private val menuBtns = arrayOf(bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bProfile, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
@@ -247,7 +265,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private var achBadge = 0
     private var rankStr = ""
     private val dimTitles = Array(Levels.DIMS) { "" }
-    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt(), 0xFF8FD3FF.toInt(), 0xFFE040FB.toInt())
+    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt(), 0xFF8FD3FF.toInt(), 0xFFE040FB.toInt(), 0xFF64FFDA.toInt(), 0xFFFF1744.toInt())
     private val dimBestStr = Array(Levels.DIMS) { "" }
     private val dimLockStr = Array(Levels.DIMS) { "" }
     private var missionBadge = 0
@@ -284,6 +302,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Net.init({ np.getString(it, "") ?: "" }, { k, v -> np.edit().putString(k, v).apply() })
         Net.listener = this
         applyTexts()
+        Platform.googlePending { rt -> if (!rt.isNullOrEmpty()) Net.googleLogin(rt) { ok -> if (ok) afterLogin() } }
     }
 
     fun debugInfo(): String = "screen=" + screen + " level=" + runLevel + " dim=" + runDim + " fps=" + fpsShown + " vs=" + versus + " gfx=" + save.gfx
@@ -305,9 +324,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
         bRename.label = L.t(L.RENAME); bLogout.label = L.t(L.LOGOUT)
         bBoard.label = L.t(L.LEADERBOARD); bQuick.label = L.t(L.VS_QUICK); bFriendsB.label = L.t(L.FRIENDS)
         bAddFriend.label = L.t(L.ADD_FRIEND); bVsAgain.label = L.t(L.VS_AGAIN); bVsBack.label = L.t(L.ONLINE)
-        for (i in 0 until 3) bLb[i].label = L.t(L.LB_TABS[i])
+        for (i in 0 until 4) bLb[i].label = L.t(L.LB_TABS[i])
         bForgot.label = L.t(L.FORGOT_PW)
         bWGuest.label = L.t(L.GUEST_PLAY); bWLogin.label = L.t(L.LOGIN); bWReg.label = L.t(L.REGISTER)
+        bWGoogle.label = "G  " + L.t(L.NET_GOOGLE_BTN); bWLang.label = L.t(L.SETTINGS_LANG)
+        bProfile.label = L.t(L.PROFILE); bPName.label = L.t(L.RENAME); bPAvatar.label = L.t(L.AVATAR)
+        bPFriends.label = L.t(L.FRIENDS); bPChat.label = L.t(L.CHAT); bPStats.label = L.t(L.STATS)
+        bChatB.label = L.t(L.CHAT); bChatWrite.label = L.t(L.CHAT_WRITE)
+        refreshProfileLabels()
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
         bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
         bReset.label = L.t(L.RESET_BTN)
@@ -404,18 +428,30 @@ class Game(context: Context) : World.Listener, Net.Listener {
         place(bFriendsB, 70f, 1040f, 860f, 150f)
         place(bAddFriend, 70f, 230f, 860f, 115f)
         place(bForgot, 250f, 560f, 500f, 70f)
-        place(bWLogin, cx - 330f, H * 0.42f, 660f, 140f)
-        place(bWReg, cx - 330f, H * 0.42f + 170f, 660f, 120f)
-        place(bWGuest, cx - 330f, H * 0.42f + 420f, 660f, 120f)
+        place(bWLogin, cx - 330f, H * 0.40f, 660f, 135f)
+        place(bWReg, cx - 330f, H * 0.40f + 160f, 660f, 120f)
+        place(bWGuest, cx - 330f, H * 0.40f + 540f, 660f, 120f)
         place(bVsAgain, cx - 290f, H * 0.64f, 580f, 135f)
         place(bVsBack, cx - 290f, H * 0.64f + 160f, 580f, 120f)
-        for (i in 0 until 3) place(bLb[i], 50f + i * 300f, 215f, 300f, 92f)
+        for (i in 0 until 4) place(bLb[i], 50f + i * 225f, 215f, 225f, 92f)
+        place(bChatB, 70f, 1230f, 860f, 150f)
+        place(bWLang, W - 150f, 60f, 110f, 110f)
+        place(bWGoogle, cx - 330f, H * 0.40f + 300f, 660f, 120f)
+        place(bPName, 70f, 690f, 420f, 110f)
+        place(bPAvatar, 510f, 690f, 420f, 110f)
+        place(bPPhoto, 70f, 820f, 420f, 110f)
+        place(bPPub, 510f, 820f, 420f, 110f)
+        place(bPFriends, 70f, 1010f, 860f, 125f)
+        place(bPChat, 70f, 1155f, 860f, 125f)
+        place(bPStats, 70f, 1300f, 860f, 125f)
+        place(bPAccount, 70f, 1460f, 860f, 130f)
+        place(bChatWrite, 70f, H - 160f, 860f, 120f)
         place(bChallenge, 40f, pcy + 465f, 293f, 105f)
         place(bWheel, 353f, pcy + 465f, 293f, 105f)
         place(bChest, 666f, pcy + 465f, 293f, 105f)
         place(bSpin, cx - 290f, wheelCY() + 420f, 580f, 140f)
         val ny = H - 300f
-        val nav = arrayOf(bShop, bMissions, bAch, bStats, bSettings)
+        val nav = arrayOf(bShop, bMissions, bAch, bProfile, bSettings)
         for (i in 0 until 5) place(nav[i], 100f + i * 200f - 65f, ny, 130f, 130f)
         place(bBack, 40f, 60f, 110f, 110f)
         place(bPause, 40f, 60f, 110f, 110f)
@@ -453,6 +489,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.MENU -> refreshMenuTexts()
             Screen.LEADER -> { shopScroll = 0f; lbDirty = true; Net.loadBoard(); netT = 0f }
             Screen.FRIENDS -> { shopScroll = 0f; Net.loadFriends(); netT = 0f }
+            Screen.CHAT -> { shopScroll = 0f; Net.loadChat(); netT = 0f; chatDirty = true }
             else -> {}
         }
     }
@@ -497,6 +534,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
             4 -> showToast(L.t(L.DIM4_HINT))
             5 -> showToast(L.t(L.DIM5_HINT))
             6 -> showToast(L.t(L.DIM6_HINT))
+            7 -> showToast(L.t(L.DIM7_HINT))
+            8 -> showToast(L.t(L.DIM8_HINT))
         }
         if (!save.redirectHint && (level == 0 || level >= 2)) {
             save.redirectHint = true; save.flush()
@@ -534,7 +573,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         }
     }
 
-    private fun ttTop() = 245f + 3 * 285f
+    private fun ttTop() = 245f + 4 * 285f
 
     private fun ttOpen(k: Int) = save.levelDone >= TT_COURSES[k].max()
 
@@ -661,33 +700,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun backFrom() {
         when (screen) {
-            Screen.LEADER, Screen.FRIENDS -> go(Screen.ONLINE)
+            Screen.LEADER -> go(Screen.ONLINE)
+            Screen.FRIENDS, Screen.CHAT, Screen.AVATARS -> go(if (backToProfile) Screen.PROFILE else Screen.ONLINE)
+            Screen.STATS -> go(Screen.PROFILE)
             Screen.QUEUE -> { Net.leaveQueue(); Net.cancelInvite(); go(if (queueInvite) Screen.FRIENDS else Screen.ONLINE) }
             else -> go(Screen.MENU)
-        }
-    }
-
-    private fun askCreds(register: Boolean) {
-        Platform.askText(L.t(L.ASK_EMAIL), Net.email, 80) { mail ->
-            if (mail.isNullOrBlank()) return@askText
-            if (!mail.contains('@') || !mail.contains('.')) { showToast(L.t(L.NET_BAD_EMAIL)); return@askText }
-            val askPw: (String) -> Unit = { n ->
-                Platform.askText(L.t(L.ASK_PW), "", 40, true) { pw ->
-                    if (pw != null) {
-                        if (pw.length < 6) showToast(L.t(L.NET_BAD_PW))
-                        else {
-                            val done: (Boolean) -> Unit = { ok -> if (ok) { showToast(L.f(L.NET_WELCOME, Net.name)); if (screen == Screen.WELCOME) go(Screen.MENU) } }
-                            if (register) Net.register(mail, n, pw, done) else Net.login(mail, pw, done)
-                        }
-                    }
-                }
-            }
-            if (!register) askPw("")
-            else Platform.askText(L.t(L.ASK_NAME), "", 16) { n ->
-                if (n == null) return@askText
-                if (!Net.validName(n)) { showToast(L.t(L.NET_BAD_NAME)); return@askText }
-                askPw(n)
-            }
         }
     }
 
@@ -700,11 +717,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
         netT += dt
         if (screen == Screen.LEADER && netT > 5f) { netT = 0f; Net.loadBoard() }
         if (screen == Screen.FRIENDS && netT > 8f) { netT = 0f; Net.loadFriends() }
+        if (screen == Screen.CHAT && netT > 3f) { netT = 0f; Net.loadChat() }
         if (Net.active && screen != Screen.PLAYING) {
             cloudT += dt
             if (cloudT > 20f) {
                 cloudT = 0f
-                val sig = "${save.stars}_${save.levelDone}_${save.totalCrowns}_${save.best}_${save.games}_${save.ownedSkins}_${save.ownedTrails}"
+                val sig = "${save.stars}_${save.levelDone}_${save.totalCrowns}_${save.best}_${save.games}_${save.ownedSkins}_${save.ownedSkins2}_${save.ownedTrails}"
                 if (sig != cloudSig) { cloudSig = sig; Net.pushProfile(); Net.pushSave() }
             }
         }
@@ -760,7 +778,15 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     override fun netChanged() { lbDirty = true }
 
-    override fun netProfile(): String = "\"best\":" + save.best + ",\"level\":" + save.levelDone + ",\"crowns\":" + save.totalCrowns
+    override fun netProfile(): String {
+        val wk = curWeek()
+        val wb = if (save.weekId == wk) save.weekBest else 0
+        return "\"best\":" + save.best + ",\"level\":" + save.levelDone + ",\"crowns\":" + save.totalCrowns +
+            ",\"av\":" + save.avatar + ",\"ph\":" + (Net.hasPhoto && save.photoPub) + ",\"wk\":" + wk + ",\"wb\":" + wb
+    }
+
+    override fun netAvatar(): Int = save.avatar
+    override fun netPhotoPublic(): Boolean = save.photoPub
 
     override fun netExport(): String { save.flush(); return Platform.prefsExport() }
 
@@ -788,12 +814,265 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, ty - 60f, 420f, 150)
         gfx.text(c, "ORBIT", cx, ty, 200f, Color.WHITE)
         gfx.spaced(c, "PLANET JUMP", cx, ty + 70f, 36f, Gfx.ACCENT, 0.5f)
-        gfx.text(c, L.t(L.WELCOME_Q), cx, H * 0.42f - 70f, 46f, Color.WHITE, maxW = 860f)
-        drawBtn(c, bWLogin); drawBtn(c, bWReg)
-        gfx.text(c, L.t(L.WELCOME_ACC), cx, H * 0.42f + 345f, 26f, Gfx.DIM, false, maxW = 860f)
+        gfx.text(c, L.t(L.WELCOME_Q), cx, H * 0.40f - 60f, 46f, Color.WHITE, maxW = 860f)
+        drawBtn(c, bWLogin); drawBtn(c, bWReg); drawBtn(c, bWGoogle); drawBtn(c, bWLang)
+        gfx.text(c, L.LANG_NAMES[L.cur], W - 95f, 205f, 22f, Gfx.DIM, false, maxW = 180f)
+        gfx.text(c, L.t(L.WELCOME_ACC), cx, H * 0.40f + 460f, 26f, Gfx.DIM, false, maxW = 860f)
         drawBtn(c, bWGuest)
-        gfx.text(c, L.t(L.WELCOME_GUEST), cx, H * 0.42f + 595f, 26f, Gfx.DIM, false, maxW = 860f)
-        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), cx, H * 0.42f + 680f, 30f, Gfx.ACCENT)
+        gfx.text(c, L.t(L.WELCOME_GUEST), cx, H * 0.40f + 685f, 26f, Gfx.DIM, false, maxW = 860f)
+        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), cx, H * 0.40f + 760f, 30f, Gfx.ACCENT)
+    }
+
+    // ===================================================================== Profil, Avatare, Chat, Formulare
+
+    private var backToProfile = false
+    private var selPid = ""
+    private var selName = ""
+    private var photoKey = ""
+    private var myPhotoBmp: Bitmap? = null
+    private val photoCache = HashMap<String, Bitmap>()
+    private val photoReq = HashSet<String>()
+    private val avPath = android.graphics.Path()
+    private val avRect = RectF()
+    private val AV_COUNT = 20
+
+    private fun curWeek(): Int = ((today() + 3) / 7).toInt()
+
+    private fun avatarBody(av: Int) = (av.coerceIn(0, AV_COUNT - 1)) + 1
+
+    private fun myPhoto(): Bitmap? {
+        val p = Net.myPhoto
+        if (p.isEmpty()) { myPhotoBmp = null; photoKey = ""; return null }
+        if (p.length.toString() + p.takeLast(16) != photoKey) {
+            photoKey = p.length.toString() + p.takeLast(16)
+            val k = photoKey
+            Platform.decodeImage(p) { b -> if (k == photoKey) myPhotoBmp = b }
+        }
+        return myPhotoBmp
+    }
+
+    private fun photoFor(uid: String, ph: Boolean): Bitmap? {
+        if (!ph) return null
+        photoCache[uid]?.let { return it }
+        if (photoReq.add(uid)) Net.loadPhoto(uid) { b64 ->
+            if (b64.isNotEmpty()) Platform.decodeImage(b64) { b -> if (b != null) photoCache[uid] = b }
+        }
+        return null
+    }
+
+    private fun drawAvatar(c: Canvas, x: Float, y: Float, r: Float, av: Int, photo: Bitmap?) {
+        if (photo != null) {
+            c.save()
+            avPath.reset()
+            avPath.addCircle(x, y, r, android.graphics.Path.Direction.CW)
+            c.clipPath(avPath)
+            avRect.set(x - r, y - r, x + r, y + r)
+            c.drawBitmap(photo, null, avRect, null)
+            c.restore()
+            gfx.ring(c, x, y, r, Color.WHITE, 3f, 140)
+            return
+        }
+        gfx.circle(c, x, y, r, Gfx.PANEL2)
+        gfx.drawBody(c, avatarBody(av), x, y, r * 0.78f, time, true)
+        gfx.ring(c, x, y, r, Color.WHITE, 3f, 90)
+    }
+
+    private fun refreshProfileLabels() {
+        bPPhoto.label = L.t(if (Net.hasPhoto) L.PHOTO_DEL else L.PHOTO_UP)
+        bPPub.label = L.t(if (save.photoPub) L.PHOTO_PUBLIC else L.PHOTO_PRIVATE)
+        bPAccount.label = L.t(if (Net.loggedIn) L.LOGOUT else L.REGISTER)
+    }
+
+    private fun afterLogin() {
+        showToast(L.f(L.NET_WELCOME, Net.name))
+        if (screen == Screen.WELCOME) go(Screen.MENU)
+        Net.loadMyPhoto()
+    }
+
+    private fun doGoogle() {
+        Platform.googleSignIn { rt ->
+            if (rt.isNullOrEmpty()) showToast(L.t(L.NET_GOOGLE_FAIL))
+            else Net.googleLogin(rt) { ok -> if (ok) afterLogin() }
+        }
+    }
+
+    private fun loginForm(mail: String = Net.email.takeIf { it.contains('@') } ?: "") {
+        Platform.showForm(FormSpec(L.t(L.LOGIN), L.t(L.FORM_LOGIN_SUB),
+            listOf(FormField("mail", L.t(L.ASK_EMAIL), FormField.EMAIL, mail, 80), FormField("pw", L.t(L.ASK_PW), FormField.PASSWORD, "", 40)),
+            L.t(L.LOGIN), listOf("forgot" to L.t(L.FORGOT_PW), "reg" to L.t(L.FORM_NO_ACC)), L.t(L.NET_GOOGLE_BTN), L.t(L.NET_OR))) { a, v ->
+            val m = v["mail"] ?: ""; val pw = v["pw"] ?: ""
+            when (a) {
+                "submit" -> when {
+                    !m.contains('@') || !m.contains('.') -> { showToast(L.t(L.NET_BAD_EMAIL)); loginForm(m) }
+                    pw.length < 6 -> { showToast(L.t(L.NET_BAD_PW)); loginForm(m) }
+                    else -> Net.login(m, pw) { ok -> if (ok) afterLogin() }
+                }
+                "google" -> doGoogle()
+                "forgot" -> resetForm(m)
+                "reg" -> registerForm(m)
+            }
+        }
+    }
+
+    private fun registerForm(mail: String = "", name: String = "") {
+        Platform.showForm(FormSpec(L.t(L.REGISTER), L.t(L.FORM_REG_SUB),
+            listOf(FormField("mail", L.t(L.ASK_EMAIL), FormField.EMAIL, mail, 80),
+                FormField("name", L.t(L.ASK_NAME), FormField.TEXT, name, 16),
+                FormField("pw", L.t(L.ASK_PW), FormField.PASSWORD, "", 40)),
+            L.t(L.REGISTER), listOf("login" to L.t(L.FORM_HAS_ACC)), L.t(L.NET_GOOGLE_BTN), L.t(L.NET_OR))) { a, v ->
+            val m = v["mail"] ?: ""; val n = v["name"] ?: ""; val pw = v["pw"] ?: ""
+            when (a) {
+                "submit" -> when {
+                    !m.contains('@') || !m.contains('.') -> { showToast(L.t(L.NET_BAD_EMAIL)); registerForm(m, n) }
+                    !Net.validName(n) -> { showToast(L.t(L.NET_BAD_NAME)); registerForm(m, n) }
+                    pw.length < 6 -> { showToast(L.t(L.NET_BAD_PW)); registerForm(m, n) }
+                    else -> Net.register(m, n, pw) { ok -> if (ok) afterLogin() }
+                }
+                "google" -> doGoogle()
+                "login" -> loginForm(m)
+            }
+        }
+    }
+
+    private fun resetForm(mail: String = "") {
+        Platform.showForm(FormSpec(L.t(L.FORGOT_PW), L.t(L.FORM_RESET_SUB),
+            listOf(FormField("mail", L.t(L.ASK_EMAIL), FormField.EMAIL, mail, 80)), L.t(L.FORM_RESET_BTN))) { a, v ->
+            if (a == "submit" && !v["mail"].isNullOrBlank()) Net.resetPassword(v["mail"]!!)
+        }
+    }
+
+    private fun nameForm() {
+        Platform.showForm(FormSpec(L.t(L.RENAME), L.t(L.ASK_NAME), listOf(FormField("n", L.t(L.ASK_NEW_NAME), FormField.TEXT, Net.name, 16)), "OK")) { a, v ->
+            if (a != "submit") return@showForm
+            val n = v["n"] ?: ""
+            if (!Net.validName(n)) { showToast(L.t(L.NET_BAD_NAME)); return@showForm }
+            Net.rename(n) { ok -> if (ok) { showToast(L.f(L.NET_RENAMED, Net.name)); Net.loadBoard() } }
+        }
+    }
+
+    private fun chatForm() {
+        Platform.showForm(FormSpec(L.t(L.CHAT_TITLE), "", listOf(FormField("t", L.t(L.CHAT_WRITE), FormField.TEXT, "", 200)), L.t(L.CHAT_SEND))) { a, v ->
+            if (a == "submit") { Net.sendChat(v["t"] ?: ""); shopScroll = 0f }
+        }
+    }
+
+    private fun openPlayer(uid: String, name: String) {
+        if (uid == Net.pid || uid.isEmpty()) return
+        selPid = uid; selName = name
+        openDialog(D_PLAYER, name, arrayOf(L.t(L.PLAYER_WHAT)), L.t(L.ADD), L.t(L.DUEL))
+    }
+
+    private fun leaderTap(y: Float) {
+        if (y < LB_TOP || y > H - 150f) return
+        val i = ((y + shopScroll - LB_TOP) / LB_STEP).toInt()
+        if (i in lbList.indices) openPlayer(lbList[i].pid, lbList[i].name)
+    }
+
+    // ---- Profil
+
+    private fun drawProfile(c: Canvas) {
+        header(c, L.t(L.PROFILE))
+        starPill(c, save.stars)
+        val cx = W / 2f
+        if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, 360f, 260f, 120)
+        drawAvatar(c, cx, 360f, 120f, save.avatar, myPhoto())
+        gfx.text(c, if (Net.name.isNotEmpty()) Net.name else L.t(L.NET_GUEST), cx, 545f, 50f, Color.WHITE, maxW = 860f)
+        val sub = (if (Net.loggedIn) Net.email else L.t(L.PROFILE_GUEST)) + "  ·  " + L.f(L.PROFILE_LEVEL, save.levelDone, Net.board.firstOrNull { it.pid == Net.pid }?.wins ?: 0)
+        gfx.text(c, sub, cx, 600f, 26f, Gfx.DIM, false, maxW = 860f)
+        for (b in profileBtns) if (b !== bBack) drawBtn(c, b)
+        gfx.text(c, L.t(L.PHOTO_INFO), cx, 975f, 24f, Gfx.DIM, false, maxW = 860f)
+    }
+
+    private fun drawAvatars(c: Canvas) {
+        header(c, L.t(L.AVATAR_PICK))
+        for (i in 0 until AV_COUNT) {
+            val col = i % 4; val row = i / 4
+            val x = 140f + col * 240f; val y = 360f + row * 240f
+            val sel = i == save.avatar
+            if (sel) gfx.ring(c, x, y, 100f, Gfx.ACCENT, 8f, 255)
+            drawAvatar(c, x, y, 88f, i, null)
+        }
+    }
+
+    private fun avatarTap(x: Float, y: Float) {
+        val col = ((x - 20f) / 240f).toInt(); val row = ((y - 240f) / 240f).toInt()
+        if (col !in 0..3 || row < 0) return
+        val i = row * 4 + col
+        if (i !in 0 until AV_COUNT) return
+        save.avatar = i; save.flush()
+        sound.play(Sound.CLICK)
+        Net.pushProfile()
+        go(Screen.PROFILE)
+    }
+
+    // ---- Chat
+
+    private class ChatLine(val msg: Net.Msg, val lines: List<String>, val h: Float)
+    private var chatLines: List<ChatLine> = emptyList()
+    private var chatDirty = true
+    private var chatSig = ""
+    private var chatTotalH = 0f
+    private val CHAT_TOP = 330f
+
+    private fun wrap(t: String, size: Float, maxW: Float): List<String> {
+        val out = ArrayList<String>()
+        var cur = ""
+        for (w in t.split(' ')) {
+            val test = if (cur.isEmpty()) w else "$cur $w"
+            if (gfx.textWidth(test, size) <= maxW || cur.isEmpty()) cur = test
+            else { out.add(cur); cur = w }
+        }
+        if (cur.isNotEmpty()) out.add(cur)
+        return out.take(6)
+    }
+
+    private fun layoutChat() {
+        val sig = Net.chat.size.toString() + (Net.chat.lastOrNull()?.id ?: "")
+        if (!chatDirty && sig == chatSig) return
+        chatDirty = false; chatSig = sig
+        chatLines = Net.chat.map { m ->
+            val ls = wrap(m.text, 32f, 700f)
+            ChatLine(m, ls, 70f + ls.size * 42f + 26f)
+        }
+        chatTotalH = chatLines.sumOf { it.h.toDouble() }.toFloat()
+    }
+
+    private fun drawChat(c: Canvas) {
+        dim(c, 150)
+        layoutChat()
+        val bottom = H - 190f
+        c.save()
+        c.clipRect(0f, CHAT_TOP - 10f, W, bottom)
+        var y = bottom + shopScroll
+        for (k in chatLines.indices.reversed()) {
+            val cl = chatLines[k]
+            y -= cl.h
+            if (y > bottom || y + cl.h < CHAT_TOP - 10f) continue
+            val m = cl.msg
+            val me = m.uid == Net.pid
+            gfx.glass(c, 140f, y + 6f, 950f, y + cl.h - 14f, 30f, border = if (me) Gfx.ACCENT else Color.WHITE)
+            drawAvatar(c, 80f, y + 50f, 40f, m.av, if (me) myPhoto() else photoFor(m.uid, m.ph))
+            gfx.text(c, m.name, 170f, y + 50f, 26f, if (me) Gfx.ACCENT else Gfx.GOLD, align = Paint.Align.LEFT, maxW = 600f)
+            for ((i, l) in cl.lines.withIndex()) gfx.text(c, l, 170f, y + 96f + i * 42f, 32f, Color.WHITE, false, Paint.Align.LEFT, maxW = 760f)
+        }
+        if (chatLines.isEmpty()) gfx.text(c, L.t(if (Net.chatLoaded) L.CHAT_EMPTY else L.NET_LOADING), W / 2f, H * 0.45f, 32f, Gfx.DIM, false, maxW = 860f)
+        c.restore()
+        gfx.roundRect(c, -10f, -10f, W + 10f, CHAT_TOP - 10f, 0f, Gfx.BG, 245)
+        drawBtn(c, bBack)
+        gfx.text(c, L.t(L.CHAT_TITLE), W / 2f, 132f, 50f, Color.WHITE, maxW = 600f)
+        gfx.text(c, L.t(L.CHAT_HINT), W / 2f, 250f, 24f, Gfx.DIM, false, maxW = 880f)
+        drawBtn(c, bChatWrite)
+    }
+
+    private fun chatTap(y: Float) {
+        val bottom = H - 190f
+        if (y < CHAT_TOP || y > bottom) return
+        var yy = bottom + shopScroll
+        for (k in chatLines.indices.reversed()) {
+            val cl = chatLines[k]
+            yy -= cl.h
+            if (y >= yy && y < yy + cl.h) { openPlayer(cl.msg.uid, cl.msg.name); return }
+        }
     }
 
     private fun drawOnline(c: Canvas) {
@@ -801,23 +1080,21 @@ class Game(context: Context) : World.Listener, Net.Listener {
         starPill(c, save.stars)
         val hasName = Net.name.isNotEmpty()
         gfx.glass(c, 50f, 230f, 950f, 550f, 44f, border = if (Net.loggedIn) Gfx.GREEN else Color.WHITE)
-        gfx.circle(c, 140f, 320f, 55f, if (hasName) Gfx.ACCENT else Gfx.PANEL2)
-        gfx.text(c, if (hasName) Net.name.take(1).uppercase() else "?", 140f, 340f, 56f, if (hasName) Gfx.BG else Gfx.DIM)
+        drawAvatar(c, 140f, 320f, 60f, save.avatar, myPhoto())
         gfx.text(c, if (hasName) Net.name else L.t(L.NET_GUEST), 220f, 315f, 46f, Color.WHITE, align = Paint.Align.LEFT, maxW = 700f)
         gfx.text(c, L.t(if (Net.loggedIn) L.NET_CLOUD else if (Net.guest) L.NET_GUEST_ACC else L.NET_GUEST_INFO), 220f, 362f, 25f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 700f)
         for (b in if (Net.loggedIn) onlineInBtns else onlineOutBtns) if (b !== bBack) drawBtn(c, b)
-        if (!Net.loggedIn) gfx.text(c, bForgot.label, W / 2f, 605f, 28f, Gfx.ACCENT, false, maxW = 500f)
-        gfx.text(c, L.t(L.NET_GOOGLE), W / 2f, 1260f, 26f, Gfx.DIM, false, maxW = 860f)
-        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), W / 2f, 1310f, 30f, Gfx.ACCENT)
+        gfx.text(c, L.t(L.NET_GOOGLE), W / 2f, 1440f, 26f, Gfx.DIM, false, maxW = 860f)
+        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), W / 2f, 1490f, 30f, Gfx.ACCENT)
     }
 
-    private fun lbValue(e: Net.Entry) = when (lbTab) { 0 -> e.level; 1 -> e.best; else -> e.wins }
+    private fun lbValue(e: Net.Entry) = when (lbTab) { 0 -> e.level; 1 -> e.best; 2 -> e.wins; else -> if (e.wk == curWeek()) e.wb else 0 }
 
     private fun drawLeader(c: Canvas) {
         dim(c, 150)
         if (lbDirty) {
             lbDirty = false
-            lbList = Net.board.sortedWith(compareByDescending<Net.Entry> { lbValue(it) }.thenByDescending { it.crowns })
+            lbList = Net.board.filter { lbTab != 3 || (it.wk == curWeek() && it.wb > 0) }.sortedWith(compareByDescending<Net.Entry> { lbValue(it) }.thenByDescending { it.crowns })
             myRank = lbList.indexOfFirst { it.pid == Net.pid } + 1
         }
         c.save()
@@ -829,9 +1106,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
             val me = e.pid == Net.pid
             gfx.glass(c, 50f, y, 950f, y + LB_STEP - 14f, 32f, border = if (me) Gfx.ACCENT else Color.WHITE)
             val medal = when (i) { 0 -> Gfx.GOLD; 1 -> 0xFFC0C8D2.toInt(); 2 -> 0xFFCD8B4E.toInt(); else -> Gfx.PANEL2 }
-            gfx.circle(c, 115f, y + 49f, 33f, medal)
-            gfx.text(c, levelNum[min(i + 1, Levels.COUNT)], 115f, y + 61f, if (i < 99) 32f else 24f, if (i < 3) Gfx.BG else Color.WHITE)
-            gfx.text(c, e.name, 175f, y + 63f, 36f, if (me) Gfx.ACCENT else Color.WHITE, align = Paint.Align.LEFT, maxW = 560f)
+            gfx.circle(c, 100f, y + 49f, 28f, medal)
+            gfx.text(c, levelNum[min(i + 1, Levels.COUNT)], 100f, y + 59f, if (i < 99) 28f else 21f, if (i < 3) Gfx.BG else Color.WHITE)
+            drawAvatar(c, 180f, y + 49f, 38f, e.av, if (me) myPhoto() else photoFor(e.pid, e.ph))
+            gfx.text(c, e.name, 235f, y + 63f, 34f, if (me) Gfx.ACCENT else Color.WHITE, align = Paint.Align.LEFT, maxW = 500f)
             gfx.text(c, lbValue(e).toString(), 910f, y + 63f, 38f, Gfx.GOLD, align = Paint.Align.RIGHT)
         }
         if (lbList.isEmpty()) gfx.text(c, L.t(L.NET_LOADING), W / 2f, LB_TOP + 120f, 34f, Gfx.DIM)
@@ -843,7 +1121,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         val tb = bLb[lbTab]
         val sh = tb.shader
         if (sh != null) gfx.gradRoundRect(c, tb.x + 6f, tb.y + 6f, tb.x + tb.w - 6f, tb.y + tb.h - 6f, 40f, sh)
-        for (i in 0 until 3) gfx.text(c, bLb[i].label, bLb[i].x + 150f, 272f, 30f, if (i == lbTab) Color.WHITE else Gfx.DIM, maxW = 260f)
+        for (i in 0 until 4) gfx.text(c, bLb[i].label, bLb[i].x + 112f, 272f, 26f, if (i == lbTab) Color.WHITE else Gfx.DIM, maxW = 200f)
         if (Net.active && myRank > 0) {
             gfx.glass(c, 50f, H - 140f, 950f, H - 40f, 50f, border = Gfx.ACCENT)
             gfx.text(c, L.f(L.RANK_YOU, myRank), W / 2f, H - 75f, 36f, Color.WHITE)
@@ -1083,6 +1361,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
             val d = (runDim - 1).coerceIn(0, Levels.DIMS - 1)
             if (world.score > save.bestDim[d]) { save.bestDim[d] = world.score; newRecord = true }
             if (world.score > save.best) save.best = world.score
+            val wk = curWeek()
+            if (save.weekId != wk) { save.weekId = wk; save.weekBest = 0 }
+            if (world.score > save.weekBest) save.weekBest = world.score
         }
         save.playTime += runTime; runTime = 0f
         if (!runCounted) { save.games++; runCounted = true }
@@ -1309,13 +1590,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dialog != D_NONE) return
-                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS) return
+                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT) return
                 if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
                 if (dragging) when (screen) {
                     Screen.MAP -> mapScroll = clampMap(scrollStart + (y - downY))
                     Screen.ACHIEVE -> achScroll = clampAch(scrollStart - (y - downY))
                     Screen.LEADER -> shopScroll = clampList(scrollStart - (y - downY), lbList.size, LB_TOP, LB_STEP)
                     Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
+                    Screen.CHAT -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
                     else -> shopScroll = clampShop(scrollStart - (y - downY))
                 }
             }
@@ -1334,6 +1616,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     Screen.MISSIONS -> missionTap(y)
                     Screen.ENDLESS_SEL -> endlessTap(x, y)
                     Screen.FRIENDS -> friendTap(x, y)
+                    Screen.LEADER -> leaderTap(y)
+                    Screen.CHAT -> chatTap(y)
+                    Screen.AVATARS -> avatarTap(x, y)
                     else -> {}
                 }
             }
@@ -1359,6 +1644,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Screen.MISSIONS, Screen.ENDLESS_SEL, Screen.QUEUE -> backBtns
         Screen.ONLINE -> if (Net.loggedIn) onlineInBtns else onlineOutBtns
         Screen.WELCOME -> welcomeBtns
+        Screen.PROFILE -> { refreshProfileLabels(); profileBtns }
+        Screen.AVATARS -> backBtns
+        Screen.CHAT -> chatBtns
         Screen.LEADER -> leaderBtns
         Screen.FRIENDS -> friendBtns
         Screen.VSRESULT -> { bVsAgain.visible = vsFinal; bVsBack.visible = vsFinal; vsBtns }
@@ -1375,25 +1663,42 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bSettings.id -> go(Screen.SETTINGS)
             bBack.id -> backFrom()
             bOnline.id -> go(Screen.ONLINE)
-            bLogin.id -> askCreds(false)
-            bRegister.id -> askCreds(true)
-            bRename.id -> Platform.askText(L.t(L.ASK_NEW_NAME), Net.name, 16) { n ->
-                if (n == null) return@askText
-                if (!Net.validName(n)) { showToast(L.t(L.NET_BAD_NAME)); return@askText }
-                Net.rename(n) { ok -> if (ok) { showToast(L.f(L.NET_RENAMED, Net.name)); Net.loadBoard() } }
-            }
+            bLogin.id -> loginForm()
+            bRegister.id -> registerForm()
+            bRename.id -> nameForm()
             bLogout.id -> { Net.logout(); showToast(L.t(L.NET_LOGGED_OUT)); go(Screen.WELCOME) }
             bWGuest.id -> { Net.chooseGuest(); go(Screen.MENU) }
-            bWLogin.id -> askCreds(false)
-            bWReg.id -> askCreds(true)
-            bForgot.id -> Platform.askText(L.t(L.ASK_EMAIL), Net.email, 80) { m -> if (!m.isNullOrBlank()) Net.resetPassword(m) }
+            bWLogin.id -> loginForm()
+            bWReg.id -> registerForm()
+            bWGoogle.id -> doGoogle()
+            bWLang.id -> {
+                save.lang = (L.cur + 1) % 3
+                save.flush(); L.set(save.lang); applyTexts(); buildStats(); buildAch()
+            }
+            bProfile.id -> go(Screen.PROFILE)
+            bPName.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else nameForm()
+            bPAvatar.id -> { backToProfile = true; go(Screen.AVATARS) }
+            bPPhoto.id -> if (Net.hasPhoto) { Net.removePhoto(); photoKey = ""; myPhotoBmp = null } else Platform.pickImage { b64 ->
+                if (b64 != null && b64.length < 60000) { Net.setPhoto(b64); showToast(L.t(L.PHOTO_SAVED)) }
+            }
+            bPPub.id -> { save.photoPub = !save.photoPub; save.flush(); Net.setPhotoPublic(save.photoPub) }
+            bPFriends.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { backToProfile = true; go(Screen.FRIENDS) }
+            bPChat.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { backToProfile = true; go(Screen.CHAT) }
+            bChatB.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { backToProfile = false; go(Screen.CHAT) }
+            bPStats.id -> go(Screen.STATS)
+            bPAccount.id -> if (Net.loggedIn) { Net.logout(); showToast(L.t(L.NET_LOGGED_OUT)); go(Screen.WELCOME) } else registerForm()
+            bChatWrite.id -> chatForm()
+            bLb[3].id -> { lbTab = 3; lbDirty = true; shopScroll = 0f }
+            bForgot.id -> resetForm()
             bBoard.id -> go(Screen.LEADER)
             bQuick.id, bVsAgain.id -> {
                 if (!Net.active) { sound.play(Sound.ERROR); showToast(L.t(L.NET_LOGIN_NEEDED)); go(Screen.ONLINE) }
                 else { Net.pushProfile(); Net.joinQueue(); queueInvite = false; go(Screen.QUEUE) }
             }
-            bFriendsB.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else go(Screen.FRIENDS)
-            bAddFriend.id -> Platform.askText(L.t(L.ASK_FRIEND), "", 16) { n -> if (!n.isNullOrBlank()) Net.addFriend(n) }
+            bFriendsB.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { backToProfile = false; go(Screen.FRIENDS) }
+            bAddFriend.id -> Platform.showForm(FormSpec(L.t(L.ADD_FRIEND).removePrefix("+ "), "", listOf(FormField("n", L.t(L.ASK_FRIEND), max = 16)), "OK")) { a, v ->
+                if (a == "submit" && !v["n"].isNullOrBlank()) Net.addFriend(v["n"]!!)
+            }
             bVsBack.id -> go(Screen.ONLINE)
             bLb[0].id -> { lbTab = 0; lbDirty = true; shopScroll = 0f }
             bLb[1].id -> { lbTab = 1; lbDirty = true; shopScroll = 0f }
@@ -1488,6 +1793,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
             D_DAILY -> claimDaily()
             D_INVITE -> if (yes) Net.acceptInvite(invFrom, invMid) else Net.declineInvite(invFrom)
             D_REMOVE -> if (yes) Net.removeFriend(remPid)
+            D_PLAYER -> if (yes) {
+                if (!Net.loggedIn) showToast(L.t(L.NET_FRIENDS_NEED)) else Net.addFriendId(selPid, selName)
+            } else {
+                Net.inviteAny(selPid, selName); queueInvite = true; showToast(L.t(L.INVITE_SENT)); go(Screen.QUEUE)
+            }
             else -> {}
         }
     }
@@ -1591,7 +1901,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (save.stars < price) return
         save.stars -= price
         when (tab) {
-            0 -> { save.ownedSkins = save.ownedSkins or (1L shl i); save.skin = i }
+            0 -> { save.grantSkin(i); save.skin = i }
             1 -> { save.ownedTrails = save.ownedTrails or (1 shl i); save.trail = i }
             2 -> save.revives = min(Skins.REVIVE_MAX, save.revives + 1)
             4 -> save.upg[i] = min(3, save.upg[i] + 1)
@@ -1709,6 +2019,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.QUEUE -> drawQueue(c)
             Screen.VSRESULT -> drawVsResult(c)
             Screen.WELCOME -> drawWelcome(c)
+            Screen.PROFILE -> drawProfile(c)
+            Screen.AVATARS -> drawAvatars(c)
+            Screen.CHAT -> drawChat(c)
         }
 
         if (save.showFps) {
@@ -1835,7 +2148,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         drawBtn(c, bChest)
         if (chestReady()) gfx.circle(c, bChest.x + bChest.w - 14f, bChest.y + 14f, 14f, Gfx.RED)
 
-        drawBtn(c, bShop); drawBtn(c, bMissions); drawBtn(c, bAch); drawBtn(c, bStats); drawBtn(c, bSettings)
+        drawBtn(c, bShop); drawBtn(c, bMissions); drawBtn(c, bAch); drawBtn(c, bProfile); drawBtn(c, bSettings)
         if (missionBadge > 0) {
             val bx = bMissions.x + bMissions.w - 18f; val by = bMissions.y + 18f
             gfx.circle(c, bx, by, 22f, Gfx.RED)
@@ -2041,7 +2354,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
             gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
-            if (s == 15 || s == 20 || s == 25 || s == 30 || s == 35) {
+            if (s >= 15 && s % 5 == 0 && s <= 45) {
                 // Übergang in die Spiegelwelt
                 val dy = by - r - 150f
                 val di = s / 5 - 2

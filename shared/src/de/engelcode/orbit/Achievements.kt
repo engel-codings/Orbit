@@ -83,7 +83,11 @@ object Achievements {
         Ach(n("Frostbeule", "Frostbite", "Обморожение"), LEVEL, 310, 700),
         Ach(n("Eiskönig", "Ice king", "Ледяной король"), LEVEL, 350, 2500),
         Ach(n("Lichtgeschwindigkeit", "Light speed", "Скорость света"), LEVEL, 360, 900),
-        Ach(n("Unendlichkeit", "Infinity", "Бесконечность"), LEVEL, 400, 4000)
+        Ach(n("Unendlichkeit", "Infinity", "Бесконечность"), LEVEL, 400, 4000),
+        Ach(n("Pulsjäger", "Pulse hunter", "Охотник за пульсом"), LEVEL, 410, 1000),
+        Ach(n("Herzschlag der Sterne", "Heartbeat of the stars", "Сердцебиение звёзд"), LEVEL, 450, 3000),
+        Ach(n("Am Ereignishorizont", "At the event horizon", "На горизонте событий"), LEVEL, 460, 1200),
+        Ach(n("Omega", "Omega", "Омега"), LEVEL, 500, 6000)
     )
 
     private val DESC = arrayOf(

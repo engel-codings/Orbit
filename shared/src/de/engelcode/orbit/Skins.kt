@@ -152,7 +152,23 @@ object Skins {
         Skin(n("Quant", "Quantum", "Квант"), 6200, c(0xFF00E5FF), c(0xFFE040FB), ATOM, c(0xFFE040FB), reqLevel = 365),
         Skin(n("Tachyon", "Tachyon", "Тахион"), 7400, c(0xFFE040FB), c(0xFFE040FB), ELECTRIC, c(0xFF00E5FF), reqLevel = 380),
         Skin(n("Neon-Prisma", "Neon prism", "Неоновая призма"), 8500, c(0xFF76FF03), c(0xFF76FF03), PRISM, reqCrowns = 600),
-        Skin(n("Unendlichkeit", "Infinity", "Бесконечность"), 0, c(0xFFFFFFFF), c(0xFFE040FB), GALAXY, c(0xFF00E5FF), reqLevel = 400)
+        Skin(n("Unendlichkeit", "Infinity", "Бесконечность"), 0, c(0xFFFFFFFF), c(0xFFE040FB), GALAXY, c(0xFF00E5FF), reqLevel = 400),
+        Skin(n("Pulsschlag", "Heartbeat", "Пульс"), 4500, c(0xFF64FFDA), c(0xFF1DE9B6), ATOM, c(0xFFFFFFFF), reqLevel = 405),
+        Skin(n("Neutron", "Neutron", "Нейтрон"), 5000, c(0xFFB2EBF2), c(0xFF00B8D4), DIAMOND, reqLevel = 415),
+        Skin(n("Magnetar", "Magnetar", "Магнетар"), 5800, c(0xFF00E5FF), c(0xFF64FFDA), ELECTRIC, c(0xFF64FFDA), reqLevel = 425),
+        Skin(n("Doppelsonne", "Twin sun", "Двойное солнце"), 6400, c(0xFFFFF59D), c(0xFF64FFDA), STAR, reqLevel = 435),
+        Skin(n("Sternentor", "Star gate", "Звёздные врата"), 7000, c(0xFF64FFDA), c(0xFF64FFDA), RINGPLANET, reqLevel = 445),
+        Skin(n("Pulsar-Krone", "Pulsar crown", "Корона пульсара"), 0, c(0xFF1DE9B6), c(0xFF64FFDA), CROWN, c(0xFFFFFFFF), reqLevel = 450),
+        Skin(n("Ereignis", "Event", "Событие"), 6000, c(0xFFFF6E40), c(0xFFFF1744), EMBER, c(0xFFFFD166), reqLevel = 455),
+        Skin(n("Singularität", "Singularity", "Сингулярность"), 7200, c(0xFF7C4DFF), c(0xFF311B92), GALAXY, c(0xFFFF1744), reqLevel = 465),
+        Skin(n("Dunkelstern", "Dark star", "Тёмная звезда"), 8000, c(0xFFD500F9), c(0xFF1A0033), STAR, reqLevel = 475),
+        Skin(n("Abgrund", "Abyss", "Бездна"), 9000, c(0xFF311B92), c(0xFFFF1744), CUBE, c(0xFFFF1744), reqLevel = 485),
+        Skin(n("Omega", "Omega", "Омега"), 0, c(0xFFFFD54F), c(0xFFFF1744), PRISM, reqLevel = 500),
+        Skin(n("Rubin", "Ruby", "Рубин"), 2200, c(0xFFE53935), c(0xFFB71C1C), DIAMOND, reqLevel = 60),
+        Skin(n("Smaragd", "Emerald", "Изумруд"), 2600, c(0xFF2E7D32), c(0xFF66BB6A), DIAMOND, reqLevel = 90),
+        Skin(n("Saphir", "Sapphire", "Сапфир"), 3000, c(0xFF1565C0), c(0xFF64B5F6), DIAMOND, reqLevel = 120),
+        Skin(n("Goldkrone", "Gold crown", "Золотая корона"), 12000, c(0xFFFFD54F), c(0xFFFFB300), CROWN, c(0xFFFFFFFF), reqCrowns = 900),
+        Skin(n("Legende", "Legend", "Легенда"), 15000, c(0xFFFFFFFF), c(0xFFFFD54F), GALAXY, c(0xFFFF1744), reqCrowns = 1200)
     )
 
     val trails = arrayOf(
@@ -185,7 +201,9 @@ object Skins {
         Trail(n("Nordlicht", "Northern lights", "Северное сияние"), 4800, c(0xFF2EE59D), T_WAVES, reqLevel = 340),
         Trail(n("Hyperlaser", "Hyper laser", "Гиперлазер"), 5400, c(0xFFE040FB), T_LASER, reqLevel = 360),
         Trail(n("Quantenstaub", "Quantum dust", "Квантовая пыль"), 6000, c(0xFF00E5FF), T_STARDUST, reqLevel = 375),
-        Trail(n("Lichtspur", "Light trail", "Световой след"), 7500, c(0xFF76FF03), T_COMET, reqCrowns = 700)
+        Trail(n("Lichtspur", "Light trail", "Световой след"), 7500, c(0xFF76FF03), T_COMET, reqCrowns = 700),
+        Trail(n("Pulswelle", "Pulse wave", "Пульсовая волна"), 5500, c(0xFF64FFDA), T_WAVES, reqLevel = 420),
+        Trail(n("Ereignisspur", "Event trail", "След событий"), 7000, c(0xFFFF1744), T_LASER, reqLevel = 470)
     )
 
     const val REVIVE_PRICE = 120

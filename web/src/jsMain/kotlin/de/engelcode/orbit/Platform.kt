@@ -63,4 +63,49 @@ object Platform {
     }
 
     fun restart() { window.location.reload() }
+
+    fun showForm(spec: FormSpec, cb: (String, Map<String, String>) -> Unit) {
+        val sb = StringBuilder("{")
+        sb.append("\"title\":").append(Json.q(spec.title)).append(",\"subtitle\":").append(Json.q(spec.subtitle))
+        sb.append(",\"submit\":").append(Json.q(spec.submit)).append(",\"divider\":").append(Json.q(spec.divider))
+        sb.append(",\"google\":").append(if (spec.google != null) Json.q(spec.google) else "null")
+        sb.append(",\"fields\":[")
+        spec.fields.forEachIndexed { i, f ->
+            if (i > 0) sb.append(',')
+            sb.append(Json.obj("key" to f.key, "hint" to f.hint, "type" to f.type, "value" to f.value, "max" to f.max))
+        }
+        sb.append("],\"links\":[")
+        spec.links.forEachIndexed { i, l -> if (i > 0) sb.append(','); sb.append('[').append(Json.q(l.first)).append(',').append(Json.q(l.second)).append(']') }
+        sb.append("]}")
+        val json = sb.toString()
+        try {
+            val f: dynamic = js("window.orbitForm")
+            f(json, { action: String, vals: String ->
+                val m = Json.map(Json.parse(vals)).mapValues { Json.str(it.value) }
+                cb(action, m)
+            })
+        } catch (e: Throwable) { println("FORMERR " + e) }
+    }
+
+    fun googleSignIn(cb: (String?) -> Unit) {
+        val f: dynamic = js("window.orbitGoogle")
+        f({ rt: String? -> cb(rt) })
+    }
+
+    fun googlePending(cb: (String?) -> Unit) {
+        try {
+            val f: dynamic = js("window.orbitGooglePending")
+            f({ rt: String? -> cb(rt) })
+        } catch (_: Throwable) {}
+    }
+
+    fun pickImage(cb: (String?) -> Unit) {
+        val f: dynamic = js("window.orbitPickImage")
+        f({ b: String? -> cb(b) })
+    }
+
+    fun decodeImage(b64: String, cb: (android.graphics.Bitmap?) -> Unit) {
+        val f: dynamic = js("window.orbitDecodeImage")
+        f(b64, { c: dynamic -> cb(if (c == null) null else android.graphics.Bitmap.wrap(c.unsafeCast<org.w3c.dom.HTMLCanvasElement>())) })
+    }
 }

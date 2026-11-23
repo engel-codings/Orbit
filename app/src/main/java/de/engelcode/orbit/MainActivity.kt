@@ -27,6 +27,19 @@ class MainActivity : Activity() {
         gameView = GameView(this)
         setContentView(gameView)
         hideSystemUi()
+        Platform.onAuthIntent(intent?.data)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        Platform.onAuthIntent(intent?.data)
+    }
+
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == Platform.PICK_IMAGE) Platform.onImagePicked(if (resultCode == RESULT_OK) data?.data else null)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

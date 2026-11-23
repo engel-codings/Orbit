@@ -157,6 +157,7 @@ class Path {
     internal var p2d = Path2D()
     var isEmpty = true; private set
 
+    fun reset() { p2d = Path2D(); isEmpty = true }
     fun moveTo(x: Float, y: Float) { p2d.moveTo(x.toDouble(), y.toDouble()); isEmpty = false }
     fun lineTo(x: Float, y: Float) { p2d.lineTo(x.toDouble(), y.toDouble()); isEmpty = false }
     fun quadTo(x1: Float, y1: Float, x2: Float, y2: Float) {
@@ -178,6 +179,7 @@ class Bitmap internal constructor(val element: HTMLCanvasElement) {
     val width get() = element.width
     val height get() = element.height
     companion object {
+        fun wrap(c: HTMLCanvasElement) = Bitmap(c)
         fun createBitmap(w: Int, h: Int, cfg: Config): Bitmap {
             val c = document.createElement("canvas") as HTMLCanvasElement
             c.width = w; c.height = h
