@@ -46,8 +46,10 @@ object Net {
     val chosen get() = loggedIn || guestChosen
     private var store: ((String, String) -> Unit)? = null
 
+    private var getter: ((String) -> String)? = null
+
     fun init(get: (String) -> String, set: (String, String) -> Unit) {
-        store = set
+        store = set; getter = get
         refresh = get("rt")
         if (refresh.isNotEmpty()) { pid = get("pid"); name = get("name"); key = get("key"); email = get("email"); guest = get("guest") == "1" }
         else if (get("pid").isNotEmpty()) { set("pid", ""); set("name", ""); set("key", "") } // altes Konto (vor 0.9.7)
@@ -138,6 +140,7 @@ object Net {
                     if (m == null) { busy = false; authError(err); done(false); return@auth }
                     takeTokens(m)
                     guest = false; email = mail.trim()
+                    forgetGuest()
                     remember()
                     busy = false
                     rename(n) { }
@@ -195,7 +198,10 @@ object Net {
     }
 
     /** Gast-Eintrag aus der Bestenliste entfernen (beim Anmelden mit einem bestehenden Konto). */
+    private fun forgetGuest() { store?.invoke("g_rt", ""); store?.invoke("g_pid", "") }
+
     private fun dropGuest(t: String = token, p: String = pid, k: String = key) {
+        forgetGuest()
         Platform.http("DELETE", "$BASE/avatars/$p.json?auth=$t", null) {}
         Platform.http("DELETE", "$BASE/players/$p.json?auth=$t", null) {}
         Platform.http("DELETE", "$BASE/saves/$p.json?auth=$t", null) {}
@@ -208,6 +214,12 @@ object Net {
 
     fun chooseGuest() {
         guestChosen = true
+        // Immer dasselbe Gast-Konto auf diesem Gerät wiederverwenden
+        val g = getter
+        if (g != null && pid.isEmpty() && g("g_rt").isNotEmpty()) {
+            refresh = g("g_rt"); pid = g("g_pid"); name = g("g_name"); key = g("g_key"); guest = true
+            token = ""; tokenExp = 0L
+        }
         remember()
         guestRetry = 0f
     }
@@ -226,6 +238,7 @@ object Net {
                 guestBusy = false
                 name = n; key = if (okN) k else ""
                 remember()
+                store?.invoke("g_rt", refresh); store?.invoke("g_pid", pid); store?.invoke("g_name", name); store?.invoke("g_key", key)
                 pushProfile()
                 listener?.netChanged()
             }
