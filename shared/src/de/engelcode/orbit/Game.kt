@@ -718,7 +718,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (screen == Screen.LEADER && netT > 5f) { netT = 0f; Net.loadBoard() }
         if (screen == Screen.FRIENDS && netT > 8f) { netT = 0f; Net.loadFriends() }
         if (screen == Screen.CHAT && netT > 3f) { netT = 0f; Net.loadChat() }
-        if (screen == Screen.QUEUE && !queueInvite && Net.inQueue && Net.queueTime > 12f) {
+        if (screen == Screen.QUEUE && !queueInvite) queueWait += dt else queueWait = 0f
+        if (screen == Screen.QUEUE && !queueInvite && queueWait > 12f) {
+            queueWait = 0f
             Net.leaveQueue()
             val names = arrayOf("Nova", "Comet", "Luna", "Astro", "Pixel", "Orion", "Vega", "Zenit")
             Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], 12 + kotlin.random.Random.nextInt(45))
@@ -834,6 +836,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     // ===================================================================== Profil, Avatare, Chat, Formulare
 
     private var backToProfile = false
+    private var queueWait = 0f
     private var selPid = ""
     private var selName = ""
     private var photoKey = ""
@@ -1174,7 +1177,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.icon(c, Gfx.I_TARGET, cx, cy, 36f, Color.WHITE)
         gfx.text(c, L.t(L.QUEUE_SEARCH), cx, cy + 380f, 48f, Color.WHITE, maxW = 860f)
         if (!queueInvite) {
-            val sec = Net.queueTime.toInt()
+            val sec = queueWait.toInt()
             gfx.text(c, "${sec / 60}:" + (if (sec % 60 < 10) "0" else "") + "${sec % 60}", cx, cy + 450f, 40f, Gfx.GOLD)
             gfx.text(c, L.t(L.QUEUE_HINT), cx, cy + 530f, 28f, Gfx.DIM, false, maxW = 860f)
         } else gfx.text(c, L.t(L.INVITE_SENT), cx, cy + 450f, 32f, Gfx.GOLD, maxW = 860f)
