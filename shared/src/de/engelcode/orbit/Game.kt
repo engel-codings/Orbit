@@ -1144,7 +1144,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         dim(c, 150)
         if (lbDirty) {
             lbDirty = false
-            lbList = Net.board.filter { lbTab != 3 || (it.wk == curWeek() && it.wb > 0) }.sortedWith(compareByDescending<Net.Entry> { lbValue(it) }.thenByDescending { it.crowns })
+            lbList = Net.board.filter { (it.level > 0 || it.best > 0 || it.wins > 0 || it.pid == Net.pid) && (lbTab != 3 || (it.wk == curWeek() && it.wb > 0)) }.sortedWith(compareByDescending<Net.Entry> { lbValue(it) }.thenByDescending { it.crowns })
             myRank = lbList.indexOfFirst { it.pid == Net.pid } + 1
         }
         c.save()
