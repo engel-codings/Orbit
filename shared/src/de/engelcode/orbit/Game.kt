@@ -718,6 +718,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (screen == Screen.LEADER && netT > 5f) { netT = 0f; Net.loadBoard() }
         if (screen == Screen.FRIENDS && netT > 8f) { netT = 0f; Net.loadFriends() }
         if (screen == Screen.CHAT && netT > 3f) { netT = 0f; Net.loadChat() }
+        if (screen == Screen.QUEUE && !queueInvite && Net.inQueue && Net.queueTime > 12f) {
+            Net.leaveQueue()
+            val names = arrayOf("Nova", "Comet", "Luna", "Astro", "Pixel", "Orion", "Vega", "Zenit")
+            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], 12 + kotlin.random.Random.nextInt(45))
+            versus = true; vsFinal = false; oppVal = -1
+            startRun(0, kotlin.random.Random.nextLong(1, 1_000_000_000L), 1)
+            showToast(L.t(L.VS_RULES))
+        }
         if (Net.active && screen != Screen.PLAYING) {
             cloudT += dt
             if (cloudT > 20f) {
@@ -740,7 +748,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         vsCol = if (draw) Gfx.GOLD else if (won) Gfx.GREEN else Gfx.RED
         save.stars += vsReward
         save.flush()
-        Net.result(won, draw)
+        if (!Net.isBot) Net.result(won, draw)
         Net.endMatch()
         versus = false
         sound.play(if (won) Sound.WIN else Sound.ERROR)

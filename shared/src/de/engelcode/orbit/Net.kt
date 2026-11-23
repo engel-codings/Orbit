@@ -612,6 +612,17 @@ object Net {
 
     fun endMatch() { mid = "" }
 
+    // Bot-Gegner, wenn niemand in der Warteschlange ist
+    val isBot get() = mid == "bot"
+    private var botT = 0f
+    private var botNext = 0f
+    private var botTarget = 0
+
+    fun startBot(n: String, target: Int) {
+        startMatch("bot", "a", n)
+        botT = 0f; botNext = 1.5f; botTarget = target
+    }
+
     fun report(score: Int, dead: Boolean) {
         myScore = score
         if (dead && !myDead) { myDead = true; syncT = 99f }
@@ -658,7 +669,15 @@ object Net {
                 }
             }
         }
-        if (mid.isNotEmpty()) {
+        if (mid == "bot") {
+            oppSeenAge = 0f
+            botT += dt
+            if (!oppDead && botT > botNext) {
+                oppScore += 1 + Random.nextInt(3)
+                botNext = botT + 0.7f + Random.nextFloat() * 1.4f
+                if (oppScore >= botTarget) oppDead = true
+            }
+        } else if (mid.isNotEmpty()) {
             oppSeenAge += dt
             syncT += dt
             if (syncT > 1f) { syncT = 0f; syncMatch() }
