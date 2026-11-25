@@ -720,7 +720,7 @@ class World(private val gfx: Gfx) {
             popT = 0.9f; popX = plX; popY = plY - 40f
             popStr = L.f(L.PERFECT_POP, pts)
         }
-        val col = if (p.body != 0) BODY_COLOR[p.body] else Gfx.PALETTE[p.colorIdx]
+        val col = if (p.body in 1 until BODY_COLOR.size) BODY_COLOR[p.body] else Gfx.PALETTE[(if (p.body != 0) p.body else p.colorIdx) % Gfx.PALETTE.size]
         burst(plX, plY, col, if (perfect) 22 else 12, if (perfect) 380f else 260f)
         listener?.onCapture(perfect, streak)
         if (p.goal) {
@@ -828,7 +828,7 @@ class World(private val gfx: Gfx) {
 
         for (p in planets) {
             if (!p.active || p.y < top || p.y > bottom) continue
-            val col = if (p.body != 0) BODY_COLOR[p.body] else Gfx.PALETTE[p.colorIdx]
+            val col = if (p.body in 1 until BODY_COLOR.size) BODY_COLOR[p.body] else Gfx.PALETTE[(if (p.body != 0) p.body else p.colorIdx) % Gfx.PALETTE.size]
             if (p === current) {
                 gfx.ring(c, p.x, p.y, orbitTarget, col, 3f, 70)
             } else if (p !== lastPlanet) {
