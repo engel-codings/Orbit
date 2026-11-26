@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 17
-        const val VERSION_NAME = "1.2.0"
+        const val VERSION_CODE = 18
+        const val VERSION_NAME = "1.3.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -61,7 +61,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT, DM, SKILLS, CHANGELOG }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT, DM, SKILLS, CHANGELOG, CLAN }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -151,6 +151,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val bDmDuel = Btn(94, "", S_GLASS)
     private val bDmRemove = Btn(95, "", S_INVISIBLE)
     private val dmBtns = arrayOf(bBack, bDmWrite, bDmPhoto, bDmDuel)
+    private val dmClanBtns = arrayOf(bBack, bDmWrite, bDmPhoto)
     private val bSkillBuy = Btn(96, "", S_PRIMARY)
     private val skillBtns = arrayOf(bBack, bSkillBuy)
     private val bBgStyle = Btn(97, "", S_INVISIBLE)
@@ -159,13 +160,23 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val bSideFriends = Btn(100, "", S_ROUND, Gfx.I_HEART)
     private val bSideChat = Btn(101, "", S_ROUND, Gfx.I_GLOBE)
     private val bSideLog = Btn(102, "", S_ROUND, Gfx.I_LIST)
-    private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB, bChatB)
-    private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bChatB)
+    private val bSideClan = Btn(103, "", S_ROUND, Gfx.I_CROWN)
+    private val bClanB = Btn(104, "", S_GLASS, Gfx.I_CROWN)
+    private val bClanCreate = Btn(105, "", S_PRIMARY)
+    private val bClanJoin = Btn(106, "", S_GLASS)
+    private val bClanAdd = Btn(107, "", S_PRIMARY)
+    private val bClanChat = Btn(108, "", S_GLASS, Gfx.I_GLOBE)
+    private val bClanLeave = Btn(109, "", S_GLASS)
+    private val clanNoBtns = arrayOf(bBack, bClanCreate, bClanJoin)
+    private val clanBtns = arrayOf(bBack, bClanAdd, bClanChat, bClanLeave)
+    private var fromSide = false
+    private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB, bChatB, bClanB)
+    private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bChatB, bClanB)
     private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2], bLb[3])
     private val friendBtns = arrayOf(bBack, bAddFriend)
     private val vsBtns = arrayOf(bVsAgain, bVsBack)
 
-    private val menuBtns = arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog, bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bProfile, bSettings)
+    private val menuBtns = arrayOf(bSideBoard, bSideFriends, bSideChat, bSideClan, bSideLog, bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bProfile, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
@@ -346,6 +357,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         bChatB.label = L.t(L.CHAT); bChatWrite.label = L.t(L.CHAT_WRITE)
         bDmWrite.label = L.t(L.CHAT_WRITE); bDmPhoto.label = L.t(L.DM_PHOTO); bDmDuel.label = L.t(L.DUEL)
         bSkillBuy.label = L.t(L.SKILL_UNLOCK)
+        bClanB.label = L.t(L.CLAN); bClanCreate.label = L.t(L.CLAN_CREATE); bClanJoin.label = L.t(L.CLAN_JOIN)
+        bClanAdd.label = L.t(L.CLAN_ADD); bClanChat.label = L.t(L.CLAN_CHAT); bClanLeave.label = L.t(L.CLAN_LEAVE)
         refreshProfileLabels()
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
         bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
@@ -468,7 +481,13 @@ class Game(context: Context) : World.Listener, Net.Listener {
         place(bDmPhoto, 710f, H - 160f, 220f, 120f)
         place(bDmDuel, W - 270f, 70f, 230f, 95f)
         place(bSkillBuy, 520f, H - 175f, 410f, 120f)
-        for ((k, b) in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog).withIndex()) place(b, 30f, playCY() - 330f + k * 130f, 110f, 110f)
+        for ((k, b) in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideClan, bSideLog).withIndex()) place(b, 30f, playCY() - 360f + k * 122f, 104f, 104f)
+        place(bClanB, 70f, 1420f, 860f, 150f)
+        place(bClanCreate, 70f, 600f, 860f, 140f)
+        place(bClanJoin, 70f, 770f, 860f, 125f)
+        place(bClanAdd, 70f, 560f, 420f, 115f)
+        place(bClanChat, 510f, 560f, 420f, 115f)
+        place(bClanLeave, W - 290f, 70f, 250f, 95f)
         place(bChallenge, 40f, pcy + 465f, 293f, 105f)
         place(bWheel, 353f, pcy + 465f, 293f, 105f)
         place(bChest, 666f, pcy + 465f, 293f, 105f)
@@ -509,10 +528,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.SHOP -> shopScroll = 0f
             Screen.SETTINGS -> layoutSettings()
             Screen.ENDLESS_SEL -> buildEndlessTexts()
-            Screen.MENU -> refreshMenuTexts()
+            Screen.MENU -> { fromSide = false; refreshMenuTexts() }
             Screen.LEADER -> { shopScroll = 0f; lbDirty = true; Net.loadBoard(); netT = 0f }
             Screen.FRIENDS -> { shopScroll = 0f; Net.loadFriends(); netT = 0f }
             Screen.CHAT -> { shopScroll = 0f; Net.loadChat(); netT = 0f; chatDirty = true }
+            Screen.CLAN -> Net.loadClan()
             Screen.DM -> { shopScroll = 0f; netT = 0f; chatDirty = true }
             else -> {}
         }
@@ -525,7 +545,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         missionsToday()
         buildMissions()
         chestLabelMin = -1
-        bEndless.label = if (save.best > 0) L.f(L.ENDLESS_BEST, save.best) else L.t(L.ENDLESS)
+        bEndless.label = L.t(L.MODES_BTN)
         achBadge = Achievements.claimableCount(save)
         var r = 0
         for (i in RANK_AT.indices) if (save.planets >= RANK_AT[i]) r = i
@@ -867,6 +887,39 @@ class Game(context: Context) : World.Listener, Net.Listener {
         } else gfx.text(c, L.t(L.SKILL_TAP), W / 2f, H - 100f, 32f, Gfx.DIM, false)
     }
 
+    // ---- Clan
+    private fun drawClan(c: Canvas) {
+        header(c, L.t(L.CLAN))
+        val cx = W / 2f
+        if (!Net.clanLoaded) { gfx.text(c, L.t(L.NET_LOADING), cx, H * 0.4f, 34f, Gfx.DIM); return }
+        if (Net.clanId.isEmpty()) {
+            gfx.glass(c, 50f, 240f, 950f, 540f, 44f)
+            gfx.icon(c, Gfx.I_CROWN, cx, 330f, 44f, Gfx.GOLD)
+            gfx.text(c, L.t(L.CLAN_NONE), cx, 440f, 42f, Color.WHITE, maxW = 860f)
+            gfx.text(c, L.t(L.CLAN_INFO), cx, 495f, 26f, Gfx.DIM, false, maxW = 860f)
+            drawBtn(c, bClanCreate); drawBtn(c, bClanJoin)
+            return
+        }
+        drawBtn(c, bClanLeave)
+        gfx.glass(c, 50f, 220f, 950f, 520f, 44f, border = Gfx.GOLD)
+        gfx.icon(c, Gfx.I_CROWN, cx, 285f, 34f, Gfx.GOLD)
+        gfx.text(c, Net.clanName, cx, 385f, 58f, Color.WHITE, maxW = 860f)
+        gfx.text(c, L.f(L.CLAN_CODE, Net.clanId), cx, 445f, 32f, Gfx.GOLD, maxW = 860f)
+        gfx.text(c, L.f(L.CLAN_MEMBERS, Net.clanMembers.size), cx, 492f, 26f, Gfx.DIM, false, maxW = 860f)
+        drawBtn(c, bClanAdd); drawBtn(c, bClanChat)
+        var y = 720f
+        for ((uid, n) in Net.clanMembers) {
+            if (y > H - 60f) break
+            val me = uid == Net.pid
+            gfx.glass(c, 50f, y, 950f, y + 96f, 30f, border = if (me) Gfx.ACCENT else Color.WHITE)
+            gfx.circle(c, 110f, y + 48f, 30f, Gfx.PANEL2)
+            gfx.text(c, n.take(1).uppercase(), 110f, y + 60f, 32f, Gfx.ACCENT)
+            gfx.text(c, n, 160f, y + 62f, 34f, if (me) Gfx.ACCENT else Color.WHITE, align = Paint.Align.LEFT, maxW = 560f)
+            if (uid == Net.clanOwner) gfx.text(c, L.t(L.CLAN_LEADER), 910f, y + 60f, 26f, Gfx.GOLD, false, Paint.Align.RIGHT, maxW = 220f)
+            y += 108f
+        }
+    }
+
     // ---- Update-Log
     private var logH = 0f
     private var logLang = -1
@@ -969,11 +1022,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun backFrom() {
         when (screen) {
-            Screen.LEADER -> go(Screen.ONLINE)
-            Screen.DM -> go(Screen.FRIENDS)
+            Screen.LEADER, Screen.CLAN -> go(if (fromSide) Screen.MENU else Screen.ONLINE)
+            Screen.DM -> go(if (Net.dmIsClan) Screen.CLAN else Screen.FRIENDS)
             Screen.SKILLS -> go(Screen.SHOP)
             Screen.CHANGELOG -> go(Screen.MENU)
-            Screen.FRIENDS, Screen.CHAT, Screen.AVATARS -> go(if (backToProfile) Screen.PROFILE else Screen.ONLINE)
+            Screen.FRIENDS, Screen.CHAT, Screen.AVATARS -> go(if (fromSide) Screen.MENU else if (backToProfile) Screen.PROFILE else Screen.ONLINE)
             Screen.STATS -> go(Screen.PROFILE)
             Screen.QUEUE -> { Net.leaveQueue(); Net.cancelInvite(); go(if (queueInvite) Screen.FRIENDS else Screen.ONLINE) }
             else -> go(Screen.MENU)
@@ -1364,7 +1417,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         drawBtn(c, bBack)
         if (dmMode) {
             gfx.text(c, Net.dmName, W / 2f - 60f, 132f, 44f, Color.WHITE, maxW = 480f)
-            drawBtn(c, bDmDuel); drawBtn(c, bDmWrite); drawBtn(c, bDmPhoto)
+            if (!Net.dmIsClan) drawBtn(c, bDmDuel)
+            drawBtn(c, bDmWrite); drawBtn(c, bDmPhoto)
         } else {
             gfx.text(c, L.t(L.CHAT_TITLE), W / 2f, 132f, 50f, Color.WHITE, maxW = 600f)
             gfx.text(c, L.t(L.CHAT_HINT), W / 2f, 250f, 24f, Gfx.DIM, false, maxW = 880f)
@@ -1401,8 +1455,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.text(c, if (hasName) Net.name else L.t(L.NET_GUEST), 220f, 315f, 46f, Color.WHITE, align = Paint.Align.LEFT, maxW = 700f)
         gfx.text(c, L.t(if (Net.loggedIn) L.NET_CLOUD else if (Net.guest) L.NET_GUEST_ACC else L.NET_GUEST_INFO), 220f, 362f, 25f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 700f)
         for (b in if (Net.loggedIn) onlineInBtns else onlineOutBtns) if (b !== bBack) drawBtn(c, b)
-        gfx.text(c, L.t(L.NET_GOOGLE), W / 2f, 1440f, 26f, Gfx.DIM, false, maxW = 860f)
-        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), W / 2f, 1490f, 30f, Gfx.ACCENT)
+        gfx.text(c, L.t(L.NET_GOOGLE), W / 2f, 1630f, 26f, Gfx.DIM, false, maxW = 860f)
+        if (Net.busy) gfx.text(c, L.t(L.NET_LOADING), W / 2f, 1680f, 30f, Gfx.ACCENT)
     }
 
     private fun lbValue(e: Net.Entry) = when (lbTab) { 0 -> e.level; 1 -> e.best; 2 -> e.wins; else -> if (e.wk == curWeek()) e.wb else 0 }
@@ -1992,9 +2046,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Screen.PROFILE -> { refreshProfileLabels(); profileBtns }
         Screen.AVATARS -> backBtns
         Screen.CHAT -> chatBtns
-        Screen.DM -> dmBtns
+        Screen.DM -> if (Net.dmIsClan) dmClanBtns else dmBtns
         Screen.SKILLS -> skillBtns
         Screen.CHANGELOG -> backBtns
+        Screen.CLAN -> if (Net.clanId.isEmpty()) clanNoBtns else clanBtns
         Screen.LEADER -> leaderBtns
         Screen.FRIENDS -> friendBtns
         Screen.VSRESULT -> { bVsAgain.visible = vsFinal; bVsBack.visible = vsFinal; vsBtns }
@@ -2010,7 +2065,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bStats.id -> go(Screen.STATS)
             bSettings.id -> go(Screen.SETTINGS)
             bBack.id -> backFrom()
-            bOnline.id -> go(Screen.ONLINE)
+            bOnline.id -> { fromSide = false; go(Screen.ONLINE) }
             bLogin.id -> loginForm()
             bRegister.id -> registerForm()
             bRename.id -> nameForm()
@@ -2082,9 +2137,23 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 6; save.flush(); sound.syncMusic() }
             bBgStyle.id -> { save.bgStyle = (save.bgStyle + 1) % 9; save.flush(); world.bgStyle = save.bgStyle }
             bLogSet.id, bSideLog.id -> { shopScroll = 0f; go(Screen.CHANGELOG) }
-            bSideBoard.id -> go(Screen.LEADER)
-            bSideFriends.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { backToProfile = false; go(Screen.FRIENDS) }
-            bSideChat.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { backToProfile = false; go(Screen.CHAT) }
+            bSideBoard.id -> { fromSide = true; go(Screen.LEADER) }
+            bSideFriends.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { fromSide = true; backToProfile = false; go(Screen.FRIENDS) }
+            bSideChat.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { fromSide = true; backToProfile = false; go(Screen.CHAT) }
+            bSideClan.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { fromSide = true; go(Screen.CLAN) }
+            bClanB.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { fromSide = false; go(Screen.CLAN) }
+            bClanCreate.id -> Platform.showForm(FormSpec(L.t(L.CLAN_CREATE), "", listOf(FormField("n", L.t(L.CLAN_NAME), FormField.TEXT, "", 20)), "OK")) { a, v ->
+                val n = v["n"] ?: ""
+                if (a == "submit") { if (!Net.validName(n)) showToast(L.t(L.NET_BAD_NAME)) else Net.createClan(n) }
+            }
+            bClanJoin.id -> Platform.showForm(FormSpec(L.t(L.CLAN_JOIN), "", listOf(FormField("c", L.t(L.CLAN_CODE_HINT), FormField.TEXT, "", 6)), "OK")) { a, v ->
+                if (a == "submit" && !v["c"].isNullOrBlank()) Net.joinClan(v["c"]!!)
+            }
+            bClanAdd.id -> Platform.showForm(FormSpec(L.t(L.CLAN_ADD).removePrefix("+ "), L.f(L.CLAN_CODE, Net.clanId), listOf(FormField("n", L.t(L.SEARCH_HINT), max = 16)), "OK")) { a, v ->
+                if (a == "submit" && !v["n"].isNullOrBlank()) Net.addToClan(v["n"]!!)
+            }
+            bClanChat.id -> { Net.openClanChat(); go(Screen.DM) }
+            bClanLeave.id -> Net.leaveClan()
             bRow[6].id -> {
                 save.lang = (L.cur + 1) % 3
                 save.flush()
@@ -2385,6 +2454,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.DM -> drawChat(c)
             Screen.SKILLS -> drawSkills(c)
             Screen.CHANGELOG -> drawChangelog(c)
+            Screen.CLAN -> drawClan(c)
         }
 
         if (save.showFps) {
@@ -2478,7 +2548,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
         crownPill(c, 300f)
         starPill(c, save.stars)
-        for (b in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog)) drawBtn(c, b)
+        for (b in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideClan, bSideLog)) drawBtn(c, b)
 
         val ty = H * 0.17f
         if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, ty - 60f, 420f, 150)

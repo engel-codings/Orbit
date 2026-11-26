@@ -426,6 +426,80 @@ object Net {
         }
     }
 
+    // ------------------------------------------------------------------ Clans
+
+    var clanId = ""; private set
+    var clanName = ""; private set
+    var clanOwner = ""; private set
+    val clanMembers = ArrayList<Pair<String, String>>()
+    var clanLoaded = false; private set
+
+    fun loadClan() {
+        if (!active) return
+        get("clanOf/$pid") { v ->
+            val cid = Json.str(v)
+            if (cid.isEmpty()) { clanId = ""; clanName = ""; clanMembers.clear(); clanLoaded = true; listener?.netChanged(); return@get }
+            get("clans/$cid") { cv ->
+                val m = Json.map(cv)
+                if (m.isEmpty()) { del("clanOf/$pid"); clanId = ""; clanLoaded = true; listener?.netChanged(); return@get }
+                clanId = cid; clanName = Json.str(m["name"]); clanOwner = Json.str(m["owner"])
+                clanMembers.clear()
+                for ((u, n) in Json.map(m["members"])) clanMembers.add(u to Json.str(n))
+                clanMembers.sortBy { it.second.lowercase() }
+                clanLoaded = true
+                listener?.netChanged()
+            }
+        }
+    }
+
+    fun createClan(n: String) {
+        if (!active) return
+        val cid = randId(6).uppercase()
+        put("clans/$cid", "{\"name\":${Json.q(n.trim().take(20))},\"owner\":${Json.q(pid)},\"members\":{${Json.q(pid)}:${Json.q(name)}}}") { ok ->
+            if (!ok) { listener?.netToast(L.t(L.NET_OFFLINE)); return@put }
+            put("clanOf/$pid", Json.q(cid)) { loadClan() }
+            listener?.netToast(L.f(L.CLAN_CREATED, n.trim()))
+        }
+    }
+
+    fun joinClan(code: String) {
+        if (!active) return
+        val cid = code.trim().uppercase()
+        get("clans/$cid/name") { v ->
+            if (Json.str(v).isEmpty()) { listener?.netToast(L.t(L.CLAN_NOT_FOUND)); return@get }
+            if (clanId.isNotEmpty() && clanId != cid) del("clans/$clanId/members/$pid")
+            put("clans/$cid/members/$pid", Json.q(name)) { put("clanOf/$pid", Json.q(cid)) { loadClan() } }
+            listener?.netToast(L.f(L.CLAN_JOINED, Json.str(v)))
+        }
+    }
+
+    /** Jedes Mitglied kann andere per Name oder Freundescode in den Clan holen. */
+    fun addToClan(q: String) {
+        if (!active || clanId.isEmpty()) return
+        val t = q.trim(); val cid = clanId
+        val add = { uid: String, n: String ->
+            put("clans/$cid/members/$uid", Json.q(n)) { put("clanOf/$uid", Json.q(cid)) { loadClan() } }
+            listener?.netToast(L.f(L.CLAN_ADDED, n))
+        }
+        get("names/${keyOf(t)}") { v ->
+            val uid = Json.str(v)
+            if (uid.isNotEmpty()) { get("players/$uid/name") { n -> add(uid, Json.str(n).ifEmpty { t }) }; return@get }
+            get("codes/${t.uppercase().replace(" ", "")}") { c ->
+                val u2 = Json.str(c)
+                if (u2.isEmpty()) { listener?.netToast(L.t(L.NET_NOT_FOUND)); return@get }
+                get("players/$u2/name") { n -> add(u2, Json.str(n).ifEmpty { t }) }
+            }
+        }
+    }
+
+    fun leaveClan() {
+        if (clanId.isEmpty()) return
+        del("clans/$clanId/members/$pid"); del("clanOf/$pid")
+        listener?.netToast(L.f(L.CLAN_LEFT, clanName))
+        clanId = ""; clanName = ""; clanMembers.clear()
+        listener?.netChanged()
+    }
+
     // ------------------------------------------------------------------ Private Nachrichten
 
     val dm = ArrayList<Msg>()
@@ -434,18 +508,26 @@ object Net {
     var dmLoaded = false; private set
     private fun pair(a: String, b: String) = if (a < b) a + "_" + b else b + "_" + a
 
-    fun openDm(uid: String, n: String) { dmWith = uid; dmName = n; dm.clear(); dmLoaded = false; loadDm() }
+    private var dmPath = ""
+    val dmIsClan get() = dmPath.startsWith("clanchat/")
+
+    fun openDm(uid: String, n: String) { dmWith = uid; dmName = n; dmPath = "dms/" + pair(pid, uid); dm.clear(); dmLoaded = false; loadDm() }
+
+    fun openClanChat() {
+        if (clanId.isEmpty()) return
+        dmWith = clanId; dmName = clanName; dmPath = "clanchat/$clanId"; dm.clear(); dmLoaded = false; loadDm()
+    }
 
     fun loadDm() {
         if (!active || dmWith.isEmpty()) return
         val w = dmWith
-        Platform.http("GET", "$BASE/dms/${pair(pid, w)}.json?orderBy=%22%24key%22&limitToLast=60&auth=$token", null) { r ->
+        Platform.http("GET", "$BASE/$dmPath.json?orderBy=%22%24key%22&limitToLast=60&auth=$token", null) { r ->
             if (!ok(r) || w != dmWith) return@http
             val list = ArrayList<Msg>()
             for ((k, e) in Json.map(Json.parse(r!!))) {
                 val m = Json.map(e)
                 val mine = Json.str(m["uid"]) == pid
-                list.add(Msg(k, Json.str(m["uid"]), if (mine) name else dmName, Json.int(m["av"]), m["ph"] == true,
+                list.add(Msg(k, Json.str(m["uid"]), if (mine) name else Json.str(m["name"]).ifEmpty { dmName }, Json.int(m["av"]), m["ph"] == true,
                     Json.str(m["text"]), Json.long(m["t"]), Json.str(m["img"])))
             }
             list.sortBy { it.id }
@@ -460,8 +542,8 @@ object Net {
         if (t.isEmpty() && img.isEmpty()) return
         val av = listener?.netAvatar() ?: 0
         val ph = hasPhoto && (listener?.netPhotoPublic() ?: false)
-        Platform.http("POST", url("dms/${pair(pid, dmWith)}"),
-            "{\"uid\":${Json.q(pid)},\"av\":$av,\"ph\":$ph,\"text\":${Json.q(t)},\"img\":${Json.q(img)},\"t\":$SV}") { loadDm() }
+        Platform.http("POST", url(dmPath),
+            "{\"uid\":${Json.q(pid)},\"name\":${Json.q(name)},\"av\":$av,\"ph\":$ph,\"text\":${Json.q(t)},\"img\":${Json.q(img)},\"t\":$SV}") { loadDm() }
     }
 
     fun addFriendId(uid: String, n: String) {

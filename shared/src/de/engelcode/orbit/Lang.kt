@@ -320,6 +320,7 @@ object L {
     val UPDATES = a("Updates", "Updates", "Обновления")
     val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
     val CHANGELOG = arrayOf(
+        arrayOf(a("1.3", "1.3", "1.3"), a("Clans mit Clan-Code, Mitglieder hinzufügen und Clan-Chat, eigener Spielmodi-Knopf, Menü-Zurück direkt zum Hauptmenü", "Clans with clan code, add members and clan chat, separate game modes button, menu back goes straight home", "Кланы с кодом, добавление участников и чат клана, отдельная кнопка режимов, «назад» сразу в главное меню")),
         arrayOf(a("1.2", "1.2", "1.2"), a("Fähigkeitenbaum, Mini-Modi (Sternenjagd, Sprint, Zen), mehr Sterne, neue Effekte, 2 neue Songs, Hintergrund-Stile, Update-Log, Schnellzugriff im Menü", "Skill tree, mini modes (Star rush, Sprint, Zen), more stars, new effects, 2 new songs, background styles, update log, menu shortcuts", "Дерево навыков, мини-режимы, больше звёзд, новые эффекты, 2 новые песни, стили фона, журнал обновлений, быстрый доступ в меню")),
         arrayOf(a("1.1", "1.1", "1.1"), a("Fairere Level, kürzere Runden, Combos, Bestzeiten, Skins mit Fähigkeiten", "Fairer levels, shorter runs, combos, best times, skins with abilities", "Честнее уровни, короче забеги, комбо, рекорды времени, скины со способностями")),
         arrayOf(a("1.0", "1.0", "1.0"), a("500 Level, Dimension 7 & 8, Profil, Avatare, Chat, Freunde-Nachrichten, Bots im 1v1", "500 levels, dimensions 7 & 8, profile, avatars, chat, friend messages, 1v1 bots", "500 уровней, измерения 7 и 8, профиль, аватары, чат, сообщения друзьям, боты в 1 на 1")),
@@ -328,6 +329,25 @@ object L {
         arrayOf(a("0.7", "0.7", "0.7"), a("300 Level, Dimensionen 2–4, Endlos-Modus", "300 levels, dimensions 2–4, endless mode", "300 уровней, измерения 2–4, бесконечный режим")),
         arrayOf(a("0.5", "0.5", "0.5"), a("3 Sprachen, Missionen, Glücksrad, Truhen, Erfolge", "3 languages, missions, wheel, chests, achievements", "3 языка, миссии, колесо, сундуки, достижения")),
         arrayOf(a("0.3", "0.3", "0.3"), a("Shop, Skins, Spuren, Level-Karte", "Shop, skins, trails, level map", "Магазин, скины, следы, карта уровней")))
+    val CLAN = a("CLAN", "CLAN", "КЛАН")
+    val CLAN_NONE = a("Du bist in keinem Clan", "You are not in a clan", "Ты не состоишь в клане")
+    val CLAN_INFO = a("Gründe einen Clan oder tritt mit einem Clan-Code bei", "Create a clan or join with a clan code", "Создай клан или вступи по коду клана")
+    val CLAN_CREATE = a("CLAN GRÜNDEN", "CREATE CLAN", "СОЗДАТЬ КЛАН")
+    val CLAN_JOIN = a("BEITRETEN", "JOIN", "ВСТУПИТЬ")
+    val CLAN_NAME = a("Clan-Name", "Clan name", "Название клана")
+    val CLAN_CODE_HINT = a("Clan-Code (6 Zeichen)", "Clan code (6 characters)", "Код клана (6 символов)")
+    val CLAN_CODE = a("Clan-Code: {0}", "Clan code: {0}", "Код клана: {0}")
+    val CLAN_MEMBERS = a("Mitglieder: {0}", "Members: {0}", "Участников: {0}")
+    val CLAN_ADD = a("+ MITGLIED", "+ MEMBER", "+ УЧАСТНИК")
+    val CLAN_CHAT = a("CLAN-CHAT", "CLAN CHAT", "ЧАТ КЛАНА")
+    val CLAN_LEAVE = a("VERLASSEN", "LEAVE", "ПОКИНУТЬ")
+    val CLAN_CREATED = a("Clan „{0}“ gegründet!", "Clan \"{0}\" created!", "Клан «{0}» создан!")
+    val CLAN_JOINED = a("Willkommen im Clan „{0}“!", "Welcome to clan \"{0}\"!", "Добро пожаловать в клан «{0}»!")
+    val CLAN_ADDED = a("{0} ist jetzt im Clan", "{0} is now in the clan", "{0} теперь в клане")
+    val CLAN_LEFT = a("Clan „{0}“ verlassen", "Left clan \"{0}\"", "Ты покинул клан «{0}»")
+    val CLAN_NOT_FOUND = a("Clan nicht gefunden", "Clan not found", "Клан не найден")
+    val CLAN_LEADER = a("Gründer", "Founder", "Основатель")
+    val MODES_BTN = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ")
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
@@ -388,11 +408,10 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Fähigkeitenbaum mit 15 Knoten (Shop → Können)", "• Skill tree with 15 nodes (Shop → Skills)", "• Дерево навыков: 15 узлов (Магазин → Навыки)"),
-        a("• Neue Modi: Sternenjagd, Sprint 25, Zen", "• New modes: Star rush, Sprint 25, Zen", "• Новые режимы: Звёздная охота, Спринт 25, Дзен"),
-        a("• Mehr Sterne: Sternenbögen und höhere Belohnungen", "• More stars: star arcs and bigger rewards", "• Больше звёзд и наград"),
-        a("• Schockwellen, Sternschnuppen, Monde, Tempo-Streifen", "• Shockwaves, shooting stars, moons, speed lines", "• Ударные волны, метеоры, луны, линии скорости"),
-        a("• Feier-Animation für neue Dimensionen", "• Celebration for new dimensions", "• Анимация новых измерений")
+        a("• Clans: gründen, per Code beitreten, Mitglieder hinzufügen", "• Clans: create, join by code, add members", "• Кланы: создай, вступай по коду, добавляй участников"),
+        a("• Clan-Chat mit Bildern", "• Clan chat with photos", "• Чат клана с фото"),
+        a("• Eigener Knopf für Spielmodi", "• Separate game modes button", "• Отдельная кнопка режимов"),
+        a("• Zurück aus den Menüs links führt direkt ins Hauptmenü", "• Back from side menus goes straight home", "• «Назад» из бокового меню сразу в главное")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe
