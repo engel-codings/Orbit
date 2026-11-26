@@ -8,7 +8,7 @@ import kotlin.math.min
  */
 object Levels {
 
-    const val COUNT = 500
+    const val COUNT = 600
 
     // Himmelskörper
     const val B_NONE = 0
@@ -63,6 +63,16 @@ object Levels {
     const val B_DARKSTAR = 49
     const val B_ABYSS = 50
     const val B_OMEGA = 51
+    const val B_STORMEYE2 = 52
+    const val B_THUNDER = 53
+    const val B_CYCLONE = 54
+    const val B_AURORA2 = 55
+    const val B_STORMCROWN = 56
+    const val B_SUNRISE = 57
+    const val B_PRISM = 58
+    const val B_GENESIS = 59
+    const val B_BIGBANG2 = 60
+    const val B_ORIGIN = 61
 
     private val bodyNames = arrayOf(
         arrayOf("", "", ""),
@@ -116,13 +126,25 @@ object Levels {
         arrayOf("SINGULARITÄT", "SINGULARITY", "СИНГУЛЯРНОСТЬ"),
         arrayOf("DUNKELSTERN", "DARK STAR", "ТЁМНАЯ ЗВЕЗДА"),
         arrayOf("ABGRUND", "ABYSS", "БЕЗДНА"),
-        arrayOf("OMEGA", "OMEGA", "ОМЕГА")
+        arrayOf("OMEGA", "OMEGA", "ОМЕГА"),
+        arrayOf("ORKANAUGE", "HURRICANE EYE", "ГЛАЗ УРАГАНА"),
+        arrayOf("DONNERWELT", "THUNDER WORLD", "МИР ГРОМА"),
+        arrayOf("ZYKLON", "CYCLONE", "ЦИКЛОН"),
+        arrayOf("STURMLICHT", "STORM LIGHT", "ГРОЗОВОЙ СВЕТ"),
+        arrayOf("STURMKRONE", "STORM CROWN", "КОРОНА БУРИ"),
+        arrayOf("SONNENAUFGANG", "SUNRISE", "РАССВЕТ"),
+        arrayOf("PRISMA", "PRISM", "ПРИЗМА"),
+        arrayOf("GENESIS", "GENESIS", "ГЕНЕЗИС"),
+        arrayOf("SCHÖPFUNGSFUNKE", "SPARK OF CREATION", "ИСКРА ТВОРЕНИЯ"),
+        arrayOf("URSPRUNG", "ORIGIN", "ИСТОК")
     )
 
     fun bodyName(b: Int): String = bodyNames[b][L.cur]
 
     /** 1 = unser Universum (1–150), 2 = Spiegelwelt (151–200), 3 = Die Leere (201–250). */
     fun dimension(level: Int) = when {
+        level > 550 -> 10
+        level > 500 -> 9
         level > 450 -> 8
         level > 400 -> 7
         level > 350 -> 6
@@ -139,9 +161,11 @@ object Levels {
     const val DIM6_FROM = 351
     const val DIM7_FROM = 401
     const val DIM8_FROM = 451
-    const val DIMS = 8
+    const val DIM9_FROM = 501
+    const val DIM10_FROM = 551
+    const val DIMS = 10
     /** Ab welchem geschafften Level ist der Endlos-Modus einer Dimension frei? */
-    val DIM_UNLOCK = intArrayOf(0, 150, 200, 250, 300, 350, 400, 450)
+    val DIM_UNLOCK = intArrayOf(0, 150, 200, 250, 300, 350, 400, 450, 500, 550)
 
     /** Abschnitt 0..19 (je 10 Level). */
     fun section(level: Int) = (level - 1) / 10

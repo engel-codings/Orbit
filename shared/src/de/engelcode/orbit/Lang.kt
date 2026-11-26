@@ -146,8 +146,12 @@ object L {
         a("Frostwelt", "Frost world", "Ледяной мир"),
         a("Hyperraum", "Hyperspace", "Гиперпространство"),
         a("Pulsar", "Pulsar", "Пульсар"),
-        a("Schwarzes Loch", "Black hole", "Чёрная дыра")
+        a("Schwarzes Loch", "Black hole", "Чёрная дыра"),
+        a("Sturmfront", "Storm front", "Грозовой фронт"),
+        a("Urknall", "Big Bang", "Большой взрыв")
     )
+    val DIM9_HINT = a("Sturmfront: Der Wind dreht alle paar Sekunden!", "Storm front: the wind turns every few seconds!", "Грозовой фронт: ветер меняется каждые несколько секунд!")
+    val DIM10_HINT = a("Urknall: Pulsierende Fangzone und Sog zur Mitte!", "Big Bang: pulsing capture zone and pull to the center!", "Большой взрыв: пульсирующая зона и притяжение к центру!")
     val DIM7_HINT = a("Pulsar: Die Fangzone pulsiert – triff den richtigen Moment!", "Pulsar: the capture zone pulses – time it right!", "Пульсар: зона захвата пульсирует – лови момент!")
     val DIM8_HINT = a("Schwarzes Loch: Die Mitte zieht dich an!", "Black hole: the center pulls you in!", "Чёрная дыра: центр притягивает тебя!")
     val DIM5_HINT = a("Frostwelt: Die Kälte bremst deinen Flug!", "Frost world: the cold slows your flight!", "Ледяной мир: холод замедляет полёт!")
@@ -161,7 +165,9 @@ object L {
         a("Kälte bremst dich", "The cold slows you", "Холод тормозит тебя"),
         a("Alles ist schneller", "Everything is faster", "Всё быстрее"),
         a("Fangzone pulsiert", "Capture zone pulses", "Зона захвата пульсирует"),
-        a("Die Mitte zieht dich an", "The center pulls you", "Центр притягивает")
+        a("Die Mitte zieht dich an", "The center pulls you", "Центр притягивает"),
+        a("Wind wechselt die Richtung", "Wind changes direction", "Ветер меняет направление"),
+        a("Puls und Sog zugleich", "Pulse and pull at once", "Пульс и притяжение сразу")
     )
     val ENDLESS_TITLE = a("SPIELMODI", "GAME MODES", "РЕЖИМЫ ИГРЫ")
     val ONLINE = a("ONLINE", "ONLINE", "ОНЛАЙН")
@@ -288,21 +294,22 @@ object L {
     val SKILL_OWNED = a("Freigeschaltet", "Unlocked", "Открыто")
     val SKILL_NEED = a("Erst den vorherigen Knoten freischalten", "Unlock the previous node first", "Сначала открой предыдущий узел")
     val SKILL_TAP = a("Tippe auf einen Knoten", "Tap a node", "Нажми на узел")
-    val SKILL_NAMES = arrayOf(
-        a("Startschub", "Kickstart", "Рывок"), a("Sternensammler", "Star collector", "Собиратель звёзд"), a("Fangnetz", "Catch net", "Ловчая сеть"),
-        a("Boost-Start", "Boost start", "Стартовый ускоритель"), a("Sternenregen", "Star rain", "Звёздный дождь"), a("Magnetfeld", "Magnet field", "Магнитное поле"),
-        a("Weitblick", "Far sight", "Дальнозоркость"), a("Turbo-Ringe", "Turbo rings", "Турбо-кольца"), a("Überschall", "Supersonic", "Сверхзвук"),
-        a("Glückspilz", "Lucky one", "Везунчик"), a("Schutzengel", "Guardian angel", "Ангел-хранитель"), a("Combo-Meister", "Combo master", "Мастер комбо"),
-        a("Doppelsprung", "Double jump", "Двойной прыжок"), a("Fangnetz II", "Catch net II", "Ловчая сеть II"), a("Meister des Orbits", "Orbit master", "Мастер орбиты"))
-    val SKILL_DESC = arrayOf(
-        a("+4 % Fluggeschwindigkeit", "+4% flight speed", "+4 % скорость полёта"), a("+6 % Sterne", "+6% stars", "+6 % звёзд"),
-        a("+4 % Fangzone", "+4% capture zone", "+4 % зона захвата"), a("1,5 s Boost beim Start", "1.5 s boost at start", "1,5 с ускорения на старте"),
-        a("Mehr Sterne im Level", "More stars in levels", "Больше звёзд на уровне"), a("+2 s Magnet", "+2 s magnet", "+2 с магнит"),
-        a("+25 % Zielhilfe", "+25% aim assist", "+25 % прицел"), a("Boost-Ringe +0,4 s", "Boost rings +0.4 s", "Кольца ускорения +0,4 с"),
-        a("+4 % Fluggeschwindigkeit", "+4% flight speed", "+4 % скорость полёта"), a("+8 % Sterne", "+8% stars", "+8 % звёзд"),
-        a("15 % Chance auf Start-Schild", "15% chance of start shield", "15 % шанс щита на старте"), a("Combo-Zeit +0,15 s", "Combo time +0.15 s", "Время комбо +0,15 с"),
-        a("+1 Umlenkung", "+1 redirect", "+1 смена курса"), a("+5 % Fangzone", "+5% capture zone", "+5 % зона захвата"),
-        a("+5 % Tempo und +10 % Sterne", "+5% speed and +10% stars", "+5 % скорость и +10 % звёзд"))
+    val SK_TYPE_NAMES = arrayOf(
+        a("Tempo", "Speed", "Скорость"), a("Sternensammler", "Star collector", "Собиратель звёзд"), a("Fangnetz", "Catch net", "Ловчая сеть"),
+        a("Startschub", "Kickstart", "Стартовый рывок"), a("Sternenregen", "Star rain", "Звёздный дождь"), a("Magnetfeld", "Magnet field", "Магнитное поле"),
+        a("Weitblick", "Far sight", "Дальнозоркость"), a("Turbo-Ringe", "Turbo rings", "Турбо-кольца"), a("Schutzengel", "Guardian angel", "Ангел-хранитель"),
+        a("Combo-Meister", "Combo master", "Мастер комбо"), a("Doppelsprung", "Double jump", "Двойной прыжок"), a("Sternenmagnet", "Star magnet", "Звёздный магнит"),
+        a("Überflieger", "High flyer", "Высокий полёт"), a("Meister des Orbits", "Orbit master", "Мастер орбиты"))
+    val SK_TYPE_DESC = arrayOf(
+        a("+{0} % Fluggeschwindigkeit", "+{0}% flight speed", "+{0} % скорость полёта"), a("+{0} % Sterne", "+{0}% stars", "+{0} % звёзд"),
+        a("+{0} % Fangzone", "+{0}% capture zone", "+{0} % зона захвата"), a("{0} s Boost beim Start", "{0} s boost at start", "{0} с ускорения на старте"),
+        a("+{0} % mehr Sterne im Level", "+{0}% more stars in levels", "+{0} % больше звёзд на уровне"), a("+{0} s Magnet", "+{0} s magnet", "+{0} с магнит"),
+        a("+{0} % Zielhilfe", "+{0}% aim assist", "+{0} % прицел"), a("Boost-Ringe +{0} s", "Boost rings +{0} s", "Кольца ускорения +{0} с"),
+        a("{0} % Chance auf Start-Schild", "{0}% chance of start shield", "{0} % шанс щита на старте"), a("Combo-Zeit +{0} s", "Combo time +{0} s", "Время комбо +{0} с"),
+        a("+{0} Umlenkung", "+{0} redirect", "+{0} смена курса"), a("+{0} % Sammelradius für Sterne", "+{0}% star pickup radius", "+{0} % радиус сбора звёзд"),
+        a("+{0} Punkt pro übersprungenem Planeten", "+{0} point per skipped planet", "+{0} очко за пропущенную планету"),
+        a("+5 % Tempo und +15 % Sterne", "+5% speed and +15% stars", "+5 % скорость и +15 % звёзд"))
+    val SKILL_REFUND = a("Neuer Fähigkeitenbaum! {0} Sterne erstattet", "New skill tree! {0} stars refunded", "Новое дерево навыков! Возвращено звёзд: {0}")
     val MINI_MODES = a("MINI-MODI", "MINI MODES", "МИНИ-РЕЖИМЫ")
     val MODE_NAMES = arrayOf(a("Sternenjagd", "Star rush", "Звёздная охота"), a("Sprint 25", "Sprint 25", "Спринт 25"), a("Zen", "Zen", "Дзен"))
     val MODE_DESC = arrayOf(a("60 Sekunden – so viele Punkte wie möglich", "60 seconds – score as much as you can", "60 секунд – набери максимум очков"),
@@ -320,6 +327,7 @@ object L {
     val UPDATES = a("Updates", "Updates", "Обновления")
     val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
     val CHANGELOG = arrayOf(
+        arrayOf(a("1.4", "1.4", "1.4"), a("Riesiger Fähigkeitenbaum mit 37 Knoten, Dimension 9 Sturmfront und 10 Urknall, 600 Level, 10 neue Himmelskörper", "Huge skill tree with 37 nodes, dimension 9 Storm front and 10 Big Bang, 600 levels, 10 new celestial bodies", "Огромное дерево навыков (37 узлов), измерения 9 и 10, 600 уровней, 10 новых небесных тел")),
         arrayOf(a("1.3", "1.3", "1.3"), a("Clans mit Clan-Code, Mitglieder hinzufügen und Clan-Chat, eigener Spielmodi-Knopf, Menü-Zurück direkt zum Hauptmenü", "Clans with clan code, add members and clan chat, separate game modes button, menu back goes straight home", "Кланы с кодом, добавление участников и чат клана, отдельная кнопка режимов, «назад» сразу в главное меню")),
         arrayOf(a("1.2", "1.2", "1.2"), a("Fähigkeitenbaum, Mini-Modi (Sternenjagd, Sprint, Zen), mehr Sterne, neue Effekte, 2 neue Songs, Hintergrund-Stile, Update-Log, Schnellzugriff im Menü", "Skill tree, mini modes (Star rush, Sprint, Zen), more stars, new effects, 2 new songs, background styles, update log, menu shortcuts", "Дерево навыков, мини-режимы, больше звёзд, новые эффекты, 2 новые песни, стили фона, журнал обновлений, быстрый доступ в меню")),
         arrayOf(a("1.1", "1.1", "1.1"), a("Fairere Level, kürzere Runden, Combos, Bestzeiten, Skins mit Fähigkeiten", "Fairer levels, shorter runs, combos, best times, skins with abilities", "Честнее уровни, короче забеги, комбо, рекорды времени, скины со способностями")),
@@ -408,10 +416,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Clans: gründen, per Code beitreten, Mitglieder hinzufügen", "• Clans: create, join by code, add members", "• Кланы: создай, вступай по коду, добавляй участников"),
-        a("• Clan-Chat mit Bildern", "• Clan chat with photos", "• Чат клана с фото"),
-        a("• Eigener Knopf für Spielmodi", "• Separate game modes button", "• Отдельная кнопка режимов"),
-        a("• Zurück aus den Menüs links führt direkt ins Hauptmenü", "• Back from side menus goes straight home", "• «Назад» из бокового меню сразу в главное")
+        a("• Riesiger Fähigkeitenbaum: 37 Knoten zum Scrollen", "• Huge skill tree: 37 nodes to scroll through", "• Огромное дерево навыков: 37 узлов"),
+        a("• Dimension 9: Sturmfront", "• Dimension 9: Storm front", "• Измерение 9: Грозовой фронт"),
+        a("• Dimension 10: Urknall", "• Dimension 10: Big Bang", "• Измерение 10: Большой взрыв"),
+        a("• 100 neue Level – jetzt 600!", "• 100 new levels – now 600!", "• 100 новых уровней – теперь 600!"),
+        a("• 10 neue Himmelskörper und 4 neue Erfolge", "• 10 new celestial bodies and 4 new achievements", "• 10 новых небесных тел и 4 новых достижения"),
+        a("• Alter Baum: Sterne wurden erstattet", "• Old tree: stars were refunded", "• Старое дерево: звёзды возвращены")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

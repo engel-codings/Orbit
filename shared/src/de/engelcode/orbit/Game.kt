@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 18
-        const val VERSION_NAME = "1.3.0"
+        const val VERSION_CODE = 19
+        const val VERSION_NAME = "1.4.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -289,7 +289,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private var achBadge = 0
     private var rankStr = ""
     private val dimTitles = Array(Levels.DIMS) { "" }
-    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt(), 0xFF8FD3FF.toInt(), 0xFFE040FB.toInt(), 0xFF64FFDA.toInt(), 0xFFFF1744.toInt())
+    private val DIM_COL = intArrayOf(Gfx.ACCENT, 0xFFF15BB5.toInt(), 0xFF2EE5C8.toInt(), 0xFFFF9F1C.toInt(), 0xFF8FD3FF.toInt(), 0xFFE040FB.toInt(), 0xFF64FFDA.toInt(), 0xFFFF1744.toInt(), 0xFF90A4AE.toInt(), 0xFFFFD54F.toInt())
     private val dimBestStr = Array(Levels.DIMS) { "" }
     private val dimLockStr = Array(Levels.DIMS) { "" }
     private var missionBadge = 0
@@ -326,6 +326,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Net.init({ np.getString(it, "") ?: "" }, { k, v -> np.edit().putString(k, v).apply() })
         Net.listener = this
         applyTexts()
+        migrateOldTree()
         Platform.googlePending { rt -> if (!rt.isNullOrEmpty()) Net.googleLogin(rt) { ok -> if (ok) afterLogin() } }
     }
 
@@ -593,6 +594,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
             6 -> showToast(L.t(L.DIM6_HINT))
             7 -> showToast(L.t(L.DIM7_HINT))
             8 -> showToast(L.t(L.DIM8_HINT))
+            9 -> showToast(L.t(L.DIM9_HINT))
+            10 -> showToast(L.t(L.DIM10_HINT))
         }
         if (!save.redirectHint && (level == 0 || level >= 2)) {
             save.redirectHint = true; save.flush()
@@ -631,7 +634,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         }
     }
 
-    private fun ttTop() = 245f + 4 * 285f
+    private fun ttTop() = 245f + ((Levels.DIMS + 1) / 2) * 285f
 
     private fun ttOpen(k: Int) = save.levelDone >= TT_COURSES[k].max()
 
@@ -802,46 +805,93 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.text(c, modeStr, W / 2f, 380f, 40f, if (mode == 1) Gfx.GOLD else Gfx.ORANGE, maxW = 360f)
     }
 
-    // Fähigkeitenbaum: (x, y-Zeile, Eltern, Preis)
-    private val SK_X = floatArrayOf(500f, 250f, 500f, 750f, 150f, 350f, 500f, 650f, 850f, 250f, 500f, 750f, 350f, 650f, 500f)
-    private val SK_ROW = intArrayOf(0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5)
-    private val SK_PARENT = intArrayOf(-1, 0, 0, 0, 1, 1, 2, 3, 3, 4, 6, 7, 9, 11, 12)
-    private val SK_COST = intArrayOf(150, 300, 300, 300, 600, 600, 500, 600, 700, 1200, 1200, 1200, 2500, 2500, 5000)
+    // Fähigkeitenbaum (37 Knoten): x, Eltern, Preis, Typ, Wert – Zeilen ergeben sich aus SK_ROWS
+    private val SK_DEF = arrayOf(
+        intArrayOf(500, -1, 300, 0, 4),
+        intArrayOf(220, 0, 600, 1, 6), intArrayOf(500, 0, 600, 2, 4), intArrayOf(780, 0, 600, 3, 15),
+        intArrayOf(120, 1, 1000, 4, 10), intArrayOf(320, 1, 1000, 5, 2), intArrayOf(500, 2, 900, 6, 25), intArrayOf(680, 3, 1000, 7, 4), intArrayOf(880, 3, 1100, 0, 4),
+        intArrayOf(220, 4, 1600, 1, 8), intArrayOf(400, 6, 1600, 8, 10), intArrayOf(600, 6, 1600, 9, 15), intArrayOf(780, 8, 1800, 0, 4),
+        intArrayOf(120, 9, 2400, 11, 20), intArrayOf(320, 9, 2400, 5, 2), intArrayOf(500, 10, 2600, 10, 1), intArrayOf(680, 12, 2400, 3, 10), intArrayOf(880, 12, 2600, 12, 1),
+        intArrayOf(220, 13, 3600, 1, 10), intArrayOf(400, 15, 3600, 2, 5), intArrayOf(600, 11, 3600, 9, 15), intArrayOf(780, 16, 3800, 0, 5),
+        intArrayOf(120, 18, 5000, 4, 10), intArrayOf(320, 14, 5000, 5, 3), intArrayOf(500, 19, 5500, 8, 15), intArrayOf(680, 21, 5000, 7, 5), intArrayOf(880, 21, 5000, 6, 25),
+        intArrayOf(220, 22, 7000, 1, 12), intArrayOf(500, 24, 7500, 10, 1), intArrayOf(780, 26, 7500, 0, 5),
+        intArrayOf(320, 27, 9000, 11, 25), intArrayOf(500, 28, 9500, 2, 6), intArrayOf(680, 29, 9000, 9, 20),
+        intArrayOf(500, 31, 15000, 13, 0),
+        intArrayOf(300, 33, 20000, 1, 15), intArrayOf(700, 33, 20000, 0, 6),
+        intArrayOf(500, 34, 30000, 8, 100)
+    )
+    private val SK_ROWS = intArrayOf(1, 3, 5, 4, 5, 4, 5, 3, 3, 1, 2, 1)
+    private val SK_ROW = IntArray(SK_DEF.size).also { r -> var i = 0; for ((row, n) in SK_ROWS.withIndex()) repeat(n) { r[i++] = row } }
+    private val SK_STEP = 210f
     private var skSel = -1
+    private var skScroll = 0f
+    private val roman = arrayOf("", " I", " II", " III", " IV", " V", " VI")
 
-    private fun skY(i: Int) = H - 330f - SK_ROW[i] * ((H - 640f) / 5f)
-    private fun hasSkill(i: Int) = save.skillTree and (1 shl i) != 0
-    private fun skillOpen(i: Int) = SK_PARENT[i] < 0 || hasSkill(SK_PARENT[i])
+    private fun skMaxScroll() = max(0f, (SK_ROWS.size - 1) * SK_STEP - (H - 700f))
+    private fun skY(i: Int) = H - 340f - SK_ROW[i] * SK_STEP + skScroll
+    private fun hasSkill(i: Int) = save.skillTreeL and (1L shl i) != 0L
+    private fun skillOpen(i: Int) = SK_DEF[i][1] < 0 || hasSkill(SK_DEF[i][1])
+
+    private fun skName(i: Int): String {
+        val t = SK_DEF[i][3]
+        var n = 0
+        for (k in 0..i) if (SK_DEF[k][3] == t) n++
+        val total = SK_DEF.count { it[3] == t }
+        return L.t(L.SK_TYPE_NAMES[t]) + if (total > 1) roman[min(n, 6)] else ""
+    }
+
+    private fun skDesc(i: Int): String {
+        val t = SK_DEF[i][3]; val v = SK_DEF[i][4]
+        val vs = when (t) { 3, 7 -> (v / 10).toString() + "," + (v % 10); 9 -> "0," + v.toString().padStart(2, '0'); else -> v.toString() }
+        return if (t == 13) L.t(L.SK_TYPE_DESC[13]) else L.f(L.SK_TYPE_DESC[t], vs)
+    }
 
     private fun applySkills() {
-        fun h(i: Int) = hasSkill(i)
-        var sp = 1f; var stars = 0; var cap = 0f
-        if (h(0)) sp += 0.04f
-        if (h(8)) sp += 0.04f
-        if (h(14)) { sp += 0.05f; stars += 10 }
-        if (h(1)) stars += 6
-        if (h(9)) stars += 8
-        if (h(2)) cap += 0.04f
-        if (h(13)) cap += 0.05f
-        world.speedMul = sp
+        var sp = 0f; var stars = 0; var cap = 0f; var boostStart = 0f; var rain = 0f; var mag = 0f; var aim = 0f
+        var boostLen = 0f; var shield = 0; var combo = 0f; var redir = 0; var radius = 0f; var skip = 0
+        for (i in SK_DEF.indices) {
+            if (!hasSkill(i)) continue
+            val v = SK_DEF[i][4]
+            when (SK_DEF[i][3]) {
+                0 -> sp += v / 100f; 1 -> stars += v; 2 -> cap += v / 100f; 3 -> boostStart += v / 10f
+                4 -> rain += v / 100f; 5 -> mag += v; 6 -> aim += v / 100f; 7 -> boostLen += v / 10f
+                8 -> shield = max(shield, v); 9 -> combo += v / 100f; 10 -> redir += v; 11 -> radius += v / 100f
+                12 -> skip += v; 13 -> { sp += 0.05f; stars += 15 }
+            }
+        }
+        world.speedMul = 1f + min(sp, 0.25f)
         world.captureMul += cap
-        if (h(3)) world.boost(1.5f)
-        if (h(4)) world.starExtra = 0.1f
-        if (h(5)) world.magnetBonus += 2f
-        if (h(6)) world.aimMul += 0.25f
-        if (h(7)) world.boostExtra = 0.4f
-        if (h(10) && !versus && kotlin.random.Random.nextInt(100) < 15) world.giveShield()
-        if (h(11)) world.comboBonus += 0.15f
-        if (h(12)) world.redirects += 1
+        if (boostStart > 0f) world.boost(boostStart)
+        world.starExtra = min(rain, 0.25f)
+        world.magnetBonus += mag
+        world.aimMul += aim
+        world.boostExtra = boostLen
+        if (shield > 0 && !versus && kotlin.random.Random.nextInt(100) < shield) world.giveShield()
+        world.comboBonus += combo
+        world.redirects += redir
+        world.starRadius = 1f + radius
+        world.skipBonus = skip
         skillStarPct = stars
     }
     private var skillStarPct = 0
 
+    /** Alter 15-Knoten-Baum: Sterne einmalig erstatten. */
+    private fun migrateOldTree() {
+        if (save.skillTree == 0) return
+        val old = intArrayOf(150, 300, 300, 300, 600, 600, 500, 600, 700, 1200, 1200, 1200, 2500, 2500, 5000)
+        var refund = 0
+        for (i in old.indices) if (save.skillTree and (1 shl i) != 0) refund += old[i]
+        save.skillTree = 0
+        save.stars += refund
+        save.flush()
+        if (refund > 0) showToast(L.f(L.SKILL_REFUND, refund))
+    }
+
     private fun skillTap(x: Float, y: Float) {
-        if (y > H - 200f) return
-        for (i in SK_X.indices) {
-            val dx = x - SK_X[i]; val dy = y - skY(i)
-            if (dx * dx + dy * dy < 75f * 75f) { skSel = i; sound.play(Sound.CLICK); return }
+        if (y > H - 200f || y < 200f) return
+        for (i in SK_DEF.indices) {
+            val dx = x - SK_DEF[i][0]; val dy = y - skY(i)
+            if (dx * dx + dy * dy < 70f * 70f) { skSel = i; sound.play(Sound.CLICK); return }
         }
     }
 
@@ -849,39 +899,47 @@ class Game(context: Context) : World.Listener, Net.Listener {
         val i = skSel
         if (i < 0) { showToast(L.t(L.SKILL_TAP)); return }
         if (hasSkill(i)) return
+        val cost = SK_DEF[i][2]
         if (!skillOpen(i)) { sound.play(Sound.ERROR); showToast(L.t(L.SKILL_NEED)); return }
-        if (save.stars < SK_COST[i]) { sound.play(Sound.ERROR); showToast(L.f(L.T_MISSING, SK_COST[i] - save.stars, L.stars(SK_COST[i] - save.stars))); return }
-        save.stars -= SK_COST[i]
-        save.skillTree = save.skillTree or (1 shl i)
+        if (save.stars < cost) { sound.play(Sound.ERROR); showToast(L.f(L.T_MISSING, cost - save.stars, L.stars(cost - save.stars))); return }
+        save.stars -= cost
+        save.skillTreeL = save.skillTreeL or (1L shl i)
         save.flush()
         sound.play(Sound.BUY)
-        celebrate(L.t(L.SKILL_NAMES[i]), L.t(L.SKILL_DESC[i]), Gfx.ACCENT, 1.6f)
+        celebrate(skName(i), skDesc(i), Gfx.ACCENT, 1.6f)
     }
 
     private fun drawSkills(c: Canvas) {
-        header(c, L.t(L.SKILL_TREE_H))
-        starPill(c, save.stars)
+        c.save()
+        c.clipRect(0f, 200f, W, H - 200f)
         gfx.line.strokeWidth = 6f
-        for (i in SK_X.indices) {
-            val p = SK_PARENT[i]; if (p < 0) continue
+        for (i in SK_DEF.indices) {
+            val p = SK_DEF[i][1]; if (p < 0) continue
             gfx.line.color = if (hasSkill(i)) Gfx.ACCENT else Gfx.PANEL2
             gfx.line.alpha = 255
-            c.drawLine(SK_X[p], skY(p), SK_X[i], skY(i), gfx.line)
+            c.drawLine(SK_DEF[p][0].toFloat(), skY(p), SK_DEF[i][0].toFloat(), skY(i), gfx.line)
         }
-        for (i in SK_X.indices) {
-            val x = SK_X[i]; val y = skY(i)
+        for (i in SK_DEF.indices) {
+            val x = SK_DEF[i][0].toFloat(); val y = skY(i)
+            if (y < 120f || y > H - 120f) continue
             val own = hasSkill(i); val open = skillOpen(i)
-            if (own && !save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], x, y, 110f, 120)
-            gfx.circle(c, x, y, 58f, if (own) Gfx.ACCENT else Gfx.PANEL)
-            gfx.ring(c, x, y, 58f, if (i == skSel) Color.WHITE else if (open) Gfx.ACCENT else Gfx.PANEL2, if (i == skSel) 7f else 4f, 255)
-            if (own) gfx.icon(c, Gfx.I_CHECK, x, y, 24f, Gfx.BG)
-            else if (!open) gfx.icon(c, Gfx.I_LOCK, x, y, 20f, Gfx.DIM)
-            else gfx.text(c, SK_COST[i].toString(), x, y + 11f, 28f, Gfx.GOLD, maxW = 100f)
+            val big = SK_DEF[i][3] == 13 || SK_DEF[i][2] >= 20000
+            val r = if (big) 66f else 54f
+            val col = when (SK_DEF[i][3]) { 0, 3, 7 -> Gfx.ORANGE; 1, 4, 11 -> Gfx.GOLD; 13 -> 0xFFE040FB.toInt(); else -> Gfx.ACCENT }
+            if (own && !save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], x, y, r * 2f, 110)
+            gfx.circle(c, x, y, r, if (own) col else Gfx.PANEL)
+            gfx.ring(c, x, y, r, if (i == skSel) Color.WHITE else if (open) col else Gfx.PANEL2, if (i == skSel) 7f else 4f, 255)
+            if (own) gfx.icon(c, Gfx.I_CHECK, x, y, 22f, Gfx.BG)
+            else if (!open) gfx.icon(c, Gfx.I_LOCK, x, y, 18f, Gfx.DIM)
+            else gfx.text(c, if (SK_DEF[i][2] >= 1000) (SK_DEF[i][2] / 1000).toString() + "k" else SK_DEF[i][2].toString(), x, y + 10f, 27f, Gfx.GOLD, maxW = 96f)
         }
+        c.restore()
+        header(c, L.t(L.SKILL_TREE_H))
+        starPill(c, save.stars)
         gfx.glass(c, 50f, H - 200f, 950f, H - 30f, 44f)
         if (skSel >= 0) {
-            gfx.text(c, L.t(L.SKILL_NAMES[skSel]), 80f, H - 130f, 36f, Color.WHITE, align = Paint.Align.LEFT, maxW = 420f)
-            gfx.text(c, L.t(L.SKILL_DESC[skSel]), 80f, H - 80f, 25f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 430f)
+            gfx.text(c, skName(skSel), 80f, H - 130f, 34f, Color.WHITE, align = Paint.Align.LEFT, maxW = 420f)
+            gfx.text(c, skDesc(skSel), 80f, H - 80f, 24f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 430f)
             if (hasSkill(skSel)) gfx.text(c, L.t(L.SKILL_OWNED), 725f, H - 100f, 32f, Gfx.GREEN, maxW = 380f)
             else drawBtn(c, bSkillBuy)
         } else gfx.text(c, L.t(L.SKILL_TAP), W / 2f, H - 100f, 32f, Gfx.DIM, false)
@@ -1978,7 +2036,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     return
                 }
                 if ((screen == Screen.GAMEOVER || screen == Screen.LEVELDONE) && screenTime < 0.6f) return
-                scrollStart = when (screen) { Screen.MAP -> mapScroll; Screen.ACHIEVE -> achScroll; else -> shopScroll }
+                scrollStart = when (screen) { Screen.MAP -> mapScroll; Screen.ACHIEVE -> achScroll; Screen.SKILLS -> skScroll; else -> shopScroll }
                 pressed = hit(activeButtons(), x, y)
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -1986,13 +2044,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dialog != D_NONE) return
-                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT && screen != Screen.DM && screen != Screen.ENDLESS_SEL && screen != Screen.CHANGELOG) return
+                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT && screen != Screen.DM && screen != Screen.ENDLESS_SEL && screen != Screen.CHANGELOG && screen != Screen.SKILLS) return
                 if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
                 if (dragging) when (screen) {
                     Screen.MAP -> mapScroll = clampMap(scrollStart + (y - downY))
                     Screen.ACHIEVE -> achScroll = clampAch(scrollStart - (y - downY))
                     Screen.LEADER -> shopScroll = clampList(scrollStart - (y - downY), lbList.size, LB_TOP, LB_STEP)
                     Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
+                    Screen.SKILLS -> skScroll = (scrollStart + (y - downY)).coerceIn(0f, skMaxScroll())
                     Screen.CHANGELOG -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, logH - H + 300f))
                     Screen.ENDLESS_SEL -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, ttTop() + 760f - H))
                     Screen.CHAT, Screen.DM -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
@@ -2811,7 +2870,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             val tw = min(gfx.textWidth(name, 38f), 760f)
             gfx.glass(c, W / 2f - tw / 2f - 36f, by + r + 30f, W / 2f + tw / 2f + 36f, by + r + 100f, 35f)
             gfx.text(c, name, W / 2f, by + r + 79f, 38f, if (reached) Color.WHITE else Gfx.DIM, maxW = 760f)
-            if (s >= 15 && s % 5 == 0 && s <= 45) {
+            if (s >= 15 && s % 5 == 0 && s <= Levels.COUNT / 10 - 5) {
                 // Übergang in die Spiegelwelt
                 val dy = by - r - 150f
                 val di = s / 5 - 2

@@ -170,7 +170,11 @@ class World(private val gfx: Gfx) {
     private var popStr = ""
     var dim = 1; private set
     /** Sonnenwind (nur Dimension 4): positive Werte = nach rechts. */
-    val windX: Float get() = if (dim == 4) sin(time * 0.55f) * 330f + sin(time * 1.7f) * 60f else 0f
+    val windX: Float get() = when (dim) {
+        4 -> sin(time * 0.55f) * 330f + sin(time * 1.7f) * 60f
+        9 -> (if (((time / 4f).toInt()) % 2 == 0) 1f else -1f) * 300f + sin(time * 2.2f) * 50f
+        else -> 0f
+    }
 
     private val layerPts = Array(3) { FloatArray(0) }
     private val layerDepth = floatArrayOf(0.04f, 0.12f, 0.25f)
@@ -222,7 +226,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f; starRadius = 1f; skipBonus = 0
         for (w in waves) w.active = false
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
@@ -420,6 +424,8 @@ class World(private val gfx: Gfx) {
     // Fähigkeiten / Modi
     var zen = false
     var bgStyle = 0
+    var starRadius = 1f
+    var skipBonus = 0
     var speedMul = 1f
     var starExtra = 0f
     var boostExtra = 0f
@@ -439,7 +445,7 @@ class World(private val gfx: Gfx) {
     var ghostName = ""
 
     /** Dimension 7 (Pulsar): Fangzone pulsiert zwischen klein und groß. */
-    fun pulseMul() = if (dim == 7) 0.7f + 0.45f * (0.5f + 0.5f * sin(time * 2.4f)) else 1f
+    fun pulseMul() = if (dim == 7 || dim == 10) 0.7f + 0.45f * (0.5f + 0.5f * sin(time * 2.4f)) else 1f
 
     private fun spawnWorm(mx: Float, my: Float, y: Float, pr: Float) {
         for (w in worms) if (!w.active) {
@@ -547,7 +553,8 @@ class World(private val gfx: Gfx) {
             }
             if (playing && !dead) {
                 val dx = s.x - plX; val dy = s.y - plY
-                if (dx * dx + dy * dy < 55f * 55f) {
+                val sr = 55f * starRadius
+                if (dx * dx + dy * dy < sr * sr) {
                     s.active = false
                     runStars++
                     burst(s.x, s.y, Gfx.GOLD, 12, 260f)
@@ -673,7 +680,7 @@ class World(private val gfx: Gfx) {
             if (d < p.r + CAPTURE * captureMul * pulse) { capture(p, d); return true }
             if (d < 750f) {
                 val k = p.r / 100f
-                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; 5 -> 1.15f; 6 -> 0.9f; 8 -> 1.05f; else -> 1f })
+                val a = GRAVITY * k * k / d2 * (when (dim) { 2 -> -0.55f; 3 -> 0f; 4 -> 0.8f; 5 -> 1.15f; 6 -> 0.9f; 8 -> 1.05f; 9 -> 1.05f; 10 -> 1.1f; else -> 1f })
                 ax += dx / d * a; ay += dy / d * a
             }
         }
@@ -718,8 +725,9 @@ class World(private val gfx: Gfx) {
                 break
             }
         }
-        if (dim == 4) ax += windX
+        if (dim == 4 || dim == 9) ax += windX
         if (dim == 8) ax += (W / 2f - plX) * 1.7f
+        if (dim == 10) ax += (W / 2f - plX) * 0.8f
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
         val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * speedMul * (if (boostT > 0f) 1.35f else 1f) *
@@ -756,7 +764,7 @@ class World(private val gfx: Gfx) {
         if (flyTime < 1.15f + comboBonus) combo++ else combo = 1
         val comboPts = if (combo >= 3) min(combo - 2, 6) else 0
         if (combo > bestCombo) bestCombo = combo
-        score += pts + skipped * 2 + comboPts
+        score += pts + skipped * (2 + skipBonus) + comboPts
         captures++
         if (skipped > 0) {
             skippedTotal += skipped
@@ -914,7 +922,9 @@ class World(private val gfx: Gfx) {
                     }
                 }
                 if (dim == 6) gfx.ring(c, p.x, p.y, p.r + 5f + sin(time * 9f + p.phase) * 3f, 0xFFE040FB.toInt(), 3f, 200)
-                if (dim == 7) {
+                if (dim == 9) gfx.ring(c, p.x, p.y, p.r + 4f, 0xFF90A4AE.toInt(), 4f, 160)
+                if (dim == 10) gfx.ring(c, p.x, p.y, p.r + 6f + sin(time * 3f + p.phase) * 4f, 0xFFFFD54F.toInt(), 3f, 190)
+                if (dim == 7 || dim == 10) {
                     val pm = pulseMul()
                     gfx.ring(c, p.x, p.y, p.r + CAPTURE * captureMul * pm, 0xFF64FFDA.toInt(), 3f, (60 + 140 * (pm - 0.7f) / 0.45f).toInt())
                 }
@@ -1060,10 +1070,10 @@ class World(private val gfx: Gfx) {
                 // Stil: 0 = automatisch (Dimension + Abschnitt), sonst fest gewählt
                 val pal = when {
                     bgStyle > 0 -> bgStyle
-                    level > 0 && i >= 2 -> ((dim - 1 + Levels.section(level) * 3) % 8) + 1
+                    level > 0 && i >= 2 -> ((dim - 1 + Levels.section(level) * 3) % 10) + 1
                     else -> dim
                 }
-                gfx.glow(c, when (pal) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; 7 -> gfx.nebula7[i]; 8 -> gfx.nebula8[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+                gfx.glow(c, when (pal) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; 7 -> gfx.nebula7[i]; 8 -> gfx.nebula8[i]; 9 -> gfx.nebula9[i]; 10 -> gfx.nebula10[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
             }
         }
         for (sh in shoots) if (sh.active) {
@@ -1089,7 +1099,7 @@ class World(private val gfx: Gfx) {
             c.drawLine(cx - 14f, 0f, cx - 14f, worldH, gfx.line)
             c.drawLine(cx + 14f, 0f, cx + 14f, worldH, gfx.line)
         }
-        if (dim == 4) {
+        if (dim == 4 || dim == 9) {
             // sichtbare Windstreifen
             val w = windX
             val len = 40f + kotlin.math.abs(w) * 0.25f

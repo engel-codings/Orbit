@@ -87,7 +87,11 @@ object Achievements {
         Ach(n("Pulsjäger", "Pulse hunter", "Охотник за пульсом"), LEVEL, 410, 1000),
         Ach(n("Herzschlag der Sterne", "Heartbeat of the stars", "Сердцебиение звёзд"), LEVEL, 450, 3000),
         Ach(n("Am Ereignishorizont", "At the event horizon", "На горизонте событий"), LEVEL, 460, 1200),
-        Ach(n("Omega", "Omega", "Омега"), LEVEL, 500, 6000)
+        Ach(n("Omega", "Omega", "Омега"), LEVEL, 500, 6000),
+        Ach(n("Sturmjäger", "Storm chaser", "Охотник за бурей"), LEVEL, 510, 1500),
+        Ach(n("Herr der Stürme", "Lord of storms", "Повелитель бурь"), LEVEL, 550, 4000),
+        Ach(n("Zeuge des Urknalls", "Witness of the Big Bang", "Свидетель Большого взрыва"), LEVEL, 560, 1800),
+        Ach(n("Am Ursprung", "At the origin", "У истока"), LEVEL, 600, 8000)
     )
 
     private val DESC = arrayOf(

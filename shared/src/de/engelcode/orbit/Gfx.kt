@@ -166,7 +166,11 @@ class Gfx(context: Context) {
         makeGlow(0xFF64FFDA.toInt(), 0xB0), makeGlow(0xFFFFFFFF.toInt(), 0xC0), makeGlow(0xFF1DE9B6.toInt(), 0x90),
         makeGlow(0xFF00B8D4.toInt(), 0xA0), makeGlow(0xFF64FFDA.toInt(), 0xE0),
         makeGlow(0xFF7C4DFF.toInt(), 0x90), makeGlow(0xFFFF1744.toInt(), 0xA0), makeGlow(0xFFD500F9.toInt(), 0xA0),
-        makeGlow(0xFF311B92.toInt(), 0xC0), makeGlow(0xFFFFFFFF.toInt(), 0xE0)
+        makeGlow(0xFF311B92.toInt(), 0xC0), makeGlow(0xFFFFFFFF.toInt(), 0xE0),
+        makeGlow(0xFF90A4AE.toInt(), 0xA0), makeGlow(0xFF4FC3F7.toInt(), 0xA0), makeGlow(0xFFB0BEC5.toInt(), 0x90),
+        makeGlow(0xFF4FC3F7.toInt(), 0xB0), makeGlow(0xFFECEFF1.toInt(), 0xC0),
+        makeGlow(0xFFFFD54F.toInt(), 0xB0), makeGlow(0xFFFF6E40.toInt(), 0xB0), makeGlow(0xFFE040FB.toInt(), 0xB0),
+        makeGlow(0xFFFFFFFF.toInt(), 0xC0), makeGlow(0xFFFFD54F.toInt(), 0xF0)
     )
     val nebula5 = arrayOf(
         makeGlow(0xFF8FD3FF.toInt(), 0x40), makeGlow(0xFF1E5EFF.toInt(), 0x40),
@@ -183,6 +187,14 @@ class Gfx(context: Context) {
     val nebula8 = arrayOf(
         makeGlow(0xFFFF1744.toInt(), 0x35), makeGlow(0xFF7C4DFF.toInt(), 0x45),
         makeGlow(0xFF311B92.toInt(), 0x60), makeGlow(0xFFD500F9.toInt(), 0x30)
+    )
+    val nebula9 = arrayOf(
+        makeGlow(0xFF90A4AE.toInt(), 0x40), makeGlow(0xFF37474F.toInt(), 0x60),
+        makeGlow(0xFF4FC3F7.toInt(), 0x30), makeGlow(0xFFB0BEC5.toInt(), 0x30)
+    )
+    val nebula10 = arrayOf(
+        makeGlow(0xFFFFD54F.toInt(), 0x40), makeGlow(0xFFFF6E40.toInt(), 0x35),
+        makeGlow(0xFFFFFFFF.toInt(), 0x25), makeGlow(0xFFE040FB.toInt(), 0x35)
     )
     val nebula4 = arrayOf(
         makeGlow(0xFFFF7A00.toInt(), 0x45), makeGlow(0xFFFF3D00.toInt(), 0x40),
@@ -911,6 +923,58 @@ class Gfx(context: Context) {
                 for (k in 0 until 4) ring(c, x, y, r * (0.4f + k * 0.18f), if (k % 2 == 0) 0xFFFF1744.toInt() else 0xFF64FFDA.toInt(), r * 0.04f, 230 - k * 40)
                 starShape(c, x, y, r * 0.45f, t * 90f, Color.WHITE, 250)
                 circle(c, x, y, r * 0.15f, 0xFFFFD54F.toInt())
+            }
+            Levels.B_STORMEYE2 -> {
+                circle(c, x, y, r * 0.8f, 0xFF455A64.toInt())
+                for (k in 0 until 3) { c.save(); c.rotate(-t * 80f + k * 120f, x, y); stroke.color = 0xFFB0BEC5.toInt(); stroke.alpha = 200; stroke.strokeWidth = r * 0.07f
+                    rect.set(x - r * 0.75f, y - r * 0.75f, x + r * 0.75f, y + r * 0.75f); c.drawArc(rect, 0f, 120f, false, stroke); c.restore() }
+                circle(c, x, y, r * 0.2f, 0xFF4FC3F7.toInt())
+            }
+            Levels.B_THUNDER -> {
+                circle(c, x, y, r * 0.75f, 0xFF263238.toInt())
+                line.color = 0xFF4FC3F7.toInt(); line.alpha = if (sin(t * 9f) > 0.3f) 255 else 90; line.strokeWidth = r * 0.07f
+                c.drawLine(x - r * 0.1f, y - r * 0.6f, x + r * 0.15f, y - r * 0.05f, line)
+                c.drawLine(x + r * 0.15f, y - r * 0.05f, x - r * 0.1f, y + r * 0.05f, line)
+                c.drawLine(x - r * 0.1f, y + r * 0.05f, x + r * 0.1f, y + r * 0.6f, line)
+                ring(c, x, y, r * 0.75f, 0xFF90A4AE.toInt(), r * 0.04f, 180)
+            }
+            Levels.B_CYCLONE -> {
+                for (k in 0 until 5) ring(c, x + sin(t * 2f + k) * r * 0.08f, y, r * (0.3f + k * 0.14f), 0xFFB0BEC5.toInt(), r * 0.04f, 220 - k * 35)
+            }
+            Levels.B_AURORA2 -> {
+                circle(c, x, y, r * 0.8f, 0xFF102A43.toInt())
+                for (k in 0 until 3) { val yy = y - r * 0.3f + k * r * 0.3f
+                    rect.set(x - r * 0.7f, yy - r * 0.07f + sin(t * 2f + k) * r * 0.05f, x + r * 0.7f, yy + r * 0.07f + sin(t * 2f + k) * r * 0.05f)
+                    fill.color = if (k == 1) 0xFF4FC3F7.toInt() else 0xFF80CBC4.toInt(); fill.alpha = 180; c.drawOval(rect, fill) }
+            }
+            Levels.B_STORMCROWN -> {
+                circle(c, x, y, r * 0.6f, 0xFF607D8B.toInt())
+                for (k in 0 until 7) { val a = k * 0.8976f + t * 0.5f
+                    starShape(c, x + cos(a) * r * 0.85f, y + sin(a) * r * 0.85f, r * 0.15f, t * 50f, 0xFFECEFF1.toInt(), 230) }
+            }
+            Levels.B_SUNRISE -> {
+                circle(c, x, y, r * 0.65f, 0xFFFFB300.toInt()); circle(c, x, y, r * 0.45f, 0xFFFFE082.toInt())
+                line.color = 0xFFFFD54F.toInt(); line.strokeWidth = r * 0.05f; line.alpha = 200
+                for (k in 0 until 12) { val a = k * 0.5236f + t * 0.3f; c.drawLine(x + cos(a) * r * 0.72f, y + sin(a) * r * 0.72f, x + cos(a) * r, y + sin(a) * r, line) }
+            }
+            Levels.B_PRISM -> {
+                for (k in 0 until 6) { val a = k * 1.047f + t * 0.4f
+                    circle(c, x + cos(a) * r * 0.4f, y + sin(a) * r * 0.4f, r * 0.32f, intArrayOf(0xFFFF5252.toInt(), 0xFFFFAB40.toInt(), 0xFFFFFF00.toInt(), 0xFF69F0AE.toInt(), 0xFF40C4FF.toInt(), 0xFFE040FB.toInt())[k], 160) }
+                circle(c, x, y, r * 0.25f, Color.WHITE)
+            }
+            Levels.B_GENESIS -> {
+                for (k in 0 until 20) { val a = k * 0.314f + t; val d = r * (0.2f + (k % 5) * 0.17f)
+                    circle(c, x + cos(a) * d, y + sin(a) * d, r * 0.06f, if (k % 2 == 0) 0xFFFFD54F.toInt() else 0xFFFF6E40.toInt(), 220) }
+                circle(c, x, y, r * 0.2f, Color.WHITE)
+            }
+            Levels.B_BIGBANG2 -> {
+                val f = (t * 0.5f) % 1f
+                for (k in 0 until 3) ring(c, x, y, r * (0.2f + ((f + k / 3f) % 1f) * 0.85f), 0xFFFFD54F.toInt(), r * 0.05f, (230 * (1f - (f + k / 3f) % 1f)).toInt())
+                circle(c, x, y, r * 0.22f, Color.WHITE)
+            }
+            Levels.B_ORIGIN -> {
+                drawGalaxy(c, x, y, r, t * 1.2f, 0xFFFFD54F.toInt(), 0xFFE040FB.toInt(), true)
+                starShape(c, x, y, r * 0.35f, t * 70f, Color.WHITE, 250)
             }
             Levels.B_SOLARCORE -> {
                 for (k in 0 until 16) {

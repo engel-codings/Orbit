@@ -6,7 +6,7 @@ import android.content.Context
 class Save(context: Context) {
 
     companion object {
-        private val LONGS = setOf("achClaimedL", "challengeDay", "chestReady", "lastDay", "missionDay", "ownedSkinsL", "ownedSkins2L", "wheelDay", "tt0", "tt1", "tt2", "tt3")
+        private val LONGS = setOf("achClaimedL", "challengeDay", "chestReady", "lastDay", "missionDay", "ownedSkinsL", "ownedSkins2L", "skillTreeL", "wheelDay", "tt0", "tt1", "tt2", "tt3")
         /** Datentyp eines gespeicherten Wertes (für den Cloud-Speicher). */
         fun typeOf(k: String, v: String): Char = when {
             k in LONGS -> 'l'
@@ -44,7 +44,8 @@ class Save(context: Context) {
     fun levelTime(l: Int) = levelTimes[l] ?: 0
     fun setLevelTime(l: Int, ms: Int) { levelTimes[l] = ms }
     var bestCombo = p.getInt("bestCombo", 0)
-    var skillTree = p.getInt("skillTree", 0)
+    var skillTree = p.getInt("skillTree", 0)   // alter Baum (wird erstattet)
+    var skillTreeL: Long = p.getLong("skillTreeL", 0L)
     var bgStyle = p.getInt("bgStyle", 0)
     val modeBest = IntArray(3) { p.getInt("mode$it", 0) }
     var ownedTrails = p.getInt("ownedTrails", 1)
@@ -144,7 +145,7 @@ class Save(context: Context) {
         p.edit()
             .putInt("best", best).putInt("stars", stars)
             .putInt("skin", skin).putInt("trail", trail)
-            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("skillTree", skillTree).putInt("bgStyle", bgStyle).putInt("mode0", modeBest[0]).putInt("mode1", modeBest[1]).putInt("mode2", modeBest[2]).putInt("ownedTrails", ownedTrails)
+            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("skillTree", skillTree).putLong("skillTreeL", skillTreeL).putInt("bgStyle", bgStyle).putInt("mode0", modeBest[0]).putInt("mode1", modeBest[1]).putInt("mode2", modeBest[2]).putInt("ownedTrails", ownedTrails)
             .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())
@@ -159,7 +160,7 @@ class Save(context: Context) {
             .putInt("upg0", upg[0]).putInt("upg1", upg[1]).putInt("upg2", upg[2]).putInt("upg3", upg[3]).putInt("upg4", upg[4])
             .putLong("tt0", ttBest[0]).putLong("tt1", ttBest[1]).putLong("tt2", ttBest[2]).putLong("tt3", ttBest[3]).putInt("ttDone", ttDone)
             .putInt("redirects", redirects).putInt("skips", skips).putInt("worms", worms).putBoolean("redirectHint", redirectHint)
-            .putInt("bestD1", bestDim[0]).putInt("bestD2", bestDim[1]).putInt("bestD3", bestDim[2]).putInt("bestD4", bestDim[3]).putInt("bestD5", bestDim[4]).putInt("bestD6", bestDim[5]).putInt("bestD7", bestDim[6]).putInt("bestD8", bestDim[7])
+            .putInt("bestD1", bestDim[0]).putInt("bestD2", bestDim[1]).putInt("bestD3", bestDim[2]).putInt("bestD4", bestDim[3]).putInt("bestD5", bestDim[4]).putInt("bestD6", bestDim[5]).putInt("bestD7", bestDim[6]).putInt("bestD8", bestDim[7]).putInt("bestD9", bestDim[8]).putInt("bestD10", bestDim[9])
             .putInt("challengesDone", challengesDone).putInt("spins", spins)
             .putLong("challengeDay", challengeDay).putLong("wheelDay", wheelDay)
             .putInt("games", games).putInt("planets", planets)
