@@ -92,6 +92,29 @@ object Skins {
 
     private fun c(v: Long) = v.toInt()
 
+    // Fähigkeiten von Skins
+    const val PK_NONE = 0
+    const val PK_CAPTURE = 1   // +% Fangzone
+    const val PK_MAGNET = 2    // +s Magnet
+    const val PK_REDIRECT = 3  // +n Umlenkungen
+    const val PK_STARS = 4     // +% Sterne
+    const val PK_SHIELD = 5    // % Chance auf Schild beim Start
+    const val PK_AIM = 6       // +% Zielhilfe
+    const val PK_COMBO = 7     // Combo-Zeitfenster +0,1 s je Stufe
+
+    /** Skin-Index -> (Fähigkeit, Wert) */
+    val PERKS: Map<Int, Pair<Int, Int>> = mapOf(
+        3 to (PK_AIM to 20), 5 to (PK_CAPTURE to 4), 8 to (PK_MAGNET to 2), 10 to (PK_STARS to 5),
+        12 to (PK_REDIRECT to 1), 15 to (PK_COMBO to 2), 18 to (PK_SHIELD to 15), 20 to (PK_CAPTURE to 6),
+        23 to (PK_STARS to 8), 25 to (PK_MAGNET to 3), 28 to (PK_COMBO to 3), 30 to (PK_SHIELD to 20),
+        33 to (PK_REDIRECT to 1), 36 to (PK_STARS to 10), 40 to (PK_CAPTURE to 8), 44 to (PK_AIM to 40),
+        48 to (PK_SHIELD to 25), 52 to (PK_STARS to 12), 56 to (PK_COMBO to 4), 59 to (PK_REDIRECT to 2),
+        63 to (PK_CAPTURE to 10), 67 to (PK_STARS to 15), 70 to (PK_SHIELD to 30), 74 to (PK_REDIRECT to 2),
+        75 to (PK_STARS to 20), 76 to (PK_COMBO to 3), 77 to (PK_CAPTURE to 7), 78 to (PK_MAGNET to 4),
+        79 to (PK_SHIELD to 25), 80 to (PK_STARS to 12), 81 to (PK_REDIRECT to 1), 82 to (PK_AIM to 50),
+        83 to (PK_COMBO to 5), 84 to (PK_CAPTURE to 12), 85 to (PK_STARS to 25)
+    )
+
     val skins = arrayOf(
         Skin(n("Komet", "Comet", "Комета"), 0, c(0xFFE8FBFF), c(0xFF7FE7FF), PLAIN),
         Skin(n("Sonne", "Sun", "Солнце"), 120, c(0xFFFFD166), c(0xFFFFB703), PULSE),
@@ -164,11 +187,21 @@ object Skins {
         Skin(n("Dunkelstern", "Dark star", "Тёмная звезда"), 8000, c(0xFFD500F9), c(0xFF1A0033), STAR, reqLevel = 475),
         Skin(n("Abgrund", "Abyss", "Бездна"), 9000, c(0xFF311B92), c(0xFFFF1744), CUBE, c(0xFFFF1744), reqLevel = 485),
         Skin(n("Omega", "Omega", "Омега"), 0, c(0xFFFFD54F), c(0xFFFF1744), PRISM, reqLevel = 500),
-        Skin(n("Rubin", "Ruby", "Рубин"), 2200, c(0xFFE53935), c(0xFFB71C1C), DIAMOND, reqLevel = 60),
-        Skin(n("Smaragd", "Emerald", "Изумруд"), 2600, c(0xFF2E7D32), c(0xFF66BB6A), DIAMOND, reqLevel = 90),
-        Skin(n("Saphir", "Sapphire", "Сапфир"), 3000, c(0xFF1565C0), c(0xFF64B5F6), DIAMOND, reqLevel = 120),
+        Skin(n("Blutrubin", "Blood ruby", "Кровавый рубин"), 2200, c(0xFFE53935), c(0xFFB71C1C), DIAMOND, reqLevel = 60),
+        Skin(n("Waldsmaragd", "Forest emerald", "Лесной изумруд"), 2600, c(0xFF2E7D32), c(0xFF66BB6A), DIAMOND, reqLevel = 90),
+        Skin(n("Tiefsaphir", "Deep sapphire", "Глубокий сапфир"), 3000, c(0xFF1565C0), c(0xFF64B5F6), DIAMOND, reqLevel = 120),
         Skin(n("Goldkrone", "Gold crown", "Золотая корона"), 12000, c(0xFFFFD54F), c(0xFFFFB300), CROWN, c(0xFFFFFFFF), reqCrowns = 900),
-        Skin(n("Legende", "Legend", "Легенда"), 15000, c(0xFFFFFFFF), c(0xFFFFD54F), GALAXY, c(0xFFFF1744), reqCrowns = 1200)
+        Skin(n("Legende", "Legend", "Легенда"), 15000, c(0xFFFFFFFF), c(0xFFFFD54F), GALAXY, c(0xFFFF1744), reqCrowns = 1200),
+        Skin(n("Sprinter", "Sprinter", "Спринтер"), 1800, c(0xFF00E676), c(0xFF00C853), ELECTRIC, c(0xFFFFFFFF), reqLevel = 25),
+        Skin(n("Fänger", "Catcher", "Ловец"), 2400, c(0xFF29B6F6), c(0xFF0288D1), RINGPLANET, reqLevel = 40),
+        Skin(n("Magnetkern", "Magnet core", "Магнитное ядро"), 2800, c(0xFFFF5252), c(0xFF448AFF), ATOM, c(0xFF448AFF), reqLevel = 55),
+        Skin(n("Schildwächter", "Shield guard", "Страж щита"), 3400, c(0xFF7C4DFF), c(0xFFB388FF), DIAMOND, reqLevel = 70),
+        Skin(n("Glücksstern", "Lucky star", "Счастливая звезда"), 4200, c(0xFFFFD740), c(0xFFFFAB00), STAR, reqLevel = 85),
+        Skin(n("Lenker", "Steerer", "Рулевой"), 4800, c(0xFF18FFFF), c(0xFF00B8D4), CUBE, c(0xFFFFFFFF), reqLevel = 100),
+        Skin(n("Adlerauge", "Eagle eye", "Орлиный глаз"), 5200, c(0xFFFFAB40), c(0xFFFF6D00), PRISM, reqLevel = 120),
+        Skin(n("Turbo", "Turbo", "Турбо"), 6500, c(0xFFFF1744), c(0xFFFFEA00), EMBER, c(0xFFFFEA00), reqLevel = 150),
+        Skin(n("Riesenfang", "Giant catch", "Большой улов"), 8000, c(0xFF64FFDA), c(0xFF1DE9B6), GALAXY, c(0xFF00B8D4), reqCrowns = 500),
+        Skin(n("Sternenkönig", "Star king", "Звёздный король"), 11000, c(0xFFFFD54F), c(0xFFFFFFFF), CROWN, c(0xFFFFD54F), reqCrowns = 800)
     )
 
     val trails = arrayOf(

@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 15
-        const val VERSION_NAME = "1.0.0"
+        const val VERSION_CODE = 16
+        const val VERSION_NAME = "1.1.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -528,6 +528,16 @@ class Game(context: Context) : World.Listener, Net.Listener {
         world.captureMul = 1f + 0.08f * save.upg[1]
         world.magnetBonus = 4f * save.upg[2]
         world.aimMul = 1f + 0.4f * save.upg[4]
+        world.comboBonus = 0f
+        val perk = Skins.PERKS[save.skin]
+        if (perk != null) when (perk.first) {
+            Skins.PK_CAPTURE -> world.captureMul += perk.second / 100f
+            Skins.PK_MAGNET -> world.magnetBonus += perk.second
+            Skins.PK_REDIRECT -> world.redirects += perk.second
+            Skins.PK_AIM -> world.aimMul += perk.second / 100f
+            Skins.PK_COMBO -> world.comboBonus = perk.second * 0.1f
+            Skins.PK_SHIELD -> if (!versus && kotlin.random.Random.nextInt(100) < perk.second) world.giveShield()
+        }
         challengeRun = seed != 0L && !versus
         challengeVal = -1
         runLevel = level
@@ -851,6 +861,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
     // ===================================================================== Profil, Avatare, Chat, Formulare
 
     private var backToProfile = false
+    private var levelTimeStr = ""
+    private var levelTimeNew = false
     private var queueWait = 0f
     private var selPid = ""
     private var selName = ""
@@ -1405,7 +1417,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private fun commitRun() {
         val bonus = if (runLevel == 0) world.score / 8 else 0
         val gained = world.runStars - cStars
-        val add = gained + gained * save.upg[3] / 10 + (bonus - cBonus)
+        val pk = Skins.PERKS[save.skin]
+        val perkPct = if (pk != null && pk.first == Skins.PK_STARS) pk.second else 0
+        val add = gained + gained * save.upg[3] / 10 + gained * perkPct / 100 + (bonus - cBonus)
+        if (world.bestCombo > save.bestCombo) save.bestCombo = world.bestCombo
         save.stars += add
         save.starsCollected += world.runStars - cStars
         save.planets += world.captures - cCaptures
@@ -1465,6 +1480,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     override fun onBoost() = sound.play(Sound.BOOST)
 
+    override fun onCombo(n: Int) = sound.play(Sound.BONUS, 1f + min(n, 8) * 0.06f, 0.7f)
+
     override fun onWormhole() {
         save.worms++
         sound.play(Sound.POWER, 0.7f)
@@ -1508,6 +1525,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
         mission(Missions.LEVELS, 1)
         commitRun()
         if (ttCourse >= 0) { save.flush(); winTimer = 0.9f; return }
+        if (runLevel > 0 && !challengeRun) {
+            val ms = (runTime * 1000f).toInt()
+            val best = save.levelTime(runLevel)
+            if (best == 0 || ms < best) { save.setLevelTime(runLevel, ms); levelTimeStr = L.f(L.TIME_NEW, fmtTime(ms / 1000f)); levelTimeNew = true }
+            else { levelTimeStr = L.f(L.TIME_LINE, fmtTime(ms / 1000f), fmtTime(best / 1000f)); levelTimeNew = false }
+        } else levelTimeStr = ""
         firstClear = runLevel > save.levelDone
         levelReward = if (firstClear) Levels.reward(runLevel) else 0
         if (firstClear) {
@@ -2376,7 +2399,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 gfx.icon(c, Gfx.I_CROWN, kx, ky, 55f, Gfx.PANEL2, a)
             }
         }
-        val ly = top + 570f
+        if (levelTimeStr.isNotEmpty()) gfx.text(c, levelTimeStr, cx, top + 528f, 30f, if (levelTimeNew) Gfx.GOLD else Gfx.DIM, false, alpha = a, maxW = 800f)
+        val ly = top + 585f
         crit(c, ly, true, L.t(L.CRIT_DONE), a)
         crit(c, ly + 62f, runRevives == 0, L.t(L.CRIT_NO_REVIVE), a)
         crit(c, ly + 124f, perfOk, perfStr, a)
@@ -2389,6 +2413,16 @@ class Game(context: Context) : World.Listener, Net.Listener {
             for (b in doneBtns) drawBtn(c, b)
         }
         if (runLevel >= Levels.COUNT) gfx.text(c, L.t(L.JOURNEY_DONE), cx, H * 0.64f, 40f, Gfx.ACCENT, alpha = a, maxW = 860f)
+    }
+
+    private val perkCache = HashMap<Pair<Int, Int>, String>()
+    private var perkLang = -1
+    private fun perkText(pk: Pair<Int, Int>): String {
+        if (perkLang != L.cur) { perkCache.clear(); perkLang = L.cur }
+        return perkCache.getOrPut(pk) {
+            val v = if (pk.first == Skins.PK_COMBO) "0," + pk.second + " s" else pk.second.toString()
+            "★ " + L.f(L.PERK_NAMES[pk.first], v)
+        }
     }
 
     private fun crit(c: Canvas, y: Float, ok: Boolean, label: String, a: Int) {
@@ -2511,6 +2545,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (skinsTab) {
             gfx.drawSkin(c, i, cx, py, 2.2f, time, save.lowGfx)
             gfx.text(c, Skins.skins[i].name, cx, y + 262f, 34f, Color.WHITE, maxW = cardW - 24f)
+            val pk = Skins.PERKS[i]
+            if (pk != null) {
+                gfx.roundRect(c, x + 14f, y + 14f, x + cardW - 14f, y + 58f, 22f, Gfx.BG, 170)
+                gfx.text(c, perkText(pk), cx, y + 46f, 22f, Gfx.ACCENT, false, maxW = cardW - 40f)
+            }
         } else {
             for (k in 0 until 24) {
                 prevX[k] = cx - 105f + k * (210f / 23f)

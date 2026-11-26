@@ -270,6 +270,18 @@ object L {
     val DM_PHOTO = a("BILD", "PHOTO", "ФОТО")
     val DM_EMPTY = a("Schreib die erste Nachricht!", "Write the first message!", "Напиши первое сообщение!")
     val DM_TAP = a("Tippe auf einen Freund, um zu schreiben", "Tap a friend to chat", "Нажми на друга, чтобы написать")
+    val COMBO_POP = a("COMBO x{0} +{1}", "COMBO x{0} +{1}", "КОМБО x{0} +{1}")
+    val TIME_LINE = a("Zeit {0}  ·  Bestzeit {1}", "Time {0}  ·  Best {1}", "Время {0}  ·  Рекорд {1}")
+    val TIME_NEW = a("Zeit {0}  ·  NEUE BESTZEIT!", "Time {0}  ·  NEW BEST!", "Время {0}  ·  НОВЫЙ РЕКОРД!")
+    val PERK_NAMES = arrayOf(a("", "", ""),
+        a("+{0} % Fangzone", "+{0}% capture zone", "+{0} % зона захвата"),
+        a("+{0} s Magnet", "+{0} s magnet", "+{0} с магнит"),
+        a("+{0} Umlenkung", "+{0} redirect", "+{0} смена курса"),
+        a("+{0} % Sterne", "+{0}% stars", "+{0} % звёзд"),
+        a("{0} % Start-Schild", "{0}% start shield", "{0} % щит на старте"),
+        a("+{0} % Zielhilfe", "+{0}% aim assist", "+{0} % прицел"),
+        a("Combo-Zeit +{0}", "Combo time +{0}", "Время комбо +{0}"))
+    val BEST_COMBO = a("Beste Combo", "Best combo", "Лучшее комбо")
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
@@ -330,12 +342,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 500 Level und 2 neue Dimensionen", "• 500 levels and 2 new dimensions", "• 500 уровней и 2 новых измерения"),
-        a("• Ab Level 40 fairer: weniger Laser", "• Fairer from level 40: fewer lasers", "• С 40 уровня честнее: меньше лазеров"),
-        a("• Profil mit Avatar und eigenem Foto", "• Profile with avatar and your own photo", "• Профиль с аватаром и своим фото"),
-        a("• Öffentlicher Chat für alle Spieler", "• Public chat for all players", "• Общий чат для всех игроков"),
-        a("• Mit Google anmelden", "• Sign in with Google", "• Вход через Google"),
-        a("• Wochen-Bestenliste und 18 neue Skins & Spuren", "• Weekly leaderboard and 18 new skins & trails", "• Недельный рейтинг и 18 новых скинов и следов")
+        a("• Fairere Level ab Level 40–100", "• Fairer levels from 40–100", "• Честнее уровни с 40–100"),
+        a("• Kürzere, schnellere Level – ideal für Speedruns", "• Shorter, faster levels – great for speedruns", "• Короче и быстрее – идеально для спидранов"),
+        a("• Combos: schnelle Sprünge = Bonuspunkte", "• Combos: quick jumps = bonus points", "• Комбо: быстрые прыжки = бонус"),
+        a("• Bestzeit für jedes Level", "• Best time for every level", "• Рекорд времени для каждого уровня"),
+        a("• Skins mit Fähigkeiten + 10 neue Skins", "• Skins with abilities + 10 new skins", "• Скины со способностями + 10 новых"),
+        a("• Fehler bei Level 60 behoben", "• Level 60 bug fixed", "• Исправлена ошибка уровня 60")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

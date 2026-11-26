@@ -152,9 +152,9 @@ object Levels {
     fun goalBody(level: Int) = if (level % 10 == 0) section(level) + 2 else B_NONE
 
     /** Anzahl der Planeten bis zum Ziel. */
-    fun planetCount(level: Int) = min(6 + level / 4, 80)
+    fun planetCount(level: Int) = min(6 + level / 6, 45)
 
-    fun difficulty(level: Int) = min(1.3f, (level - 1) / 85f)
+    fun difficulty(level: Int) = min(1.05f, (level - 1) / 170f)
 
     fun seed(level: Int) = level * 7919 + 13
 

@@ -11,7 +11,7 @@ class Save(context: Context) {
         fun typeOf(k: String, v: String): Char = when {
             k in LONGS -> 'l'
             k == "playTime" -> 'f'
-            k == "crowns" -> 's'
+            k == "crowns" || k == "lt" -> 's'
             v == "true" || v == "false" -> 'b'
             v.toIntOrNull() != null -> 'i'
             v.toLongOrNull() != null -> 'l'
@@ -36,6 +36,14 @@ class Save(context: Context) {
     var photoPub = p.getBoolean("photoPub", false)
     var weekId = p.getInt("weekId", 0)
     var weekBest = p.getInt("weekBest", 0)
+    private val levelTimes = HashMap<Int, Int>().also { m ->
+        for (e in (p.getString("lt", "") ?: "").split(',')) {
+            val kv = e.split(':'); if (kv.size == 2) { val k = kv[0].toIntOrNull(); val v = kv[1].toIntOrNull(); if (k != null && v != null) m[k] = v }
+        }
+    }
+    fun levelTime(l: Int) = levelTimes[l] ?: 0
+    fun setLevelTime(l: Int, ms: Int) { levelTimes[l] = ms }
+    var bestCombo = p.getInt("bestCombo", 0)
     var ownedTrails = p.getInt("ownedTrails", 1)
     var revives = p.getInt("revives", 0)
     var shieldStarts = p.getInt("shieldStarts", 0)
@@ -133,7 +141,7 @@ class Save(context: Context) {
         p.edit()
             .putInt("best", best).putInt("stars", stars)
             .putInt("skin", skin).putInt("trail", trail)
-            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putInt("ownedTrails", ownedTrails)
+            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("ownedTrails", ownedTrails)
             .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())

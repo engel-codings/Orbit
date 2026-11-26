@@ -32,12 +32,13 @@ class World(private val gfx: Gfx) {
         fun onBoost() {}
         fun onWormhole() {}
         fun onExplosion() {}
+        fun onCombo(n: Int) {}
     }
 
     companion object {
         const val W = 1000f
-        const val FLY_SPEED = 950f
-        const val ORBIT_SPEED = 520f
+        const val FLY_SPEED = 1020f
+        const val ORBIT_SPEED = 640f
         const val GRAVITY = 2.6e7f
         const val CAPTURE = 110f
         const val ORBIT_GAP = 50f
@@ -123,6 +124,7 @@ class World(private val gfx: Gfx) {
     var wormsUsed = 0; private set
 
     var shield = false
+    fun giveShield() { shield = true }
     var magnetT = 0f; private set
     var powerupsTaken = 0; private set
 
@@ -219,7 +221,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
@@ -407,6 +409,9 @@ class World(private val gfx: Gfx) {
 
     private var hazardGap = 0
     var ghostOrder = -1
+    var combo = 0; private set
+    var bestCombo = 0; private set
+    var comboBonus = 0f
     var ghostName = ""
 
     /** Dimension 7 (Pulsar): Fangzone pulsiert zwischen klein und groß. */
@@ -707,7 +712,11 @@ class World(private val gfx: Gfx) {
             if (streak > bestStreak) bestStreak = streak
         } else streak = 0
         val pts = if (perfect) 1 + min(streak, 4) else 1
-        score += pts + skipped * 2
+        // Combo: schnelle Sprünge hintereinander geben Bonus
+        if (flyTime < 1.15f + comboBonus) combo++ else combo = 1
+        val comboPts = if (combo >= 3) min(combo - 2, 6) else 0
+        if (combo > bestCombo) bestCombo = combo
+        score += pts + skipped * 2 + comboPts
         captures++
         if (skipped > 0) {
             skippedTotal += skipped
@@ -719,6 +728,11 @@ class World(private val gfx: Gfx) {
         if (perfect && skipped == 0) {
             popT = 0.9f; popX = plX; popY = plY - 40f
             popStr = L.f(L.PERFECT_POP, pts)
+        }
+        if (comboPts > 0) {
+            popT = 1f; popX = plX; popY = plY - 90f
+            popStr = L.f(L.COMBO_POP, combo, comboPts)
+            listener?.onCombo(combo)
         }
         val col = if (p.body in 1 until BODY_COLOR.size) BODY_COLOR[p.body] else Gfx.PALETTE[(if (p.body != 0) p.body else p.colorIdx) % Gfx.PALETTE.size]
         burst(plX, plY, col, if (perfect) 22 else 12, if (perfect) 380f else 260f)
