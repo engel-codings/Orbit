@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 16
-        const val VERSION_NAME = "1.1.0"
+        const val VERSION_CODE = 17
+        const val VERSION_NAME = "1.2.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -61,7 +61,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         private val RANK_AT = intArrayOf(0, 50, 200, 500, 1000, 2500)
     }
 
-    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT, DM }
+    private enum class Screen { MENU, MAP, PLAYING, PAUSED, GAMEOVER, LEVELDONE, SHOP, SETTINGS, STATS, ACHIEVE, WHEEL, MISSIONS, ENDLESS_SEL, ONLINE, LEADER, FRIENDS, QUEUE, VSRESULT, WELCOME, PROFILE, AVATARS, CHAT, DM, SKILLS, CHANGELOG }
 
     private class Btn(val id: Int, var label: String, val style: Int, val icon: Int = -1) {
         var x = 0f; var y = 0f; var w = 0f; var h = 0f
@@ -151,19 +151,27 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val bDmDuel = Btn(94, "", S_GLASS)
     private val bDmRemove = Btn(95, "", S_INVISIBLE)
     private val dmBtns = arrayOf(bBack, bDmWrite, bDmPhoto, bDmDuel)
+    private val bSkillBuy = Btn(96, "", S_PRIMARY)
+    private val skillBtns = arrayOf(bBack, bSkillBuy)
+    private val bBgStyle = Btn(97, "", S_INVISIBLE)
+    private val bLogSet = Btn(98, "", S_INVISIBLE)
+    private val bSideBoard = Btn(99, "", S_ROUND, Gfx.I_TROPHY)
+    private val bSideFriends = Btn(100, "", S_ROUND, Gfx.I_HEART)
+    private val bSideChat = Btn(101, "", S_ROUND, Gfx.I_GLOBE)
+    private val bSideLog = Btn(102, "", S_ROUND, Gfx.I_LIST)
     private val onlineInBtns = arrayOf(bBack, bRename, bLogout, bBoard, bQuick, bFriendsB, bChatB)
     private val onlineOutBtns = arrayOf(bBack, bLogin, bRegister, bBoard, bQuick, bFriendsB, bChatB)
     private val leaderBtns = arrayOf(bBack, bLb[0], bLb[1], bLb[2], bLb[3])
     private val friendBtns = arrayOf(bBack, bAddFriend)
     private val vsBtns = arrayOf(bVsAgain, bVsBack)
 
-    private val menuBtns = arrayOf(bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bProfile, bSettings)
+    private val menuBtns = arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog, bPlay, bEndless, bOnline, bChallenge, bWheel, bChest, bShop, bMissions, bAch, bProfile, bSettings)
     private val playBtns = arrayOf(bPause)
     private val pauseBtns = arrayOf(bResume, bRestart, bQuit)
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bTab[3], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bRow[8], bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bRow[8], bBgStyle, bLogSet, bReset)
     private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
@@ -337,6 +345,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         bPFriends.label = L.t(L.FRIENDS); bPChat.label = L.t(L.CHAT); bPStats.label = L.t(L.STATS)
         bChatB.label = L.t(L.CHAT); bChatWrite.label = L.t(L.CHAT_WRITE)
         bDmWrite.label = L.t(L.CHAT_WRITE); bDmPhoto.label = L.t(L.DM_PHOTO); bDmDuel.label = L.t(L.DUEL)
+        bSkillBuy.label = L.t(L.SKILL_UNLOCK)
         refreshProfileLabels()
         bResume.label = L.t(L.RESUME); bRestart.label = L.t(L.RESTART); bQuit.label = L.t(L.MENU)
         bAgain.label = L.t(L.AGAIN); bNext.label = L.t(L.NEXT_LEVEL); bToMap.label = L.t(L.TO_MAP)
@@ -411,9 +420,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun layoutSettings() {
         val n = settingRows()
-        for (i in 0 until 9) place(bRow[i], 40f, 235f + i * 112f, 920f, 98f)
+        val st = min(112f, (H - 520f) / (n + 2))
+        for (i in 0 until 9) place(bRow[i], 40f, 225f + i * st, 920f, st - 12f)
         bRow[8].visible = n == 9
-        place(bReset, 80f, 235f + n * 112f + 20f, 840f, 104f)
+        place(bBgStyle, 40f, 225f + n * st, 920f, st - 12f)
+        place(bLogSet, 40f, 225f + (n + 1) * st, 920f, st - 12f)
+        place(bReset, 80f, 225f + (n + 2) * st + 14f, 840f, 100f)
     }
 
     private fun playCY() = H * 0.43f
@@ -455,6 +467,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         place(bDmWrite, 70f, H - 160f, 620f, 120f)
         place(bDmPhoto, 710f, H - 160f, 220f, 120f)
         place(bDmDuel, W - 270f, 70f, 230f, 95f)
+        place(bSkillBuy, 520f, H - 175f, 410f, 120f)
+        for ((k, b) in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog).withIndex()) place(b, 30f, playCY() - 330f + k * 130f, 110f, 110f)
         place(bChallenge, 40f, pcy + 465f, 293f, 105f)
         place(bWheel, 353f, pcy + 465f, 293f, 105f)
         place(bChest, 666f, pcy + 465f, 293f, 105f)
@@ -538,6 +552,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Skins.PK_COMBO -> world.comboBonus = perk.second * 0.1f
             Skins.PK_SHIELD -> if (!versus && kotlin.random.Random.nextInt(100) < perk.second) world.giveShield()
         }
+        applySkills()
+        world.bgStyle = save.bgStyle
+        if (mode != 0 && level > 0) mode = 0
         challengeRun = seed != 0L && !versus
         challengeVal = -1
         runLevel = level
@@ -572,8 +589,9 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private fun leaveRun() {
         if (versus) { Net.report(world.score, true); go(Screen.VSRESULT); return }
         world.reset(0)
-        val tt = ttCourse >= 0
+        val tt = ttCourse >= 0 || mode != 0
         ttCourse = -1
+        mode = 0
         go(if (tt) Screen.ENDLESS_SEL else if (runLevel > 0) Screen.MAP else Screen.MENU)
     }
 
@@ -635,6 +653,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
     }
 
     private fun endlessTap(tx: Float, y: Float) {
+        val mm = ttTop() + 330f + 70f
+        if (y > mm && y < mm + 260f) {
+            val k = ((tx - 40f) / 315f).toInt().coerceIn(0, 2)
+            sound.play(Sound.CLICK); startMode(k + 1)
+            return
+        }
         val tt = ttTop() + 70f
         if (y > tt && y < tt + 230f) {
             val k = ((tx - 40f) / 235f).toInt().coerceIn(0, TT_N - 1)
@@ -653,8 +677,28 @@ class Game(context: Context) : World.Listener, Net.Listener {
     }
 
     private fun drawEndlessSel(c: Canvas) {
+        c.save()
+        c.clipRect(0f, 200f, W, H)
+        c.translate(0f, -shopScroll)
+        drawEndlessContent(c)
+        c.restore()
+        gfx.roundRect(c, -10f, -10f, W + 10f, 200f, 0f, Gfx.BG, 235)
         header(c, L.t(L.ENDLESS_TITLE))
         starPill(c, save.stars)
+    }
+
+    private fun drawEndlessContent(c: Canvas) {
+        val mm = ttTop() + 330f
+        gfx.text(c, L.t(L.MINI_MODES), W / 2f, mm + 45f, 40f, Gfx.ACCENT)
+        for (k in 0 until 3) {
+            val x = 40f + k * 315f; val y = mm + 70f
+            val col = when (k) { 0 -> Gfx.GOLD; 1 -> Gfx.ORANGE; else -> Gfx.GREEN }
+            gfx.glass(c, x, y, x + 290f, y + 260f, 36f, border = col)
+            gfx.icon(c, when (k) { 0 -> Gfx.I_CROWN; 1 -> Gfx.I_SPEED; else -> Gfx.I_HEART }, x + 145f, y + 50f, 24f, col)
+            gfx.text(c, L.t(L.MODE_NAMES[k]), x + 145f, y + 112f, 32f, Color.WHITE, maxW = 260f)
+            for ((li, ln) in wrap(L.t(L.MODE_DESC[k]), 24f, 255f).take(2).withIndex()) gfx.text(c, ln, x + 145f, y + 152f + li * 30f, 24f, Gfx.DIM, false, maxW = 265f)
+            if (k < 2 && save.modeBest[k] > 0) gfx.text(c, L.f(L.MODE_RECORD, if (k == 1) fmtTime(save.modeBest[k] / 1000f) else save.modeBest[k].toString()), x + 145f, y + 215f, 24f, Gfx.GOLD, false, maxW = 260f)
+        }
         for (d in 0 until Levels.DIMS) {
             val top = 245f + (d / 2) * 285f
             val x = 40f + (d % 2) * 470f
@@ -683,6 +727,211 @@ class Game(context: Context) : World.Listener, Net.Listener {
             gfx.text(c, ttInfoStr[k], x + 107f, y + 155f, 22f, Gfx.DIM, false, maxW = 195f)
             gfx.text(c, ttBestStr[k], x + 107f, y + 198f, 21f, if (open) Gfx.GOLD else Gfx.DIM, false, maxW = 195f)
         }
+    }
+
+    // ===================================================================== Mini-Modi & Fähigkeitenbaum
+
+    private var mode = 0          // 0 normal, 1 Sternenjagd, 2 Sprint, 3 Zen
+    private var modeT = 0f
+    private var modeStr = ""
+    private var modeShown = -1
+
+    private fun startMode(m: Int) {
+        mode = m
+        startRun(0, 0L, 1)
+        mode = m
+        modeT = if (m == 1) 60f else 0f
+        modeShown = -1
+        world.zen = true  // in allen Mini-Modi: kein Sterben, Fokus auf Tempo und Punkte
+    }
+
+    private fun finishMode() {
+        val m = mode
+        commitRun()
+        val result: String
+        val best: Boolean
+        if (m == 1) {
+            best = world.score > save.modeBest[0]
+            if (best) save.modeBest[0] = world.score
+            result = L.f(L.MODE_RESULT_RUSH, world.score)
+        } else {
+            val ms = (runTime * 1000f).toInt()
+            best = save.modeBest[1] == 0 || ms < save.modeBest[1]
+            if (best) save.modeBest[1] = ms
+            result = fmtTime(runTime)
+        }
+        save.flush()
+        sound.play(Sound.WIN)
+        mode = 0
+        world.reset(0)
+        go(Screen.ENDLESS_SEL)
+        showToast(result + if (best) "  ·  " + L.t(L.MODE_NEW) else "")
+    }
+
+    private fun updateMode(dt: Float) {
+        if (mode == 1) { modeT -= dt; if (modeT <= 0f) finishMode() }
+        else if (mode == 2 && world.captures >= 25) finishMode()
+    }
+
+    private fun drawModeHud(c: Canvas) {
+        if (mode != 1 && mode != 2) return
+        val v = if (mode == 1) modeT.coerceAtLeast(0f) else runTime
+        val ds = (v * 10f).toInt()
+        if (ds != modeShown) { modeShown = ds; modeStr = if (mode == 1) fmtTime(v) else fmtTime(v) + "  ·  " + world.captures + "/25" }
+        gfx.glass(c, W / 2f - 190f, 320f, W / 2f + 190f, 410f, 40f, border = if (mode == 1) Gfx.GOLD else Gfx.ORANGE)
+        gfx.text(c, modeStr, W / 2f, 380f, 40f, if (mode == 1) Gfx.GOLD else Gfx.ORANGE, maxW = 360f)
+    }
+
+    // Fähigkeitenbaum: (x, y-Zeile, Eltern, Preis)
+    private val SK_X = floatArrayOf(500f, 250f, 500f, 750f, 150f, 350f, 500f, 650f, 850f, 250f, 500f, 750f, 350f, 650f, 500f)
+    private val SK_ROW = intArrayOf(0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5)
+    private val SK_PARENT = intArrayOf(-1, 0, 0, 0, 1, 1, 2, 3, 3, 4, 6, 7, 9, 11, 12)
+    private val SK_COST = intArrayOf(150, 300, 300, 300, 600, 600, 500, 600, 700, 1200, 1200, 1200, 2500, 2500, 5000)
+    private var skSel = -1
+
+    private fun skY(i: Int) = H - 330f - SK_ROW[i] * ((H - 640f) / 5f)
+    private fun hasSkill(i: Int) = save.skillTree and (1 shl i) != 0
+    private fun skillOpen(i: Int) = SK_PARENT[i] < 0 || hasSkill(SK_PARENT[i])
+
+    private fun applySkills() {
+        fun h(i: Int) = hasSkill(i)
+        var sp = 1f; var stars = 0; var cap = 0f
+        if (h(0)) sp += 0.04f
+        if (h(8)) sp += 0.04f
+        if (h(14)) { sp += 0.05f; stars += 10 }
+        if (h(1)) stars += 6
+        if (h(9)) stars += 8
+        if (h(2)) cap += 0.04f
+        if (h(13)) cap += 0.05f
+        world.speedMul = sp
+        world.captureMul += cap
+        if (h(3)) world.boost(1.5f)
+        if (h(4)) world.starExtra = 0.1f
+        if (h(5)) world.magnetBonus += 2f
+        if (h(6)) world.aimMul += 0.25f
+        if (h(7)) world.boostExtra = 0.4f
+        if (h(10) && !versus && kotlin.random.Random.nextInt(100) < 15) world.giveShield()
+        if (h(11)) world.comboBonus += 0.15f
+        if (h(12)) world.redirects += 1
+        skillStarPct = stars
+    }
+    private var skillStarPct = 0
+
+    private fun skillTap(x: Float, y: Float) {
+        if (y > H - 200f) return
+        for (i in SK_X.indices) {
+            val dx = x - SK_X[i]; val dy = y - skY(i)
+            if (dx * dx + dy * dy < 75f * 75f) { skSel = i; sound.play(Sound.CLICK); return }
+        }
+    }
+
+    private fun buySkill() {
+        val i = skSel
+        if (i < 0) { showToast(L.t(L.SKILL_TAP)); return }
+        if (hasSkill(i)) return
+        if (!skillOpen(i)) { sound.play(Sound.ERROR); showToast(L.t(L.SKILL_NEED)); return }
+        if (save.stars < SK_COST[i]) { sound.play(Sound.ERROR); showToast(L.f(L.T_MISSING, SK_COST[i] - save.stars, L.stars(SK_COST[i] - save.stars))); return }
+        save.stars -= SK_COST[i]
+        save.skillTree = save.skillTree or (1 shl i)
+        save.flush()
+        sound.play(Sound.BUY)
+        celebrate(L.t(L.SKILL_NAMES[i]), L.t(L.SKILL_DESC[i]), Gfx.ACCENT, 1.6f)
+    }
+
+    private fun drawSkills(c: Canvas) {
+        header(c, L.t(L.SKILL_TREE_H))
+        starPill(c, save.stars)
+        gfx.line.strokeWidth = 6f
+        for (i in SK_X.indices) {
+            val p = SK_PARENT[i]; if (p < 0) continue
+            gfx.line.color = if (hasSkill(i)) Gfx.ACCENT else Gfx.PANEL2
+            gfx.line.alpha = 255
+            c.drawLine(SK_X[p], skY(p), SK_X[i], skY(i), gfx.line)
+        }
+        for (i in SK_X.indices) {
+            val x = SK_X[i]; val y = skY(i)
+            val own = hasSkill(i); val open = skillOpen(i)
+            if (own && !save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], x, y, 110f, 120)
+            gfx.circle(c, x, y, 58f, if (own) Gfx.ACCENT else Gfx.PANEL)
+            gfx.ring(c, x, y, 58f, if (i == skSel) Color.WHITE else if (open) Gfx.ACCENT else Gfx.PANEL2, if (i == skSel) 7f else 4f, 255)
+            if (own) gfx.icon(c, Gfx.I_CHECK, x, y, 24f, Gfx.BG)
+            else if (!open) gfx.icon(c, Gfx.I_LOCK, x, y, 20f, Gfx.DIM)
+            else gfx.text(c, SK_COST[i].toString(), x, y + 11f, 28f, Gfx.GOLD, maxW = 100f)
+        }
+        gfx.glass(c, 50f, H - 200f, 950f, H - 30f, 44f)
+        if (skSel >= 0) {
+            gfx.text(c, L.t(L.SKILL_NAMES[skSel]), 80f, H - 130f, 36f, Color.WHITE, align = Paint.Align.LEFT, maxW = 420f)
+            gfx.text(c, L.t(L.SKILL_DESC[skSel]), 80f, H - 80f, 25f, Gfx.DIM, false, Paint.Align.LEFT, maxW = 430f)
+            if (hasSkill(skSel)) gfx.text(c, L.t(L.SKILL_OWNED), 725f, H - 100f, 32f, Gfx.GREEN, maxW = 380f)
+            else drawBtn(c, bSkillBuy)
+        } else gfx.text(c, L.t(L.SKILL_TAP), W / 2f, H - 100f, 32f, Gfx.DIM, false)
+    }
+
+    // ---- Update-Log
+    private var logH = 0f
+    private var logLang = -1
+    private var logLines: List<Pair<Boolean, String>> = emptyList()
+
+    private fun drawChangelog(c: Canvas) {
+        if (logLang != L.cur) {
+            logLang = L.cur
+            val out = ArrayList<Pair<Boolean, String>>()
+            for (e in L.CHANGELOG) {
+                out.add(true to ("Version " + L.t(e[0])))
+                for (l in wrap(L.t(e[1]), 32f, 820f)) out.add(false to l)
+            }
+            logLines = out
+        }
+        c.save()
+        c.clipRect(0f, 200f, W, H)
+        var y = 280f - shopScroll
+        for ((head, t) in logLines) {
+            if (head) { y += 30f; if (y > 150f && y < H + 60f) gfx.text(c, t, 70f, y, 44f, Gfx.ACCENT, align = Paint.Align.LEFT); y += 62f }
+            else { if (y > 150f && y < H + 60f) gfx.text(c, t, 70f, y, 32f, Color.WHITE, false, Paint.Align.LEFT, maxW = 860f); y += 46f }
+        }
+        logH = y + shopScroll
+        c.restore()
+        gfx.roundRect(c, -10f, -10f, W + 10f, 200f, 0f, Gfx.BG, 235)
+        header(c, L.t(L.UPDATES_TITLE))
+    }
+
+    // ---- Feier-Animation (neue Dimension, Fähigkeit, Himmelskörper)
+    private var celebT = 0f
+    private var celebDur = 0f
+    private var celebTitle = ""
+    private var celebSub = ""
+    private var celebCol = Color.WHITE
+
+    private fun celebrate(title: String, sub: String, col: Int, dur: Float = 3.5f) {
+        celebTitle = title; celebSub = sub; celebCol = col; celebT = dur; celebDur = dur
+        sound.play(Sound.WIN)
+        sound.vibrate(60)
+    }
+
+    private fun drawCeleb(c: Canvas) {
+        if (celebT <= 0f) return
+        val age = celebDur - celebT
+        val inF = min(1f, age / 0.3f)
+        val outF = min(1f, celebT / 0.4f)
+        val a = (255 * min(inF, outF)).toInt()
+        val cx = W / 2f; val cy = H * 0.42f
+        gfx.roundRect(c, -10f, -10f, W + 10f, H + 10f, 0f, Gfx.BG, (200 * min(inF, outF)).toInt())
+        gfx.line.color = celebCol; gfx.line.strokeWidth = 10f
+        for (k in 0 until 16) {
+            val ang = k * 0.3927f + time * 0.6f
+            gfx.line.alpha = (a * 0.35f).toInt()
+            c.drawLine(cx + cos(ang) * 120f, cy + sin(ang) * 120f, cx + cos(ang) * (420f + 60f * sin(time * 3f + k)), cy + sin(ang) * (420f + 60f * sin(time * 3f + k)), gfx.line)
+        }
+        for (k in 0 until 24) {
+            val ang = k * 0.2618f
+            val r = 140f + age * 420f
+            gfx.circle(c, cx + cos(ang) * r, cy + sin(ang) * r, 9f, if (k % 2 == 0) celebCol else Gfx.GOLD, (a * (1f - min(1f, age / 1.6f))).toInt())
+        }
+        val pop = 1f + 0.25f * (1f - inF)
+        if (!save.lowGfx) gfx.glowA(c, gfx.starGlow, cx, cy, 260f * pop, a)
+        gfx.starShape(c, cx, cy, 90f * pop, time * 50f, celebCol, a)
+        gfx.text(c, celebTitle, cx, cy + 230f, 60f, Color.WHITE, alpha = a, maxW = 900f)
+        gfx.text(c, celebSub, cx, cy + 300f, 34f, celebCol, false, alpha = a, maxW = 900f)
     }
 
     // ===================================================================== Online
@@ -722,6 +971,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         when (screen) {
             Screen.LEADER -> go(Screen.ONLINE)
             Screen.DM -> go(Screen.FRIENDS)
+            Screen.SKILLS -> go(Screen.SHOP)
+            Screen.CHANGELOG -> go(Screen.MENU)
             Screen.FRIENDS, Screen.CHAT, Screen.AVATARS -> go(if (backToProfile) Screen.PROFILE else Screen.ONLINE)
             Screen.STATS -> go(Screen.PROFILE)
             Screen.QUEUE -> { Net.leaveQueue(); Net.cancelInvite(); go(if (queueInvite) Screen.FRIENDS else Screen.ONLINE) }
@@ -863,6 +1114,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private var backToProfile = false
     private var levelTimeStr = ""
     private var levelTimeNew = false
+    private var pendingDimCeleb = -1
     private var queueWait = 0f
     private var selPid = ""
     private var selName = ""
@@ -1419,7 +1671,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         val gained = world.runStars - cStars
         val pk = Skins.PERKS[save.skin]
         val perkPct = if (pk != null && pk.first == Skins.PK_STARS) pk.second else 0
-        val add = gained + gained * save.upg[3] / 10 + gained * perkPct / 100 + (bonus - cBonus)
+        val add = gained + gained * save.upg[3] / 10 + gained * (perkPct + skillStarPct) / 100 + (bonus - cBonus)
         if (world.bestCombo > save.bestCombo) save.bestCombo = world.bestCombo
         save.stars += add
         save.starsCollected += world.runStars - cStars
@@ -1504,6 +1756,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         sound.vibrate(160)
         commitRun()
         if (versus) { Net.report(world.score, true); go(Screen.VSRESULT); return }
+        if (mode == 1) { finishMode(); return }
+        if (mode == 2) { mode = 0 }
         if (ttCourse >= 0) {
             ttTime += 5f
             showToast(L.t(L.TT_PENALTY))
@@ -1526,6 +1780,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         commitRun()
         if (ttCourse >= 0) { save.flush(); winTimer = 0.9f; return }
         if (runLevel > 0 && !challengeRun) {
+            val di = Levels.DIM_UNLOCK.indexOf(runLevel)
+            if (di > 0 && save.levelDone <= runLevel) pendingDimCeleb = di
             val ms = (runTime * 1000f).toInt()
             val best = save.levelTime(runLevel)
             if (best == 0 || ms < best) { save.setLevelTime(runLevel, ms); levelTimeStr = L.f(L.TIME_NEW, fmtTime(ms / 1000f)); levelTimeNew = true }
@@ -1564,6 +1820,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (musicTimer <= 0f) { musicTimer = 0.5f; sound.syncMusic() }
         if (toastT > 0f) toastT -= dt
 
+        if (celebT > 0f) celebT -= dt
         Net.update(dt, screen != Screen.PLAYING && screen != Screen.PAUSED)
         if (screen == Screen.MENU && !Net.chosen) go(Screen.WELCOME)
         updateOnline(dt)
@@ -1577,6 +1834,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     if (Net.isBot && !Net.oppDead) { world.ghostOrder = Net.botCaps; world.ghostName = Net.oppName } else world.ghostOrder = -1
                 }
                 if (ttCourse >= 0 && winTimer <= 0f) ttTime += dt
+                if (mode != 0) updateMode(dt)
                 if (challengeRun && world.captures >= CHALLENGE_GOAL && save.challengeDay != today()) {
                     save.challengeDay = today()
                     save.challengesDone++
@@ -1674,13 +1932,15 @@ class Game(context: Context) : World.Listener, Net.Listener {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dialog != D_NONE) return
-                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT && screen != Screen.DM) return
+                if (screen != Screen.SHOP && screen != Screen.MAP && screen != Screen.ACHIEVE && screen != Screen.LEADER && screen != Screen.FRIENDS && screen != Screen.CHAT && screen != Screen.DM && screen != Screen.ENDLESS_SEL && screen != Screen.CHANGELOG) return
                 if (!dragging && abs(y - downY) > 22f) { dragging = true; pressed = null }
                 if (dragging) when (screen) {
                     Screen.MAP -> mapScroll = clampMap(scrollStart + (y - downY))
                     Screen.ACHIEVE -> achScroll = clampAch(scrollStart - (y - downY))
                     Screen.LEADER -> shopScroll = clampList(scrollStart - (y - downY), lbList.size, LB_TOP, LB_STEP)
                     Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
+                    Screen.CHANGELOG -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, logH - H + 300f))
+                    Screen.ENDLESS_SEL -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, ttTop() + 760f - H))
                     Screen.CHAT, Screen.DM -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
                     else -> shopScroll = clampShop(scrollStart - (y - downY))
                 }
@@ -1698,10 +1958,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     Screen.MAP -> mapTap(x, y)
                     Screen.ACHIEVE -> achTap(x, y)
                     Screen.MISSIONS -> missionTap(y)
-                    Screen.ENDLESS_SEL -> endlessTap(x, y)
+                    Screen.ENDLESS_SEL -> if (y > 200f) endlessTap(x, y + shopScroll)
                     Screen.FRIENDS -> friendTap(x, y)
                     Screen.LEADER -> leaderTap(y)
                     Screen.CHAT, Screen.DM -> chatTap(y)
+                    Screen.SKILLS -> skillTap(x, y)
                     Screen.AVATARS -> avatarTap(x, y)
                     else -> {}
                 }
@@ -1732,6 +1993,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         Screen.AVATARS -> backBtns
         Screen.CHAT -> chatBtns
         Screen.DM -> dmBtns
+        Screen.SKILLS -> skillBtns
+        Screen.CHANGELOG -> backBtns
         Screen.LEADER -> leaderBtns
         Screen.FRIENDS -> friendBtns
         Screen.VSRESULT -> { bVsAgain.visible = vsFinal; bVsBack.visible = vsFinal; vsBtns }
@@ -1777,6 +2040,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 if (a == "submit") { Net.sendDm(v["t"] ?: ""); shopScroll = 0f }
             }
             bDmPhoto.id -> Platform.pickImage { b64 -> if (b64 != null && b64.length < 60000) { Net.sendDm("", b64); shopScroll = 0f } }
+            bSkillBuy.id -> buySkill()
             bDmDuel.id -> { Net.inviteAny(Net.dmWith, Net.dmName); queueInvite = true; showToast(L.t(L.INVITE_SENT)); go(Screen.QUEUE) }
             bLb[3].id -> { lbTab = 3; lbDirty = true; shopScroll = 0f }
             bForgot.id -> resetForm()
@@ -1815,7 +2079,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
             bRow[5].id -> { save.gfx = (save.gfx + 1) % 3; world.quality = save.gfx; save.flush() }
             bRow[8].id -> Platform.showInstall()
-            bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 4; save.flush(); sound.syncMusic() }
+            bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 6; save.flush(); sound.syncMusic() }
+            bBgStyle.id -> { save.bgStyle = (save.bgStyle + 1) % 9; save.flush(); world.bgStyle = save.bgStyle }
+            bLogSet.id, bSideLog.id -> { shopScroll = 0f; go(Screen.CHANGELOG) }
+            bSideBoard.id -> go(Screen.LEADER)
+            bSideFriends.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { backToProfile = false; go(Screen.FRIENDS) }
+            bSideChat.id -> if (!Net.active) showToast(L.t(L.NET_OFFLINE)) else { backToProfile = false; go(Screen.CHAT) }
             bRow[6].id -> {
                 save.lang = (L.cur + 1) % 3
                 save.flush()
@@ -1924,6 +2193,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun shopTap(x: Float, y: Float) {
         if (shopTab == 3) {
+            if (y > gridTop + 5 * UPG_STEP && y < gridTop + 5 * UPG_STEP + 130f) { sound.play(Sound.CLICK); go(Screen.SKILLS); return }
             val k = ((y - gridTop) / UPG_STEP).toInt()
             if (y >= gridTop && k in 0 until 5 && (y - gridTop) - k * UPG_STEP < UPG_H) askBuy(4, k)
             return
@@ -2113,12 +2383,15 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Screen.AVATARS -> drawAvatars(c)
             Screen.CHAT -> drawChat(c)
             Screen.DM -> drawChat(c)
+            Screen.SKILLS -> drawSkills(c)
+            Screen.CHANGELOG -> drawChangelog(c)
         }
 
         if (save.showFps) {
             if (fpsShown != fpsVal) { fpsVal = fpsShown; fpsStr = "$fpsShown FPS" }
             gfx.text(c, fpsStr, 30f, H - 30f, 28f, Color.WHITE, false, Paint.Align.LEFT, 110)
         }
+        drawCeleb(c)
         if (dialog != D_NONE) drawDialog(c)
         if (toastT > 0f) drawToast(c)
 
@@ -2205,6 +2478,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
         crownPill(c, 300f)
         starPill(c, save.stars)
+        for (b in arrayOf(bSideBoard, bSideFriends, bSideChat, bSideLog)) drawBtn(c, b)
 
         val ty = H * 0.17f
         if (!save.lowGfx) gfx.glowA(c, gfx.planetGlow[4], cx, ty - 60f, 420f, 150)
@@ -2257,6 +2531,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun drawHud(c: Canvas) {
         drawBtn(c, bPause)
+        drawModeHud(c)
         if (versus) {
             if (Net.oppScore != oppVal || Net.oppDead != oppDeadShown) {
                 oppVal = Net.oppScore; oppDeadShown = Net.oppDead
@@ -2379,6 +2654,12 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.glass(c, 70f, top, 930f, top + 870f, 50f, a)
         val body = Levels.goalBody(runLevel)
         if (body != 0) {
+            gfx.line.color = Gfx.GOLD; gfx.line.strokeWidth = 8f
+            for (k in 0 until 12) {
+                val ang = k * 0.5236f + time * 0.5f
+                gfx.line.alpha = (a * 0.25f).toInt()
+                c.drawLine(cx + cos(ang) * 110f, top + 150f + sin(ang) * 110f, cx + cos(ang) * 230f, top + 150f + sin(ang) * 230f, gfx.line)
+            }
             gfx.drawBody(c, body, cx, top + 150f, 95f, time, save.lowGfx)
             gfx.text(c, Levels.bodyName(body), cx, top + 310f, 54f, Gfx.GREEN, alpha = a, maxW = 780f)
             gfx.text(c, L.t(L.REACHED), cx, top + 365f, 34f, Color.WHITE, alpha = a, maxW = 780f)
@@ -2408,6 +2689,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.starShape(c, cx - tw / 2f - 40f, top + 780f, 24f, time * 40f, Gfx.GOLD, a)
         gfx.text(c, earnedStr, cx + 15f, top + 799f, 54f, Gfx.GOLD, alpha = a)
         if (!firstClear) gfx.text(c, L.t(if (crownsNew > 0) L.NEW_CROWN else L.REWARD_ONCE), cx, top + 845f, 29f, Gfx.DIM, false, alpha = a, maxW = 780f)
+        if (pendingDimCeleb > 0 && screenTime > 1.3f) {
+            val d = pendingDimCeleb; pendingDimCeleb = -1
+            celebrate(L.t(L.CELEB_DIM), L.f(L.DIMENSION, d + 1) + ": " + L.t(L.DIM_NAMES[d]), DIM_COL[d])
+        }
         if (screenTime > 0.6f) {
             bNext.visible = runLevel < Levels.COUNT
             for (b in doneBtns) drawBtn(c, b)
@@ -2585,6 +2870,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
     }
 
     private fun drawUpgrades(c: Canvas) {
+        val sy = gridTop + 5 * UPG_STEP
+        gfx.gradRoundRect(c, 50f, sy, 950f, sy + 120f, 60f, bQuick.shader ?: return)
+        gfx.icon(c, Gfx.I_TARGET, 130f, sy + 60f, 24f, Color.WHITE)
+        gfx.text(c, L.t(L.SKILL_TREE), 520f, sy + 76f, 42f, Color.WHITE, maxW = 680f)
         for (i in 0 until 5) {
             val y = gridTop + i * UPG_STEP
             val lv = save.upg[i]
@@ -2713,8 +3002,18 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 toggle(c, b.x + b.w - 175f, b.y + b.h / 2f, on)
             }
         }
+        for ((k, b) in arrayOf(bBgStyle, bLogSet).withIndex()) {
+            gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
+            gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 34f, Gfx.PANEL2)
+            gfx.icon(c, if (k == 0) Gfx.I_EYE else Gfx.I_LIST, b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
+            gfx.text(c, L.t(if (k == 0) L.BG_STYLE else L.UPDATES), b.x + 130f, b.y + b.h / 2f + 14f, 38f, Color.WHITE, false, Paint.Align.LEFT, maxW = 440f)
+            if (k == 0) {
+                gfx.roundRect(c, b.x + b.w - 280f, b.y + 20f, b.x + b.w - 30f, b.y + b.h - 20f, 30f, Gfx.PANEL2)
+                gfx.text(c, L.t(L.BG_NAMES[save.bgStyle]), b.x + b.w - 155f, b.y + b.h / 2f + 12f, 32f, Gfx.ACCENT, maxW = 220f)
+            }
+        }
         drawBtn(c, bReset)
-        gfx.text(c, L.t(L.GFX_HINT), W / 2f, bReset.y + bReset.h + 70f, 29f, Gfx.DIM, false, maxW = 900f)
+        gfx.text(c, L.t(L.GFX_HINT), W / 2f, bReset.y + bReset.h + 60f, 27f, Gfx.DIM, false, maxW = 900f)
         gfx.text(c, "Orbit v$VERSION_NAME · Engelcode", W / 2f, H - 30f, 26f, Gfx.DIM, false, alpha = 150)
     }
 

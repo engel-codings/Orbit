@@ -44,6 +44,9 @@ class Save(context: Context) {
     fun levelTime(l: Int) = levelTimes[l] ?: 0
     fun setLevelTime(l: Int, ms: Int) { levelTimes[l] = ms }
     var bestCombo = p.getInt("bestCombo", 0)
+    var skillTree = p.getInt("skillTree", 0)
+    var bgStyle = p.getInt("bgStyle", 0)
+    val modeBest = IntArray(3) { p.getInt("mode$it", 0) }
     var ownedTrails = p.getInt("ownedTrails", 1)
     var revives = p.getInt("revives", 0)
     var shieldStarts = p.getInt("shieldStarts", 0)
@@ -141,7 +144,7 @@ class Save(context: Context) {
         p.edit()
             .putInt("best", best).putInt("stars", stars)
             .putInt("skin", skin).putInt("trail", trail)
-            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("ownedTrails", ownedTrails)
+            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("skillTree", skillTree).putInt("bgStyle", bgStyle).putInt("mode0", modeBest[0]).putInt("mode1", modeBest[1]).putInt("mode2", modeBest[2]).putInt("ownedTrails", ownedTrails)
             .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())

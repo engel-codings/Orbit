@@ -159,7 +159,7 @@ object Levels {
     fun seed(level: Int) = level * 7919 + 13
 
     /** Belohnung beim ersten Schaffen. */
-    fun reward(level: Int) = 5 + level / 2 + if (level % 10 == 0) 30 else 0
+    fun reward(level: Int) = 6 + level * 6 / 10 + if (level % 10 == 0) 40 else 0
 
     /** Perfekte Landungen für die 3. Krone. */
     fun perfectGoal(level: Int) = (planetCount(level) * 2 + 4) / 5

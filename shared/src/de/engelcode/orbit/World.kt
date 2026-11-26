@@ -44,7 +44,7 @@ class World(private val gfx: Gfx) {
         const val ORBIT_GAP = 50f
         const val HOLE_KILL = 46f
         const val MAX_PLANETS = 7
-        const val MAX_STARS = 7
+        const val MAX_STARS = 16
         const val MAX_HOLES = 3
         const val MAX_PARTICLES = 140
         const val MAX_POWER = 3
@@ -65,6 +65,7 @@ class World(private val gfx: Gfx) {
     }
 
     class Planet {
+        var moon = 0f
         var x = 0f; var y = 0f; var r = 0f
         var baseX = 0f; var amp = 0f; var speed = 0f; var phase = 0f
         var colorIdx = 0; var type = 0; var orbitMul = 1f
@@ -221,7 +222,8 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f
+        for (w in waves) w.active = false
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
         score = 0; runStars = 0; captures = 0; perfects = 0; streak = 0; bestStreak = 0
@@ -259,6 +261,7 @@ class World(private val gfx: Gfx) {
         p.orbitMul = when (type) { T_ICE -> 1.45f; T_GIANT -> 0.8f; else -> 1f }
         p.body = 0
         p.goal = false
+        p.moon = if (rng.nextFloat() < 0.3f) 0.6f + rng.nextFloat() * 1.2f else 0f
         p.active = true
     }
 
@@ -335,20 +338,25 @@ class World(private val gfx: Gfx) {
                 pw.type = if (rng.nextFloat() < 0.5f) P_SHIELD else P_MAGNET
                 break
             }
-        } else if (roll < 0.67f) {
-            for (s in stars) if (!s.active) {
-                s.x = sx; s.y = sy; s.spin = rng.nextFloat() * 6f; s.active = true
-                break
+        } else if (roll < 0.72f + starExtra) {
+            // manchmal ein kleiner Sternenbogen statt einem einzelnen Stern
+            val n = if (rng.nextFloat() < 0.28f) 3 else 1
+            var k = 0
+            for (s in stars) if (!s.active && k < n) {
+                s.x = (sx + (k - (n - 1) / 2f) * 70f).coerceIn(50f, W - 50f)
+                s.y = sy - if (n > 1 && k == 1) 40f else 0f
+                s.spin = rng.nextFloat() * 6f; s.active = true
+                k++
             }
         }
 
         // Meteorit
         val metOn = if (level > 0) level >= Levels.METEORS_FROM else genCount >= 20
         // Nach einem Hindernis kommt immer mindestens eine ruhige Lücke
-        val calm = hazardGap < 1
+        val calm = hazardGap < 1 || zen
         hazardGap++
         var hazard = false
-        if (metOn && !isGoal && !calm && rng.nextFloat() < 0.1f + 0.14f * d) {
+        if (metOn && !isGoal && !calm && !zen && rng.nextFloat() < 0.1f + 0.14f * d) {
             hazard = true
             for (m in meteors) if (!m.active) {
                 m.x = rng.nextFloat() * W
@@ -409,6 +417,22 @@ class World(private val gfx: Gfx) {
 
     private var hazardGap = 0
     var ghostOrder = -1
+    // Fähigkeiten / Modi
+    var zen = false
+    var bgStyle = 0
+    var speedMul = 1f
+    var starExtra = 0f
+    var boostExtra = 0f
+    fun boost(sec: Float) { boostT = max(boostT, sec) }
+    private class Wave { var x = 0f; var y = 0f; var t = 0f; var col = 0; var active = false }
+    private val waves = Array(6) { Wave() }
+    private class Shoot { var x = 0f; var y = 0f; var vx = 0f; var vy = 0f; var t = 0f; var active = false }
+    private val shoots = Array(3) { Shoot() }
+    private var shootT = 2f
+    private var flashT = 0f
+    private fun wave(x: Float, y: Float, col: Int) {
+        for (w in waves) if (!w.active) { w.x = x; w.y = y; w.t = 0f; w.col = col; w.active = true; return }
+    }
     var combo = 0; private set
     var bestCombo = 0; private set
     var comboBonus = 0f
@@ -577,7 +601,7 @@ class World(private val gfx: Gfx) {
             r.spin += dt * 2f
             if (playing && !dead && current == null && dist(r.x, r.y, plX, plY) < 55f) {
                 r.active = false
-                boostT = 1.2f
+                boostT = 1.2f + boostExtra
                 score += 2
                 popT = 0.9f; popX = r.x; popY = r.y - 40f; popStr = "BOOST +2"
                 burst(r.x, r.y, Gfx.GOLD, 20, 400f)
@@ -587,6 +611,22 @@ class World(private val gfx: Gfx) {
         }
         updateComets(dt)
 
+        for (w in waves) if (w.active) { w.t += dt; if (w.t > 0.6f) w.active = false }
+        if (flashT > 0f) flashT -= dt
+        if (!reduced) {
+            shootT -= dt
+            if (shootT <= 0f) {
+                shootT = 2.5f + Random.nextFloat() * 4f
+                for (sh in shoots) if (!sh.active) {
+                    sh.x = Random.nextFloat() * W; sh.y = Random.nextFloat() * worldH * 0.5f
+                    val a = 0.5f + Random.nextFloat() * 0.6f
+                    val dirX = if (Random.nextFloat() < 0.5f) 1f else -1f
+                    sh.vx = cos(a) * 1300f * dirX; sh.vy = sin(a) * 1300f; sh.t = 0.7f; sh.active = true
+                    break
+                }
+            }
+            for (sh in shoots) if (sh.active) { sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.t -= dt; if (sh.t <= 0f) sh.active = false }
+        }
         // Kamera
         val anchor = current ?: lastPlanet
         var targetY = camY
@@ -682,7 +722,7 @@ class World(private val gfx: Gfx) {
         if (dim == 8) ax += (W / 2f - plX) * 1.7f
         vx += ax * h; vy += ay * h
         val sp = sqrt(vx * vx + vy * vy)
-        val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * (if (boostT > 0f) 1.35f else 1f) *
+        val speed = (if (dim == 3) FLY_SPEED * 1.12f else FLY_SPEED) * speedMul * (if (boostT > 0f) 1.35f else 1f) *
             (if (dim == 5) max(0.68f, 1f - flyTime * 0.2f) else 1f)
         if (sp > 0.001f) { vx = vx / sp * speed; vy = vy / sp * speed }
         plX += vx * h; plY += vy * h
@@ -736,6 +776,8 @@ class World(private val gfx: Gfx) {
         }
         val col = if (p.body in 1 until BODY_COLOR.size) BODY_COLOR[p.body] else Gfx.PALETTE[(if (p.body != 0) p.body else p.colorIdx) % Gfx.PALETTE.size]
         burst(plX, plY, col, if (perfect) 22 else 12, if (perfect) 380f else 260f)
+        if (!reduced) wave(p.x, p.y, col)
+        if (combo >= 5) flashT = 0.35f
         listener?.onCapture(perfect, streak)
         if (p.goal) {
             won = true
@@ -790,6 +832,10 @@ class World(private val gfx: Gfx) {
     }
 
     private fun die() {
+        if (zen) {
+            burst(plX, plY, Gfx.ACCENT, 20, 300f)
+            if (respawn()) return
+        }
         if (shield) {
             shield = false
             burst(plX, plY, Gfx.SHIELD, 30, 450f)
@@ -850,6 +896,10 @@ class World(private val gfx: Gfx) {
             }
             if (p.goal && p.body == 0) {
                 if (!reduced) gfx.glow(c, gfx.goalGlow, p.x, p.y, p.r * 2.6f)
+            }
+            if (p.moon > 0f && !reduced) {
+                val ma = time * p.moon + p.phase
+                gfx.circle(c, p.x + cos(ma) * (p.r + 26f), p.y + sin(ma) * (p.r + 26f) * 0.5f, 7f, 0xFFD8DEE9.toInt(), 220)
             }
             if (p.body != 0) gfx.drawBody(c, p.body, p.x, p.y, p.r, time, noGlow)
             else {
@@ -966,6 +1016,22 @@ class World(private val gfx: Gfx) {
         if (popT > 0f) {
             gfx.text(c, popStr, popX, popY, 54f, Gfx.GOLD, alpha = (min(1f, popT / 0.4f) * 255f).toInt())
         }
+        for (w in waves) if (w.active) {
+            val f = w.t / 0.6f
+            gfx.ring(c, w.x, w.y, 40f + f * 170f, w.col, 6f * (1f - f) + 1f, (200 * (1f - f)).toInt())
+        }
+        if (boostT > 0f && current == null && !dead) {
+            gfx.line.color = Color.WHITE; gfx.line.strokeWidth = 3f
+            val len = sqrt(vx * vx + vy * vy).coerceAtLeast(1f)
+            val ux = vx / len; val uy = vy / len
+            for (k in 0 until 6) {
+                val off = ((k * 37 + (time * 900f).toInt()) % 120) - 60f
+                val bx = plX - ux * (40f + k * 18f) - uy * off
+                val by = plY - uy * (40f + k * 18f) + ux * off
+                gfx.line.alpha = 120
+                c.drawLine(bx, by, bx - ux * 60f, by - uy * 60f, gfx.line)
+            }
+        }
         // Bot-Gegner als Geist sichtbar
         if (ghostOrder >= 0) for (p in planets) {
             if (!p.active || p.order != ghostOrder) continue
@@ -991,9 +1057,21 @@ class World(private val gfx: Gfx) {
                 var y = (nebY[i] * worldH - camY * 0.03f) % band
                 if (y < 0f) y += band
                 y -= worldH * 0.4f
-                gfx.glow(c, when (dim) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; 7 -> gfx.nebula7[i]; 8 -> gfx.nebula8[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
+                // Stil: 0 = automatisch (Dimension + Abschnitt), sonst fest gewählt
+                val pal = when {
+                    bgStyle > 0 -> bgStyle
+                    level > 0 && i >= 2 -> ((dim - 1 + Levels.section(level) * 3) % 8) + 1
+                    else -> dim
+                }
+                gfx.glow(c, when (pal) { 2 -> gfx.nebula2[i]; 3 -> gfx.nebula3[i]; 4 -> gfx.nebula4[i]; 5 -> gfx.nebula5[i]; 6 -> gfx.nebula6[i]; 7 -> gfx.nebula7[i]; 8 -> gfx.nebula8[i]; else -> gfx.nebula[i] }, nebX[i], y, 720f)
             }
         }
+        for (sh in shoots) if (sh.active) {
+            gfx.line.color = Color.WHITE; gfx.line.strokeWidth = 3f; gfx.line.alpha = (255 * min(1f, sh.t * 2f)).toInt()
+            c.drawLine(sh.x, sh.y, sh.x - sh.vx * 0.08f, sh.y - sh.vy * 0.08f, gfx.line)
+            gfx.circle(c, sh.x, sh.y, 4f, Color.WHITE, 230)
+        }
+        if (flashT > 0f) gfx.roundRect(c, -10f, -10f, W + 10f, worldH + 10f, 0f, Gfx.GOLD, (60 * flashT / 0.35f).toInt())
         if (dim == 8) {
             // Schwarzes Loch in der Mitte: zieht alles zur Bildmitte
             val cx = W / 2f

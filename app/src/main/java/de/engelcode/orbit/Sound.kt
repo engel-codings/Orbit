@@ -35,9 +35,11 @@ class Sound(context: Context, private val save: Save) {
         const val BOOST = 17
         const val MUSIC3 = 18
         const val MUSIC4 = 19
-        const val COUNT = 20
-        fun trackId(t: Int) = when (t) { 1 -> MUSIC2; 2 -> MUSIC3; 3 -> MUSIC4; else -> MUSIC }
-        private const val FILE_VERSION = 4
+        const val MUSIC5 = 20
+        const val MUSIC6 = 21
+        const val COUNT = 22
+        fun trackId(t: Int) = when (t) { 1 -> MUSIC2; 2 -> MUSIC3; 3 -> MUSIC4; 4 -> MUSIC5; 5 -> MUSIC6; else -> MUSIC }
+        private const val FILE_VERSION = 5
         private const val MUSIC_VOL = 0.35f
     }
 

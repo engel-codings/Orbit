@@ -282,6 +282,52 @@ object L {
         a("+{0} % Zielhilfe", "+{0}% aim assist", "+{0} % прицел"),
         a("Combo-Zeit +{0}", "Combo time +{0}", "Время комбо +{0}"))
     val BEST_COMBO = a("Beste Combo", "Best combo", "Лучшее комбо")
+    val SKILL_TREE = a("FÄHIGKEITENBAUM", "SKILL TREE", "ДЕРЕВО НАВЫКОВ")
+    val SKILL_TREE_H = a("FÄHIGKEITEN", "SKILLS", "НАВЫКИ")
+    val SKILL_UNLOCK = a("FREISCHALTEN", "UNLOCK", "ОТКРЫТЬ")
+    val SKILL_OWNED = a("Freigeschaltet", "Unlocked", "Открыто")
+    val SKILL_NEED = a("Erst den vorherigen Knoten freischalten", "Unlock the previous node first", "Сначала открой предыдущий узел")
+    val SKILL_TAP = a("Tippe auf einen Knoten", "Tap a node", "Нажми на узел")
+    val SKILL_NAMES = arrayOf(
+        a("Startschub", "Kickstart", "Рывок"), a("Sternensammler", "Star collector", "Собиратель звёзд"), a("Fangnetz", "Catch net", "Ловчая сеть"),
+        a("Boost-Start", "Boost start", "Стартовый ускоритель"), a("Sternenregen", "Star rain", "Звёздный дождь"), a("Magnetfeld", "Magnet field", "Магнитное поле"),
+        a("Weitblick", "Far sight", "Дальнозоркость"), a("Turbo-Ringe", "Turbo rings", "Турбо-кольца"), a("Überschall", "Supersonic", "Сверхзвук"),
+        a("Glückspilz", "Lucky one", "Везунчик"), a("Schutzengel", "Guardian angel", "Ангел-хранитель"), a("Combo-Meister", "Combo master", "Мастер комбо"),
+        a("Doppelsprung", "Double jump", "Двойной прыжок"), a("Fangnetz II", "Catch net II", "Ловчая сеть II"), a("Meister des Orbits", "Orbit master", "Мастер орбиты"))
+    val SKILL_DESC = arrayOf(
+        a("+4 % Fluggeschwindigkeit", "+4% flight speed", "+4 % скорость полёта"), a("+6 % Sterne", "+6% stars", "+6 % звёзд"),
+        a("+4 % Fangzone", "+4% capture zone", "+4 % зона захвата"), a("1,5 s Boost beim Start", "1.5 s boost at start", "1,5 с ускорения на старте"),
+        a("Mehr Sterne im Level", "More stars in levels", "Больше звёзд на уровне"), a("+2 s Magnet", "+2 s magnet", "+2 с магнит"),
+        a("+25 % Zielhilfe", "+25% aim assist", "+25 % прицел"), a("Boost-Ringe +0,4 s", "Boost rings +0.4 s", "Кольца ускорения +0,4 с"),
+        a("+4 % Fluggeschwindigkeit", "+4% flight speed", "+4 % скорость полёта"), a("+8 % Sterne", "+8% stars", "+8 % звёзд"),
+        a("15 % Chance auf Start-Schild", "15% chance of start shield", "15 % шанс щита на старте"), a("Combo-Zeit +0,15 s", "Combo time +0.15 s", "Время комбо +0,15 с"),
+        a("+1 Umlenkung", "+1 redirect", "+1 смена курса"), a("+5 % Fangzone", "+5% capture zone", "+5 % зона захвата"),
+        a("+5 % Tempo und +10 % Sterne", "+5% speed and +10% stars", "+5 % скорость и +10 % звёзд"))
+    val MINI_MODES = a("MINI-MODI", "MINI MODES", "МИНИ-РЕЖИМЫ")
+    val MODE_NAMES = arrayOf(a("Sternenjagd", "Star rush", "Звёздная охота"), a("Sprint 25", "Sprint 25", "Спринт 25"), a("Zen", "Zen", "Дзен"))
+    val MODE_DESC = arrayOf(a("60 Sekunden – so viele Punkte wie möglich", "60 seconds – score as much as you can", "60 секунд – набери максимум очков"),
+        a("25 Planeten so schnell wie möglich", "25 planets as fast as possible", "25 планет как можно быстрее"),
+        a("Entspannt, ohne Hindernisse und ohne Sterben", "Relaxed, no hazards and no dying", "Спокойно, без препятствий и без смерти"))
+    val MODE_RESULT_RUSH = a("{0} Punkte", "{0} points", "{0} очков")
+    val MODE_RECORD = a("Rekord: {0}", "Record: {0}", "Рекорд: {0}")
+    val MODE_NEW = a("NEUER REKORD!", "NEW RECORD!", "НОВЫЙ РЕКОРД!")
+    val CELEB_DIM = a("NEUE DIMENSION!", "NEW DIMENSION!", "НОВОЕ ИЗМЕРЕНИЕ!")
+    val CELEB_TAP = a("Tippen zum Weitermachen", "Tap to continue", "Нажми, чтобы продолжить")
+    val BG_STYLE = a("Hintergrund", "Background", "Фон")
+    val BG_NAMES = arrayOf(a("Automatisch", "Automatic", "Авто"), a("Kosmos", "Cosmos", "Космос"), a("Spiegel", "Mirror", "Зеркало"),
+        a("Nullgrav", "Zero-G", "Невесомость"), a("Sonnensturm", "Solar storm", "Солнечная буря"), a("Frost", "Frost", "Мороз"),
+        a("Hyper", "Hyper", "Гипер"), a("Pulsar", "Pulsar", "Пульсар"), a("Abgrund", "Abyss", "Бездна"))
+    val UPDATES = a("Updates", "Updates", "Обновления")
+    val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
+    val CHANGELOG = arrayOf(
+        arrayOf(a("1.2", "1.2", "1.2"), a("Fähigkeitenbaum, Mini-Modi (Sternenjagd, Sprint, Zen), mehr Sterne, neue Effekte, 2 neue Songs, Hintergrund-Stile, Update-Log, Schnellzugriff im Menü", "Skill tree, mini modes (Star rush, Sprint, Zen), more stars, new effects, 2 new songs, background styles, update log, menu shortcuts", "Дерево навыков, мини-режимы, больше звёзд, новые эффекты, 2 новые песни, стили фона, журнал обновлений, быстрый доступ в меню")),
+        arrayOf(a("1.1", "1.1", "1.1"), a("Fairere Level, kürzere Runden, Combos, Bestzeiten, Skins mit Fähigkeiten", "Fairer levels, shorter runs, combos, best times, skins with abilities", "Честнее уровни, короче забеги, комбо, рекорды времени, скины со способностями")),
+        arrayOf(a("1.0", "1.0", "1.0"), a("500 Level, Dimension 7 & 8, Profil, Avatare, Chat, Freunde-Nachrichten, Bots im 1v1", "500 levels, dimensions 7 & 8, profile, avatars, chat, friend messages, 1v1 bots", "500 уровней, измерения 7 и 8, профиль, аватары, чат, сообщения друзьям, боты в 1 на 1")),
+        arrayOf(a("0.9", "0.9", "0.9"), a("Online-Konto, Bestenliste, 1v1, Freunde, Dimension 5 & 6", "Online account, leaderboard, 1v1, friends, dimensions 5 & 6", "Онлайн-аккаунт, таблица лидеров, 1 на 1, друзья, измерения 5 и 6")),
+        arrayOf(a("0.8", "0.8", "0.8"), a("Umlenken, Boost-Ringe, Asteroiden, Laser, Wurmlöcher, Zeitrennen", "Redirect, boost rings, asteroids, lasers, wormholes, time trial", "Смена курса, ускорители, астероиды, лазеры, червоточины, гонка на время")),
+        arrayOf(a("0.7", "0.7", "0.7"), a("300 Level, Dimensionen 2–4, Endlos-Modus", "300 levels, dimensions 2–4, endless mode", "300 уровней, измерения 2–4, бесконечный режим")),
+        arrayOf(a("0.5", "0.5", "0.5"), a("3 Sprachen, Missionen, Glücksrad, Truhen, Erfolge", "3 languages, missions, wheel, chests, achievements", "3 языка, миссии, колесо, сундуки, достижения")),
+        arrayOf(a("0.3", "0.3", "0.3"), a("Shop, Skins, Spuren, Level-Karte", "Shop, skins, trails, level map", "Магазин, скины, следы, карта уровней")))
     val SKIP_POP = a("SPRUNG +{0}", "SKIP +{0}", "ПРЫЖОК +{0}")
     val T_REDIRECT_HINT = a("Tipp: Im Flug tippen = Umlenken", "Tip: tap in flight to redirect", "Совет: нажми в полёте, чтобы сменить курс")
     val TIME_TRIAL = a("ZEITRENNEN", "TIME TRIAL", "ГОНКА НА ВРЕМЯ")
@@ -305,7 +351,7 @@ object L {
     val ITEM_UPG = a("{0} – Stufe {1}", "{0} – level {1}", "{0} – уровень {1}")
     val MAX = a("MAX", "MAX", "МАКС")
     val ENDLESS_LOCKED = a("Erreiche zuerst Level {0}", "Reach level {0} first", "Сначала дойди до уровня {0}")
-    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"), a("Nebel", "Nebula", "Туманность"), a("Arcade", "Arcade", "Аркада"))
+    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"), a("Nebel", "Nebula", "Туманность"), a("Arcade", "Arcade", "Аркада"), a("Galaxie", "Galaxy", "Галактика"), a("Sternenstaub", "Stardust", "Звёздная пыль"))
     val DIM3_HINT = a("Die Leere: keine Schwerkraft – ziele genau!", "The Void: no gravity – aim precisely!", "Пустота: нет гравитации – целься точно!")
     val DIM2_HINT = a("Spiegelwelt: Planeten stoßen dich ab!", "Mirror world: planets push you away!", "Зеркальный мир: планеты отталкивают тебя!")
 
@@ -342,12 +388,11 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Fairere Level ab Level 40–100", "• Fairer levels from 40–100", "• Честнее уровни с 40–100"),
-        a("• Kürzere, schnellere Level – ideal für Speedruns", "• Shorter, faster levels – great for speedruns", "• Короче и быстрее – идеально для спидранов"),
-        a("• Combos: schnelle Sprünge = Bonuspunkte", "• Combos: quick jumps = bonus points", "• Комбо: быстрые прыжки = бонус"),
-        a("• Bestzeit für jedes Level", "• Best time for every level", "• Рекорд времени для каждого уровня"),
-        a("• Skins mit Fähigkeiten + 10 neue Skins", "• Skins with abilities + 10 new skins", "• Скины со способностями + 10 новых"),
-        a("• Fehler bei Level 60 behoben", "• Level 60 bug fixed", "• Исправлена ошибка уровня 60")
+        a("• Fähigkeitenbaum mit 15 Knoten (Shop → Können)", "• Skill tree with 15 nodes (Shop → Skills)", "• Дерево навыков: 15 узлов (Магазин → Навыки)"),
+        a("• Neue Modi: Sternenjagd, Sprint 25, Zen", "• New modes: Star rush, Sprint 25, Zen", "• Новые режимы: Звёздная охота, Спринт 25, Дзен"),
+        a("• Mehr Sterne: Sternenbögen und höhere Belohnungen", "• More stars: star arcs and bigger rewards", "• Больше звёзд и наград"),
+        a("• Schockwellen, Sternschnuppen, Monde, Tempo-Streifen", "• Shockwaves, shooting stars, moons, speed lines", "• Ударные волны, метеоры, луны, линии скорости"),
+        a("• Feier-Animation für neue Dimensionen", "• Celebration for new dimensions", "• Анимация новых измерений")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

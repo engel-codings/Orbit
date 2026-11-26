@@ -34,6 +34,8 @@ object Synth {
         Sound.MUSIC2 -> music2()
         Sound.MUSIC3 -> music3()
         Sound.MUSIC4 -> music4()
+        Sound.MUSIC5 -> music5()
+        Sound.MUSIC6 -> music6()
         Sound.EXPLODE -> explode()
         Sound.BOOST -> boost()
         else -> music()
@@ -356,6 +358,52 @@ object Synth {
             s += sq(TAU * bf / 2 * dt) * exp(-dt * 5) * att(dt, 0.002) * 0.06
             if (j % 4 == 0) s += sin(TAU * (120 - 300 * dt) * dt) * exp(-dt * 18) * 0.25
             if (j % 4 == 2) s += noise[(dt * SR).toInt() % 2000] * exp(-dt * 30) * 0.08
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Synthwave-Arpeggio („Galaxie“). */
+    private fun music5(): FloatArray {
+        val len = 12.8
+        val b = buf(len)
+        val step = 0.2
+        val roots = doubleArrayOf(110.0, 87.31, 130.81, 98.0)
+        val arp = intArrayOf(0, 7, 12, 15, 12, 7, 3, 7)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val j = floor(t / step).toInt()
+            val dt = t - j * step
+            val r = roots[(j / 16) % 4]
+            var s = 0.0
+            val f = r * 2 * 2.0.pow(arp[j % 8] / 12.0)
+            s += (sin(TAU * f * dt) + 0.4 * sin(TAU * f * 2.01 * dt)) * exp(-dt * 7) * att(dt, 0.003) * 0.06
+            val pad = sin(TAU * r * t) + sin(TAU * r * 1.5 * t) * 0.6 + sin(TAU * r * 2.0 * t) * 0.4
+            s += pad * 0.025
+            if (j % 4 == 0) s += sin(TAU * (110 - 260 * dt) * dt) * exp(-dt * 16) * 0.22
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Ruhiges Klavier („Sternenstaub“). */
+    private fun music6(): FloatArray {
+        val len = 16.0
+        val b = buf(len)
+        val notes = doubleArrayOf(523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.0, 698.46, 493.88, 587.33, 783.99, 587.33, 523.25, 659.25, 783.99, 1046.5)
+        val bass = doubleArrayOf(130.81, 146.83, 123.47, 130.81)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            var s = 0.0
+            val j = floor(t).toInt()
+            for (o in 0..1) {
+                val k = ((j - o) % 16 + 16) % 16
+                val dt = ((t - (j - o)) % len + len) % len
+                if (dt < 3.0) s += (sin(TAU * notes[k] * dt) + 0.3 * sin(TAU * notes[k] * 2 * dt)) * exp(-dt * 1.8) * att(dt, 0.004) * 0.05
+            }
+            val bi = (floor(t / 4.0).toInt()) % 4
+            val bt = t % 4.0
+            s += sin(TAU * bass[bi] * t) * exp(-bt * 0.6) * 0.05
             b[i] = s.toFloat()
         }
         return b
