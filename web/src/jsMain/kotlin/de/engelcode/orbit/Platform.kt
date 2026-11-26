@@ -14,6 +14,12 @@ object Platform {
         js("window.orbitCanInstall ? window.orbitCanInstall() : false") as Boolean
     } catch (_: Throwable) { false }
 
+    /** PC-Modus gibt es nur in der Web-Version. */
+    fun hasPcMode(): Boolean = true
+    fun setPcMode(on: Boolean, lang: Int, fullscreen: Boolean) {
+        try { val f: dynamic = window.asDynamic().orbitPc; if (f != undefined) f(on, lang, fullscreen) } catch (_: Throwable) {}
+    }
+
     fun showInstall() {
         try { js("if (window.orbitShowInstall) window.orbitShowInstall()") } catch (_: Throwable) {}
     }

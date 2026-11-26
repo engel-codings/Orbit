@@ -68,11 +68,31 @@
   .of-or { text-align: center; color: #6e779c; font-size: 13px; margin-top: 12px; }
   .of-g { margin-top: 10px; width: 100%; border: 0; border-radius: 28px; padding: 14px; font: 17px OutfitXB, ManropeXB, sans-serif; color: #1f1f1f; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
   .of-link { text-align: center; color: #4cc9f0; font-size: 15px; margin-top: 14px; cursor: pointer; }
+  /* ---------- PC-Modus (Querformat-Rahmen) ---------- */
+  .pcp { display: none; }
+  body.pc { background: radial-gradient(ellipse at 20% 30%, #1b1f4d 0%, transparent 55%), radial-gradient(ellipse at 80% 70%, #2a1240 0%, transparent 55%), #070A16; }
+  body.pc .pcp { display: flex; flex-direction: column; justify-content: center; gap: 14px; flex: 1 1 0; min-width: 0; height: 100%;
+    box-sizing: border-box; padding: 4vh 3vw; color: #fff; font-family: OutfitMd, ManropeSB, sans-serif; overflow: hidden; }
+  body.pc canvas { box-shadow: 0 0 80px rgba(76,201,240,.18); border-left: 1px solid rgba(255,255,255,.08); border-right: 1px solid rgba(255,255,255,.08); }
+  body.pc.narrow .pcp { display: none; }
+  #pcL { align-items: flex-end; text-align: right; }
+  #pcR { align-items: flex-start; }
+  .pcLogo { font: 800 clamp(34px, 4.2vw, 72px) OutfitXB, ManropeXB, sans-serif; letter-spacing: .12em; }
+  .pcSub { color: #4cc9f0; letter-spacing: .4em; font: 800 clamp(11px, 1.1vw, 18px) OutfitXB, ManropeXB, sans-serif; margin-top: -10px; }
+  .pcH { color: #8A93B2; font-size: clamp(12px, 1vw, 16px); letter-spacing: .2em; margin-top: 2vh; }
+  .pcK { display: flex; align-items: center; gap: 12px; font-size: clamp(13px, 1.15vw, 19px); }
+  #pcL .pcK { flex-direction: row-reverse; }
+  .key { min-width: 34px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+    border-bottom-width: 3px; font: 800 clamp(11px, .95vw, 15px) OutfitXB, ManropeXB, sans-serif; color: #4cc9f0; text-align: center; }
+  .pcTip { max-width: 22vw; padding: 12px 16px; border-radius: 16px; background: rgba(255,255,255,.06); font-size: clamp(12px, 1vw, 17px); line-height: 1.35; }
+  .pcBtn { margin-top: 1vh; border: 0; border-radius: 22px; padding: 12px 20px; font: 800 clamp(12px, 1vw, 16px) OutfitXB, ManropeXB, sans-serif; color: #fff; background: linear-gradient(90deg,#4cc9f0,#7b61ff); cursor: pointer; }
 </style>
 </head>
 <body>
 
+<div id="pcL" class="pcp"></div>
 <canvas id="game"></canvas>
+<div id="pcR" class="pcp"></div>
 <span class="pre" style="font-family:OutfitXB">a</span>
 <span class="pre" style="font-family:OutfitMd">a</span>
 <span class="pre" style="font-family:ManropeXB">я</span>
@@ -277,5 +297,52 @@ window.orbitDecodeImage = function (b64, cb) {
 };
 </script>
 <script src="orbit.js"></script>
+<script>
+/* PC-Modus: Querformat-Rahmen links/rechts, Vollbild, Tastatur-Hilfe (DE/EN/RU) */
+(function () {
+  var T = [
+    { jump: 'Springen', click: 'Springen & Menüs', back: 'Pause / Zurück', fs: 'Vollbild', ctr: 'STEUERUNG', tips: 'TIPPS',
+      t1: 'Sammle Sterne und schalte im Fähigkeitenbaum neue Kräfte frei.', t2: 'Online: 1 gegen 1 gegen echte Spieler – oder Bots auf deinem Niveau.', t3: 'PC-Modus lässt sich in den Optionen wieder ausschalten.', btn: 'Vollbild', mouse: 'Maus' },
+    { jump: 'Jump', click: 'Jump & menus', back: 'Pause / back', fs: 'Fullscreen', ctr: 'CONTROLS', tips: 'TIPS',
+      t1: 'Collect stars and unlock new powers in the skill tree.', t2: 'Online: 1v1 against real players – or bots at your level.', t3: 'PC mode can be turned off again in the options.', btn: 'Fullscreen', mouse: 'Mouse' },
+    { jump: 'Прыжок', click: 'Прыжок и меню', back: 'Пауза / назад', fs: 'Полный экран', ctr: 'УПРАВЛЕНИЕ', tips: 'СОВЕТЫ',
+      t1: 'Собирай звёзды и открывай новые силы в дереве навыков.', t2: 'Онлайн: 1 на 1 против игроков – или ботов твоего уровня.', t3: 'Режим ПК можно выключить в настройках.', btn: 'Полный экран', mouse: 'Мышь' }
+  ];
+  function fsOn() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  window.orbitFullscreen = function (want) {
+    try {
+      var d = document.documentElement;
+      if (want === undefined) want = !fsOn();
+      if (want && !fsOn()) { (d.requestFullscreen || d.webkitRequestFullscreen).call(d); }
+      else if (!want && fsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+    } catch (e) {}
+  };
+  var pending = false;
+  function onFirst() { pending = false; window.orbitFullscreen(true); window.removeEventListener('pointerdown', onFirst, true); window.removeEventListener('keydown', onFirst, true); }
+  window.orbitPc = function (on, lang, fs) {
+    var t = T[lang] || T[0];
+    document.body.classList.toggle('pc', !!on);
+    var L = document.getElementById('pcL'), R = document.getElementById('pcR');
+    if (on) {
+      L.innerHTML = '<div class="pcLogo">ORBIT</div><div class="pcSub">PLANET JUMP</div><div class="pcH">' + t.ctr + '</div>' +
+        '<div class="pcK"><span class="key">␣ SPACE</span><span>' + t.jump + '</span></div>' +
+        '<div class="pcK"><span class="key">ENTER</span><span>' + t.jump + '</span></div>' +
+        '<div class="pcK"><span class="key">' + t.mouse + '</span><span>' + t.click + '</span></div>' +
+        '<div class="pcK"><span class="key">ESC</span><span>' + t.back + '</span></div>' +
+        '<div class="pcK"><span class="key">F</span><span>' + t.fs + '</span></div>';
+      R.innerHTML = '<div class="pcH">' + t.tips + '</div><div class="pcTip">' + t.t1 + '</div><div class="pcTip">' + t.t2 + '</div><div class="pcTip">' + t.t3 + '</div>' +
+        '<button class="pcBtn" id="pcFs">⛶ ' + t.btn + '</button>';
+      document.getElementById('pcFs').onclick = function () { window.orbitFullscreen(); };
+      if (fs) window.orbitFullscreen(true);
+      else if (!fsOn() && !pending) { pending = true; window.addEventListener('pointerdown', onFirst, true); window.addEventListener('keydown', onFirst, true); }
+    } else {
+      L.innerHTML = ''; R.innerHTML = '';
+      if (pending) { pending = false; window.removeEventListener('pointerdown', onFirst, true); window.removeEventListener('keydown', onFirst, true); }
+      if (fs) window.orbitFullscreen(false);
+    }
+    window.dispatchEvent(new Event('resize'));
+  };
+})();
+</script>
 </body>
 </html>

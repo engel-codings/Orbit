@@ -228,6 +228,9 @@ object L {
     val VS_DRAW = a("UNENTSCHIEDEN", "DRAW", "НИЧЬЯ")
     val VS_WAITING = a("Warte, bis {0} fertig ist…", "Waiting for {0} to finish…", "Ждём, пока {0} закончит…")
     val VS_LEFT = a("Gegner hat das Spiel verlassen", "Opponent left the match", "Соперник покинул игру")
+    val BOT_INFO = a("{0} · Level {1} · {2} Fähigkeiten – gleiche Strecke, mehr Punkte gewinnt", "{0} · Level {1} · {2} skills – same course, most points wins", "{0} · Уровень {1} · навыков: {2} – одна трасса, больше очков побеждает")
+    val BOT_SHIELD = a("SCHILD!", "SHIELD!", "ЩИТ!")
+    val BOT_BOOST = a("BOOST!", "BOOST!", "УСКОРЕНИЕ!")
     val VS_RULES = a("Gleiche Strecke – wer mehr Punkte schafft, gewinnt", "Same course – most points wins", "Одна трасса – побеждает тот, у кого больше очков")
     val VS_AGAIN = a("NOCHMAL", "AGAIN", "ЕЩЁ РАЗ")
     val NO_FRIENDS = a("Noch keine Freunde – füge welche hinzu!", "No friends yet – add some!", "Друзей пока нет – добавь кого-нибудь!")
@@ -327,6 +330,7 @@ object L {
     val UPDATES = a("Updates", "Updates", "Обновления")
     val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
     val CHANGELOG = arrayOf(
+        arrayOf(a("1.4.1", "1.4.1", "1.4.1"), a("Online-Bots mit Fähigkeiten und Extras (Schild, Boost, Bonuspunkte), immer auf dein Level abgestimmt; Web: PC-Modus mit Vollbild und Tastatur", "Online bots with skills and extras (shield, boost, bonus points), always matched to your level; web: PC mode with fullscreen and keyboard", "Онлайн-боты с навыками и бонусами (щит, ускорение, очки) под твой уровень; веб: режим ПК с полным экраном и клавиатурой")),
         arrayOf(a("1.4", "1.4", "1.4"), a("Riesiger Fähigkeitenbaum mit 37 Knoten, Dimension 9 Sturmfront und 10 Urknall, 600 Level, 10 neue Himmelskörper", "Huge skill tree with 37 nodes, dimension 9 Storm front and 10 Big Bang, 600 levels, 10 new celestial bodies", "Огромное дерево навыков (37 узлов), измерения 9 и 10, 600 уровней, 10 новых небесных тел")),
         arrayOf(a("1.3", "1.3", "1.3"), a("Clans mit Clan-Code, Mitglieder hinzufügen und Clan-Chat, eigener Spielmodi-Knopf, Menü-Zurück direkt zum Hauptmenü", "Clans with clan code, add members and clan chat, separate game modes button, menu back goes straight home", "Кланы с кодом, добавление участников и чат клана, отдельная кнопка режимов, «назад» сразу в главное меню")),
         arrayOf(a("1.2", "1.2", "1.2"), a("Fähigkeitenbaum, Mini-Modi (Sternenjagd, Sprint, Zen), mehr Sterne, neue Effekte, 2 neue Songs, Hintergrund-Stile, Update-Log, Schnellzugriff im Menü", "Skill tree, mini modes (Star rush, Sprint, Zen), more stars, new effects, 2 new songs, background styles, update log, menu shortcuts", "Дерево навыков, мини-режимы, больше звёзд, новые эффекты, 2 новые песни, стили фона, журнал обновлений, быстрый доступ в меню")),
@@ -416,12 +420,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Riesiger Fähigkeitenbaum: 37 Knoten zum Scrollen", "• Huge skill tree: 37 nodes to scroll through", "• Огромное дерево навыков: 37 узлов"),
-        a("• Dimension 9: Sturmfront", "• Dimension 9: Storm front", "• Измерение 9: Грозовой фронт"),
-        a("• Dimension 10: Urknall", "• Dimension 10: Big Bang", "• Измерение 10: Большой взрыв"),
-        a("• 100 neue Level – jetzt 600!", "• 100 new levels – now 600!", "• 100 новых уровней – теперь 600!"),
-        a("• 10 neue Himmelskörper und 4 neue Erfolge", "• 10 new celestial bodies and 4 new achievements", "• 10 новых небесных тел и 4 новых достижения"),
-        a("• Alter Baum: Sterne wurden erstattet", "• Old tree: stars were refunded", "• Старое дерево: звёзды возвращены")
+        a("• Online-Bots haben jetzt Fähigkeiten und Extras", "• Online bots now have skills and extras", "• Онлайн-боты теперь с навыками и бонусами"),
+        a("• Bots nutzen Schild, Boost und Bonuspunkte", "• Bots use shield, boost and bonus points", "• Боты используют щит, ускорение и бонусные очки"),
+        a("• Bots sind immer auf dein Level und deine Fähigkeiten abgestimmt", "• Bots always match your level and skills", "• Боты всегда под твой уровень и навыки"),
+        a("• Gegen Bots wirkt jetzt auch dein eigener Schild", "• Your own shield now works against bots too", "• Против ботов теперь работает и твой щит"),
+        a("• Web: PC-Modus mit Vollbild, Querformat-Rahmen und Tastatur", "• Web: PC mode with fullscreen, landscape frame and keyboard", "• Веб: режим ПК – полный экран, широкая рамка, клавиатура"),
+        a("• Leertaste, Enter oder Mausklick = springen", "• Space, Enter or mouse click = jump", "• Пробел, Enter или клик мышью = прыжок")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe
@@ -466,6 +470,9 @@ object L {
         a("Musikstück", "Music track", "Музыка: трек"),
         a("Als App installieren", "Install as app", "Установить как приложение")
     )
+    val PC_MODE = a("PC-Modus (Vollbild, Tastatur)", "PC mode (fullscreen, keyboard)", "Режим ПК (полный экран, клавиатура)")
+    val PC_ON = a("PC-Modus an: Leertaste/Enter oder Mausklick = springen · F = Vollbild", "PC mode on: Space/Enter or mouse click = jump · F = fullscreen", "Режим ПК: пробел/Enter или клик = прыжок · F = полный экран")
+    val PC_OFF = a("PC-Modus aus", "PC mode off", "Режим ПК выключен")
     val GFX_HIGH = a("Hoch", "High", "Высокая")
     val GFX_MEDIUM = a("Mittel", "Medium", "Средняя")
     val GFX_LOW = a("Sparsam", "Low", "Экономная")

@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 19
-        const val VERSION_NAME = "1.4.0"
+        const val VERSION_CODE = 20
+        const val VERSION_NAME = "1.4.1"
         const val W = 1000f
 
         // Knopf-Stile
@@ -156,6 +156,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val skillBtns = arrayOf(bBack, bSkillBuy)
     private val bBgStyle = Btn(97, "", S_INVISIBLE)
     private val bLogSet = Btn(98, "", S_INVISIBLE)
+    private val bPcMode = Btn(110, "", S_INVISIBLE)
     private val bSideBoard = Btn(99, "", S_ROUND, Gfx.I_TROPHY)
     private val bSideFriends = Btn(100, "", S_ROUND, Gfx.I_HEART)
     private val bSideChat = Btn(101, "", S_ROUND, Gfx.I_GLOBE)
@@ -182,7 +183,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private val overBtns = arrayOf(bRevive, bAgain, bLeave)
     private val doneBtns = arrayOf(bNext, bToMap)
     private val shopBtns = arrayOf(bBack, bTab[0], bTab[1], bTab[2], bTab[3], bBuyRevive, bBuyShield)
-    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bRow[8], bBgStyle, bLogSet, bReset)
+    private val setBtns = arrayOf(bBack, bRow[0], bRow[1], bRow[2], bRow[3], bRow[4], bRow[5], bRow[6], bRow[7], bRow[8], bBgStyle, bLogSet, bPcMode, bReset)
     private val wheelBtns = arrayOf(bBack, bSpin)
     private val backBtns = arrayOf(bBack)
     private val dlgBtns = arrayOf(bDlgA, bDlgB)
@@ -341,6 +342,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
     /** Alle festen Texte in der aktuellen Sprache setzen. */
     private fun applyTexts() {
         gfx.applyLanguage(L.cur)
+        Platform.setPcMode(save.pcMode, L.cur, false)
         bMissions.label = L.t(L.MISSIONS)
         bShop.label = L.t(L.SHOP); bAch.label = L.t(L.ACHIEVEMENTS); bStats.label = L.t(L.STATS); bSettings.label = L.t(L.OPTIONS)
         bChallenge.label = L.t(L.CHALLENGE); bWheel.label = L.t(L.WHEEL)
@@ -434,12 +436,16 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun layoutSettings() {
         val n = settingRows()
-        val st = min(112f, (H - 520f) / (n + 2))
+        val pc = Platform.hasPcMode()
+        val extra = if (pc) 3 else 2
+        val st = min(112f, (H - 520f) / (n + extra))
         for (i in 0 until 9) place(bRow[i], 40f, 225f + i * st, 920f, st - 12f)
         bRow[8].visible = n == 9
         place(bBgStyle, 40f, 225f + n * st, 920f, st - 12f)
         place(bLogSet, 40f, 225f + (n + 1) * st, 920f, st - 12f)
-        place(bReset, 80f, 225f + (n + 2) * st + 14f, 840f, 100f)
+        place(bPcMode, 40f, 225f + (n + 2) * st, 920f, st - 12f)
+        bPcMode.visible = pc
+        place(bReset, 80f, 225f + (n + extra) * st + 14f, 840f, 100f)
     }
 
     private fun playCY() = H * 0.43f
@@ -571,7 +577,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             Skins.PK_REDIRECT -> world.redirects += perk.second
             Skins.PK_AIM -> world.aimMul += perk.second / 100f
             Skins.PK_COMBO -> world.comboBonus = perk.second * 0.1f
-            Skins.PK_SHIELD -> if (!versus && kotlin.random.Random.nextInt(100) < perk.second) world.giveShield()
+            Skins.PK_SHIELD -> if ((!versus || Net.isBot) && kotlin.random.Random.nextInt(100) < perk.second) world.giveShield()
         }
         applySkills()
         world.bgStyle = save.bgStyle
@@ -866,7 +872,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         world.magnetBonus += mag
         world.aimMul += aim
         world.boostExtra = boostLen
-        if (shield > 0 && !versus && kotlin.random.Random.nextInt(100) < shield) world.giveShield()
+        if (shield > 0 && (!versus || Net.isBot) && kotlin.random.Random.nextInt(100) < shield) world.giveShield()
         world.comboBonus += combo
         world.redirects += redir
         world.starRadius = 1f + radius
@@ -874,6 +880,23 @@ class Game(context: Context) : World.Listener, Net.Listener {
         skillStarPct = stars
     }
     private var skillStarPct = 0
+
+    /** Bot bekommt dieselben Fähigkeiten/Extras wie der Spieler (gleicher Stand). */
+    private fun startBotMatch(name: String, tier: Int) {
+        var n = 0; var sp = 0f; var rain = 0f; var combo = 0f; var shield = 0; var bStart = 0f; var bLen = 0f; var skip = 0
+        for (i in SK_DEF.indices) {
+            if (!hasSkill(i)) continue
+            n++
+            val v = SK_DEF[i][4]
+            when (SK_DEF[i][3]) {
+                0 -> sp += v / 100f; 3 -> bStart += v / 10f; 4 -> rain += v / 100f; 7 -> bLen += v / 10f
+                8 -> shield = max(shield, v); 9 -> combo += v / 100f; 12 -> skip += v; 13 -> sp += 0.05f
+            }
+        }
+        val perk = Skins.PERKS[save.skin]
+        if (perk != null && perk.first == Skins.PK_SHIELD) shield = max(shield, perk.second)
+        Net.startBot(name, tier, n, save.levelDone, save.best, sp, min(rain, 0.25f) + combo * 0.5f, shield, bStart, bLen, skip)
+    }
 
     /** Alter 15-Knoten-Baum: Sterne einmalig erstatten. */
     private fun migrateOldTree() {
@@ -1107,10 +1130,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
             queueWait = 0f
             Net.leaveQueue()
             val names = arrayOf("Nova", "Comet", "Luna", "Astro", "Pixel", "Orion", "Vega", "Zenit")
-            Net.startBot("Bot-" + names[kotlin.random.Random.nextInt(names.size)], kotlin.random.Random.nextInt(3))
+            startBotMatch("Bot-" + names[kotlin.random.Random.nextInt(names.size)], kotlin.random.Random.nextInt(3))
             versus = true; vsFinal = false; oppVal = -1
             startRun(0, kotlin.random.Random.nextLong(1, 1_000_000_000L), 1)
-            showToast(L.t(L.VS_RULES))
+            showToast(L.f(L.BOT_INFO, Net.oppName, Net.botLevel, Net.botSkills))
         }
         if (Net.active && screen != Screen.PLAYING) {
             cloudT += dt
@@ -1120,6 +1143,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 if (sig != cloudSig) { cloudSig = sig; Net.pushProfile(); Net.pushSave() }
             }
         }
+    }
+
+    private fun botTagText(): String = when (Net.botTag) {
+        1 -> L.t(L.BOT_SHIELD); 2 -> L.t(L.BOT_BOOST); 3 -> "+" + Net.botTagVal; else -> ""
     }
 
     private fun finishVersus() {
@@ -1943,7 +1970,11 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 runTime += dt
                 if (versus) {
                     Net.report(world.score, false)
-                    if (Net.isBot && !Net.oppDead) { world.ghostOrder = Net.botCaps; world.ghostName = Net.oppName } else world.ghostOrder = -1
+                    if (Net.isBot && !Net.oppDead) {
+                        world.ghostOrder = Net.botCaps; world.ghostName = Net.oppName
+                        world.ghostBoost = Net.botBoosting
+                        world.ghostTag = if (Net.botTagT > 0f) botTagText() else ""
+                    } else world.ghostOrder = -1
                 }
                 if (ttCourse >= 0 && winTimer <= 0f) ttTime += dt
                 if (mode != 0) updateMode(dt)
@@ -2016,6 +2047,19 @@ class Game(context: Context) : World.Listener, Net.Listener {
     }
 
     // ===================================================================== Eingabe
+
+    /** Tastatur (PC-Modus): Leertaste/Enter = springen, im Pausenmenü weiterspielen, nach dem Level weiter. */
+    fun onKeyJump(): Boolean {
+        if (!ready || dialog != D_NONE) return false
+        when (screen) {
+            Screen.PLAYING -> { if (!world.redirect()) world.launch(); return true }
+            Screen.PAUSED -> { onButton(bResume.id); return true }
+            Screen.LEVELDONE -> if (screenTime > 0.8f && bNext.visible) { onButton(bNext.id); return true }
+            Screen.GAMEOVER -> if (screenTime > 0.8f && bAgain.visible) { onButton(bAgain.id); return true }
+            else -> {}
+        }
+        return false
+    }
 
     fun onTouch(action: Int, px: Float, py: Float) {
         if (!ready) return
@@ -2195,6 +2239,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bRow[8].id -> Platform.showInstall()
             bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 6; save.flush(); sound.syncMusic() }
             bBgStyle.id -> { save.bgStyle = (save.bgStyle + 1) % 9; save.flush(); world.bgStyle = save.bgStyle }
+            bPcMode.id -> { save.pcMode = !save.pcMode; save.flush(); Platform.setPcMode(save.pcMode, L.cur, true); showToast(L.t(if (save.pcMode) L.PC_ON else L.PC_OFF)) }
             bLogSet.id, bSideLog.id -> { shopScroll = 0f; go(Screen.CHANGELOG) }
             bSideBoard.id -> { fromSide = true; go(Screen.LEADER) }
             bSideFriends.id -> if (!Net.loggedIn) { sound.play(Sound.ERROR); showToast(L.t(L.NET_FRIENDS_NEED)) } else { fromSide = true; backToProfile = false; go(Screen.FRIENDS) }
@@ -2669,6 +2714,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
             val tw = min(gfx.textWidth(oppStr, 32f), 520f)
             gfx.glass(c, W / 2f - tw / 2f - 40f, 300f, W / 2f + tw / 2f + 40f, 375f, 37f, border = if (oppDeadShown) Gfx.RED else Gfx.ORANGE)
             gfx.text(c, oppStr, W / 2f, 350f, 32f, if (oppDeadShown) Gfx.DIM else Gfx.ORANGE, maxW = 520f)
+            if (Net.isBot && !oppDeadShown && Net.botTagT > 0f)
+                gfx.text(c, botTagText(), W / 2f, 420f, 30f, Gfx.GOLD, alpha = (min(1f, Net.botTagT) * 255).toInt())
         }
         if (world.redirects != redirVal) { redirVal = world.redirects; redirStr = redirVal.toString() }
         gfx.glass(c, 40f, H - 150f, 200f, H - 50f, 50f, border = if (redirVal > 0) Gfx.ACCENT else Color.WHITE)
@@ -3140,6 +3187,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
                 gfx.roundRect(c, b.x + b.w - 280f, b.y + 20f, b.x + b.w - 30f, b.y + b.h - 20f, 30f, Gfx.PANEL2)
                 gfx.text(c, L.t(L.BG_NAMES[save.bgStyle]), b.x + b.w - 155f, b.y + b.h / 2f + 12f, 32f, Gfx.ACCENT, maxW = 220f)
             }
+        }
+        if (bPcMode.visible) {
+            val b = bPcMode
+            gfx.glass(c, b.x, b.y, b.x + b.w, b.y + b.h, 36f, if (b === pressed) 255 else 235)
+            gfx.circle(c, b.x + 70f, b.y + b.h / 2f, 34f, Gfx.PANEL2)
+            gfx.icon(c, Gfx.I_TARGET, b.x + 70f, b.y + b.h / 2f, 20f, Gfx.ACCENT)
+            gfx.text(c, L.t(L.PC_MODE), b.x + 130f, b.y + b.h / 2f + 14f, 38f, Color.WHITE, false, Paint.Align.LEFT, maxW = 540f)
+            toggle(c, b.x + b.w - 175f, b.y + b.h / 2f, save.pcMode)
         }
         drawBtn(c, bReset)
         gfx.text(c, L.t(L.GFX_HINT), W / 2f, bReset.y + bReset.h + 60f, 27f, Gfx.DIM, false, maxW = 900f)

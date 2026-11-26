@@ -19,6 +19,8 @@ object Platform {
     /** „Als App installieren“ gibt es nur in der Web-Version. */
     fun canInstall(): Boolean = false
     fun showInstall() {}
+    fun hasPcMode(): Boolean = false
+    fun setPcMode(on: Boolean, lang: Int, fullscreen: Boolean) {}
 
     var activity: Activity? = null
 

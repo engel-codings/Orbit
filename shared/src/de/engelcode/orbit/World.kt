@@ -443,6 +443,8 @@ class World(private val gfx: Gfx) {
     var bestCombo = 0; private set
     var comboBonus = 0f
     var ghostName = ""
+    var ghostTag = ""
+    var ghostBoost = false
 
     /** Dimension 7 (Pulsar): Fangzone pulsiert zwischen klein und groß. */
     fun pulseMul() = if (dim == 7 || dim == 10) 0.7f + 0.45f * (0.5f + 0.5f * sin(time * 2.4f)) else 1f
@@ -1047,10 +1049,12 @@ class World(private val gfx: Gfx) {
             if (!p.active || p.order != ghostOrder) continue
             val a = time * 2.2f
             val gx = p.x + cos(a) * (p.r + 34f); val gy = p.y + sin(a) * (p.r + 34f)
+            if (ghostBoost) gfx.circle(c, gx, gy, 40f + sin(time * 14f) * 5f, Gfx.GOLD, 60)
             gfx.circle(c, gx, gy, 26f, Gfx.ORANGE, 70)
             gfx.circle(c, gx, gy, 16f, Gfx.ORANGE, 200)
             gfx.circle(c, gx, gy, 7f, Color.WHITE, 220)
             gfx.text(c, ghostName, gx, gy - 38f, 26f, Gfx.ORANGE, alpha = 220)
+            if (ghostTag.isNotEmpty()) gfx.text(c, ghostTag, gx, gy + 62f, 26f, Gfx.GOLD, alpha = 230)
             break
         }
         c.restore()

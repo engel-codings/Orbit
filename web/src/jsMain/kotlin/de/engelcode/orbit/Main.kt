@@ -31,6 +31,8 @@ private fun start() {
         val vh = window.innerHeight.toDouble()
         // Hochformat: am PC wird das Spiel mittig in Handy-Form angezeigt
         val w = min(vw, vh * 0.62)
+        // PC-Modus: links/rechts Querformat-Rahmen, nur wenn genug Platz ist
+        document.body?.classList?.toggle("narrow", (vw - w) / 2.0 < 190.0)
         canvas.style.width = "${w}px"
         canvas.style.height = "${vh}px"
         canvas.width = (w * dpr).toInt()
@@ -89,10 +91,20 @@ private fun start() {
     canvas.addEventListener("pointerup", up)
     canvas.addEventListener("pointercancel", up)
 
-    // Zurück: Escape-Taste
+    // Tastatur: Escape = zurück, Leertaste/Enter = springen, F = Vollbild
     window.addEventListener("keydown", { ev ->
-        val k = (ev as KeyboardEvent).key
-        if (k == "Escape" || k == "Backspace") game.onBack()
+        val e = ev as KeyboardEvent
+        val tag = (e.target?.asDynamic()?.tagName as? String)?.uppercase() ?: ""
+        if (tag == "INPUT" || tag == "TEXTAREA" || document.querySelector(".of-back") != null) return@addEventListener
+        val k = e.key
+        when {
+            k == "Escape" || k == "Backspace" -> game.onBack()
+            k == " " || k == "Spacebar" || k == "Enter" -> {
+                e.preventDefault()
+                if (!e.repeat) { Sound.unlockAll(); game.onKeyJump() }
+            }
+            (k == "f" || k == "F") && !e.repeat -> try { window.asDynamic().orbitFullscreen() } catch (_: Throwable) {}
+        }
     })
 
     // App im Hintergrund → Pause

@@ -47,6 +47,7 @@ class Save(context: Context) {
     var skillTree = p.getInt("skillTree", 0)   // alter Baum (wird erstattet)
     var skillTreeL: Long = p.getLong("skillTreeL", 0L)
     var bgStyle = p.getInt("bgStyle", 0)
+    var pcMode = p.getBoolean("pcMode", false)
     val modeBest = IntArray(3) { p.getInt("mode$it", 0) }
     var ownedTrails = p.getInt("ownedTrails", 1)
     var revives = p.getInt("revives", 0)
@@ -155,7 +156,7 @@ class Save(context: Context) {
             .putInt("missionsDone", missionsDone)
             .putLong("chestReady", chestReady).putInt("chests", chests)
             .putBoolean("sound", sound).putBoolean("music", music)
-            .putBoolean("vibration", vibration).putBoolean("showFps", showFps)
+            .putBoolean("vibration", vibration).putBoolean("showFps", showFps).putBoolean("pcMode", pcMode)
             .putInt("gfx", gfx).putBoolean("shake", shake).putInt("musicTrack", musicTrack)
             .putInt("upg0", upg[0]).putInt("upg1", upg[1]).putInt("upg2", upg[2]).putInt("upg3", upg[3]).putInt("upg4", upg[4])
             .putLong("tt0", ttBest[0]).putLong("tt1", ttBest[1]).putLong("tt2", ttBest[2]).putLong("tt3", ttBest[3]).putInt("ttDone", ttDone)

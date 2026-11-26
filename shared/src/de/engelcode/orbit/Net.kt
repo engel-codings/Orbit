@@ -1,5 +1,7 @@
 package de.engelcode.orbit
 
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.random.Random
 
 /**
@@ -794,14 +796,53 @@ object Net {
 
     private var botMin = 1.7f
     private var botRange = 1.8f
+    private var botSpeed = 1f
+    private var botBonus = 0.25f
+    private var botSkip = 0
+    private var botShield = false
+    private var botBoostT = 0f
+    private var botBoostLen = 0f
+    private var botBoostNext = 0f
+    /** Angezeigte Werte des Bots (auf den Spieler abgestimmt). */
+    var botLevel = 0; private set
+    var botSkills = 0; private set
+    /** Kurzer Hinweis über dem Bot: 1 = Schild, 2 = Boost, 3 = Bonuspunkte. */
+    var botTag = 0; private set
+    var botTagVal = 0; private set
+    var botTagT = 0f; private set
+    val botBoosting get() = botBoostT > 0f
 
-    /** Stufe 0 = leicht, 1 = mittel, 2 = etwas schwerer (aber nie zu schwer). */
-    fun startBot(n: String, tier: Int) {
-        val target = when (tier) { 0 -> 5 + Random.nextInt(8); 1 -> 10 + Random.nextInt(12); else -> 18 + Random.nextInt(14) }
+    private fun botTagSet(t: Int, v: Int = 0) { botTag = t; botTagVal = v; botTagT = 1.8f }
+
+    /**
+     * Stufe 0 = leicht, 1 = mittel, 2 = etwas schwerer (aber nie zu schwer).
+     * Der Bot bekommt Fähigkeiten und Extras passend zum eigenen Stand:
+     * gleiche Anzahl Fähigkeiten, gleiches Level, Tempo/Sterne/Schild/Boost wie der Spieler.
+     */
+    fun startBot(n: String, tier: Int, skills: Int = 0, level: Int = 0, best: Int = 0,
+                 speed: Float = 0f, bonus: Float = 0f, shieldPct: Int = 0,
+                 boostStart: Float = 0f, boostLen: Float = 0f, skip: Int = 0) {
+        val power = 0.55f * min(skills, 37) / 37f + 0.45f * min(level, 600) / 600f
+        var t = when (tier) { 0 -> 5 + Random.nextInt(8); 1 -> 10 + Random.nextInt(12); else -> 18 + Random.nextInt(14) } * (1f + 1.1f * power)
+        if (best > 5) {
+            val anchor = best * when (tier) { 0 -> 0.55f; 1 -> 0.8f; else -> 1.0f }
+            t = min((t + anchor) / 2f, best * 1.1f + 3f)
+        }
         botMin = when (tier) { 0 -> 2.1f; 1 -> 1.7f; else -> 1.35f }
         botRange = when (tier) { 0 -> 1.8f; 1 -> 1.6f; else -> 1.3f }
+        botSpeed = 1f + min(speed, 0.25f) + 0.35f * power
+        botBonus = min(0.25f + bonus, 0.6f)
+        botSkip = skip
+        botShield = shieldPct > 0 && Random.nextInt(100) < shieldPct
+        botBoostLen = 2.5f + boostLen
         startMatch("bot", "a", n)
-        botT = 0f; botNext = 2.5f; botTarget = target; botCaps = 0
+        botT = 0f; botNext = 2.5f; botTarget = max(5, t.toInt()); botCaps = 0
+        botBoostNext = 12f + Random.nextFloat() * 8f
+        botBoostT = boostStart
+        botLevel = if (level <= 0) 1 else (level + Random.nextInt(-6, 7)).coerceIn(1, 600)
+        botSkills = if (skills <= 0) 0 else (skills + Random.nextInt(-1, 2)).coerceIn(0, 37)
+        botTag = 0; botTagT = 0f
+        if (boostStart > 0f) botTagSet(2)
     }
 
     fun report(score: Int, dead: Boolean) {
@@ -853,11 +894,26 @@ object Net {
         if (mid == "bot") {
             oppSeenAge = 0f
             botT += dt
+            if (botTagT > 0f) botTagT -= dt
+            if (botBoostT > 0f) botBoostT -= dt
+            if (!oppDead && botT > botBoostNext) {
+                botBoostT = botBoostLen
+                botBoostNext = botT + 14f + Random.nextFloat() * 8f
+                botTagSet(2)
+            }
             if (!oppDead && botT > botNext) {
                 botCaps++
-                oppScore += if (Random.nextFloat() < 0.25f) 2 else 1
-                botNext = botT + botMin + Random.nextFloat() * botRange
-                if (oppScore >= botTarget) oppDead = true
+                var pts = if (Random.nextFloat() < botBonus) 2 else 1
+                if (botSkip > 0 && Random.nextFloat() < 0.12f) { pts += 2 + botSkip; botTagSet(3, pts) }
+                oppScore += pts
+                var pace = (botMin + Random.nextFloat() * botRange) / botSpeed
+                if (botBoostT > 0f) pace *= 0.5f
+                if (myDead) pace *= 0.3f   // Spieler ist raus: Bot spielt zügig zu Ende
+                botNext = botT + pace
+                if (oppScore >= botTarget) {
+                    if (botShield) { botShield = false; botTarget += 3 + Random.nextInt(4); botTagSet(1) }
+                    else oppDead = true
+                }
             }
         } else if (mid.isNotEmpty()) {
             oppSeenAge += dt
