@@ -336,6 +336,7 @@ object L {
     val UPDATES = a("Updates", "Updates", "Обновления")
     val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
     val CHANGELOG = arrayOf(
+        arrayOf(a("1.5.1", "1.5.1", "1.5.1"), a("Perfekte Landungen repariert (direkt auf den Planeten zielen), dritte Krone wieder erreichbar, Übersetzungen ergänzt", "Perfect landings fixed (aim straight at the planet), third crown reachable again, translations completed", "Идеальные посадки исправлены (целься прямо в планету), третья корона снова доступна, переводы дополнены")),
         arrayOf(a("1.5", "1.5", "1.5"), a("3 neue Modi (Überleben, Sternenregen, Marathon), 7-Tage-Belohnungskalender, Wochenend-Bonus, 10 Skins, 6 Spuren, 2 Songs, 11 Erfolge", "3 new modes (Survival, Star rain, Marathon), 7-day reward calendar, weekend bonus, 10 skins, 6 trails, 2 songs, 11 achievements", "3 новых режима (Выживание, Звёздный дождь, Марафон), календарь наград на 7 дней, бонус выходных, 10 скинов, 6 следов, 2 песни, 11 достижений")),
         arrayOf(a("1.4.1", "1.4.1", "1.4.1"), a("Online-Bots mit Fähigkeiten und Extras (Schild, Boost, Bonuspunkte), immer auf dein Level abgestimmt; Web: PC-Modus mit Vollbild und Tastatur", "Online bots with skills and extras (shield, boost, bonus points), always matched to your level; web: PC mode with fullscreen and keyboard", "Онлайн-боты с навыками и бонусами (щит, ускорение, очки) под твой уровень; веб: режим ПК с полным экраном и клавиатурой")),
         arrayOf(a("1.4", "1.4", "1.4"), a("Riesiger Fähigkeitenbaum mit 37 Knoten, Dimension 9 Sturmfront und 10 Urknall, 600 Level, 10 neue Himmelskörper", "Huge skill tree with 37 nodes, dimension 9 Storm front and 10 Big Bang, 600 levels, 10 new celestial bodies", "Огромное дерево навыков (37 узлов), измерения 9 и 10, 600 уровней, 10 новых небесных тел")),
@@ -429,12 +430,12 @@ object L {
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• 3 neue Modi: Überleben, Sternenregen, Marathon", "• 3 new modes: Survival, Star rain, Marathon", "• 3 новых режима: Выживание, Звёздный дождь, Марафон"),
-        a("• Neuer 7-Tage-Belohnungskalender mit bis zu 1000 Sternen", "• New 7-day reward calendar with up to 1000 stars", "• Новый 7-дневный календарь наград – до 1000 звёзд"),
-        a("• Wochenende: doppelte Sterne für neue Level", "• Weekends: double stars for new levels", "• По выходным: двойные звёзды за новые уровни"),
-        a("• 10 neue Skins mit 5 neuen Formen", "• 10 new skins with 5 new shapes", "• 10 новых скинов и 5 новых форм"),
-        a("• 6 neue Spuren und 2 neue Songs", "• 6 new trails and 2 new songs", "• 6 новых следов и 2 новые песни"),
-        a("• 11 neue Erfolge", "• 11 new achievements", "• 11 новых достижений")
+        a("• Perfekte Landungen funktionieren jetzt endlich!", "• Perfect landings finally work now!", "• Идеальные посадки наконец работают!"),
+        a("• So geht's: direkt auf den Planeten zielen", "• How: aim straight at the planet", "• Как: целься прямо в планету"),
+        a("• Fliegt die Kugel genau auf den Planeten zu, zählt es als PERFEKT", "• If the ball flies right at the planet, it counts as PERFECT", "• Если шар летит прямо на планету – это ИДЕАЛЬНО"),
+        a("• Perfekt-Serien geben bis zu +5 Punkte pro Landung", "• Perfect streaks give up to +5 points per landing", "• Серии идеальных посадок дают до +5 очков"),
+        a("• Dritte Krone im Level wieder erreichbar", "• Third crown in levels reachable again", "• Третья корона в уровнях снова доступна"),
+        a("• Web-PC-Modus: Tastenbeschriftung übersetzt", "• Web PC mode: key labels translated", "• Веб-режим ПК: подписи клавиш переведены")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

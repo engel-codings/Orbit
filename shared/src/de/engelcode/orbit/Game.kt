@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 21
-        const val VERSION_NAME = "1.5.0"
+        const val VERSION_CODE = 22
+        const val VERSION_NAME = "1.5.1"
         const val W = 1000f
 
         // Knopf-Stile

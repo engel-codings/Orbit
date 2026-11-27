@@ -42,6 +42,8 @@ class World(private val gfx: Gfx) {
         const val GRAVITY = 2.6e7f
         const val CAPTURE = 110f
         const val ORBIT_GAP = 50f
+        /** Wie genau gezielt werden muss: Abfluglinie innerhalb dieses Anteils des Planetenradius. */
+        const val PERFECT_AIM = 0.8f
         const val HOLE_KILL = 46f
         const val MAX_PLANETS = 7
         const val MAX_STARS = 16
@@ -226,7 +228,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; starRain = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f; starRadius = 1f; skipBonus = 0
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; starRain = false; launchVx = 0f; launchVy = 0f; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f; starRadius = 1f; skipBonus = 0
         for (w in waves) w.active = false
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
@@ -430,6 +432,10 @@ class World(private val gfx: Gfx) {
     var starExtra = 0f
     /** Mini-Modus Sternenregen: zwischen allen Planeten große Sternenbögen. */
     var starRain = false
+    private var launchX = 0f
+    private var launchY = 0f
+    private var launchVx = 0f
+    private var launchVy = 0f
     var boostExtra = 0f
     fun boost(sec: Float) { boostT = max(boostT, sec) }
     private class Wave { var x = 0f; var y = 0f; var t = 0f; var col = 0; var active = false }
@@ -472,6 +478,7 @@ class World(private val gfx: Gfx) {
         if (dead || won) return false
         vx = -sin(angle) * dir * FLY_SPEED
         vy = cos(angle) * dir * FLY_SPEED
+        launchX = plX; launchY = plY; launchVx = vx; launchVy = vy
         lastPlanet = c
         current = null
         flyTime = 0f
@@ -494,6 +501,8 @@ class World(private val gfx: Gfx) {
         val dx = t.x - plX; val dy = t.y - plY
         val d = sqrt(dx * dx + dy * dy)
         vx = dx / d * FLY_SPEED; vy = dy / d * FLY_SPEED
+        // Umlenken zielt automatisch – das zählt nicht als eigene perfekte Landung
+        launchVx = 0f; launchVy = 0f
         flyTime = 0f
         redirects--
         redirectsUsed++
@@ -722,6 +731,7 @@ class World(private val gfx: Gfx) {
                 plX = w.bx; plY = w.by
                 trailCount = 0
                 wormCool = 0.6f
+                launchX = plX; launchY = plY; launchVx = vx; launchVy = vy
                 flyTime = 0f
                 wormsUsed++
                 burst(plX, plY, Gfx.ORANGE, 20, 350f)
@@ -758,7 +768,12 @@ class World(private val gfx: Gfx) {
         dir = if (rx * vy - ry * vx >= 0f) 1f else -1f
 
         val skipped = (p.order - (lastPlanet?.order ?: p.order) - 1).coerceAtLeast(0)
-        val perfect = d < p.r + 72f
+        // Perfekt = beim Absprung genau auf den Planeten gezielt (gerade Abfluglinie trifft den Planeten).
+        // Früher wurde der Abstand beim Einfangen geprüft – der liegt aber immer am Rand der Fangzone,
+        // daher gab es nie „perfekt“. Die Schwerkraft lenkt kurz vor dem Ziel ohnehin zur Mitte, deshalb zählt die Absprung-Richtung.
+        val lvl = sqrt(launchVx * launchVx + launchVy * launchVy) + 0.001f
+        val perp = kotlin.math.abs((p.x - launchX) * launchVy - (p.y - launchY) * launchVx) / lvl
+        val perfect = (launchVx != 0f || launchVy != 0f) && perp < p.r * PERFECT_AIM
         if (perfect) {
             streak++; perfects++
             if (streak > bestStreak) bestStreak = streak

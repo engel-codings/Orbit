@@ -301,11 +301,11 @@ window.orbitDecodeImage = function (b64, cb) {
 /* PC-Modus: Querformat-Rahmen links/rechts, Vollbild, Tastatur-Hilfe (DE/EN/RU) */
 (function () {
   var T = [
-    { jump: 'Springen', click: 'Springen & Menüs', back: 'Pause / Zurück', fs: 'Vollbild', ctr: 'STEUERUNG', tips: 'TIPPS',
+    { space: 'LEERTASTE', jump: 'Springen', click: 'Springen & Menüs', back: 'Pause / Zurück', fs: 'Vollbild', ctr: 'STEUERUNG', tips: 'TIPPS',
       t1: 'Sammle Sterne und schalte im Fähigkeitenbaum neue Kräfte frei.', t2: 'Online: 1 gegen 1 gegen echte Spieler – oder Bots auf deinem Niveau.', t3: 'PC-Modus lässt sich in den Optionen wieder ausschalten.', btn: 'Vollbild', mouse: 'Maus' },
-    { jump: 'Jump', click: 'Jump & menus', back: 'Pause / back', fs: 'Fullscreen', ctr: 'CONTROLS', tips: 'TIPS',
+    { space: 'SPACE', jump: 'Jump', click: 'Jump & menus', back: 'Pause / back', fs: 'Fullscreen', ctr: 'CONTROLS', tips: 'TIPS',
       t1: 'Collect stars and unlock new powers in the skill tree.', t2: 'Online: 1v1 against real players – or bots at your level.', t3: 'PC mode can be turned off again in the options.', btn: 'Fullscreen', mouse: 'Mouse' },
-    { jump: 'Прыжок', click: 'Прыжок и меню', back: 'Пауза / назад', fs: 'Полный экран', ctr: 'УПРАВЛЕНИЕ', tips: 'СОВЕТЫ',
+    { space: 'ПРОБЕЛ', jump: 'Прыжок', click: 'Прыжок и меню', back: 'Пауза / назад', fs: 'Полный экран', ctr: 'УПРАВЛЕНИЕ', tips: 'СОВЕТЫ',
       t1: 'Собирай звёзды и открывай новые силы в дереве навыков.', t2: 'Онлайн: 1 на 1 против игроков – или ботов твоего уровня.', t3: 'Режим ПК можно выключить в настройках.', btn: 'Полный экран', mouse: 'Мышь' }
   ];
   function fsOn() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
@@ -325,7 +325,7 @@ window.orbitDecodeImage = function (b64, cb) {
     var L = document.getElementById('pcL'), R = document.getElementById('pcR');
     if (on) {
       L.innerHTML = '<div class="pcLogo">ORBIT</div><div class="pcSub">PLANET JUMP</div><div class="pcH">' + t.ctr + '</div>' +
-        '<div class="pcK"><span class="key">␣ SPACE</span><span>' + t.jump + '</span></div>' +
+        '<div class="pcK"><span class="key">␣ ' + t.space + '</span><span>' + t.jump + '</span></div>' +
         '<div class="pcK"><span class="key">ENTER</span><span>' + t.jump + '</span></div>' +
         '<div class="pcK"><span class="key">' + t.mouse + '</span><span>' + t.click + '</span></div>' +
         '<div class="pcK"><span class="key">ESC</span><span>' + t.back + '</span></div>' +
