@@ -226,7 +226,7 @@ class World(private val gfx: Gfx) {
         for (w in worms) w.active = false
         for (r in rings) r.active = false
         for (c in comets) c.active = false
-        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f; starRadius = 1f; skipBonus = 0
+        boostT = 0f; wormCool = 0f; skippedTotal = 0; redirectsUsed = 0; wormsUsed = 0; hazardGap = 1; ghostOrder = -1; combo = 0; bestCombo = 0; zen = false; starRain = false; speedMul = 1f; starExtra = 0f; boostExtra = 0f; flashT = 0f; starRadius = 1f; skipBonus = 0
         for (w in waves) w.active = false
         for (p in particles) p.life = 0f
         shield = false; magnetT = 0f; powerupsTaken = 0
@@ -342,9 +342,9 @@ class World(private val gfx: Gfx) {
                 pw.type = if (rng.nextFloat() < 0.5f) P_SHIELD else P_MAGNET
                 break
             }
-        } else if (roll < 0.72f + starExtra) {
+        } else if (roll < 0.72f + starExtra || starRain) {
             // manchmal ein kleiner Sternenbogen statt einem einzelnen Stern
-            val n = if (rng.nextFloat() < 0.28f) 3 else 1
+            val n = if (starRain) 5 else if (rng.nextFloat() < 0.28f) 3 else 1
             var k = 0
             for (s in stars) if (!s.active && k < n) {
                 s.x = (sx + (k - (n - 1) / 2f) * 70f).coerceIn(50f, W - 50f)
@@ -428,6 +428,8 @@ class World(private val gfx: Gfx) {
     var skipBonus = 0
     var speedMul = 1f
     var starExtra = 0f
+    /** Mini-Modus Sternenregen: zwischen allen Planeten große Sternenbögen. */
+    var starRain = false
     var boostExtra = 0f
     fun boost(sec: Float) { boostT = max(boostT, sec) }
     private class Wave { var x = 0f; var y = 0f; var t = 0f; var col = 0; var active = false }

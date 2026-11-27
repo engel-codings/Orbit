@@ -36,6 +36,8 @@ object Synth {
         Sound.MUSIC4 -> music4()
         Sound.MUSIC5 -> music5()
         Sound.MUSIC6 -> music6()
+        Sound.MUSIC7 -> music7()
+        Sound.MUSIC8 -> music8()
         Sound.EXPLODE -> explode()
         Sound.BOOST -> boost()
         else -> music()
@@ -404,6 +406,64 @@ object Synth {
             val bi = (floor(t / 4.0).toInt()) % 4
             val bt = t % 4.0
             s += sin(TAU * bass[bi] * t) * exp(-bt * 0.6) * 0.05
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Treibender Synthwave („Neonfahrt“). */
+    private fun music7(): FloatArray {
+        val len = 12.8
+        val b = buf(len)
+        val step = 0.2
+        val chords = arrayOf(doubleArrayOf(220.0, 261.63, 329.63), doubleArrayOf(174.61, 220.0, 261.63), doubleArrayOf(261.63, 329.63, 392.0), doubleArrayOf(196.0, 246.94, 293.66))
+        val bassN = doubleArrayOf(55.0, 43.65, 65.41, 49.0)
+        val lead = intArrayOf(0, 2, 4, 2, 7, 4, 2, 0)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val j = floor(t / step).toInt()
+            val dt = t - j * step
+            val bar = (j / 16) % 4
+            var s = 0.0
+            // Bass in Achteln, oktaviert
+            val bf = bassN[bar] * (if (j % 2 == 0) 2.0 else 4.0)
+            s += (sin(TAU * bf * dt) + 0.5 * sin(TAU * bf * 2 * dt)) * exp(-dt * 9) * att(dt, 0.003) * 0.09
+            // weiche Akkordfläche
+            for (f in chords[bar]) s += sin(TAU * f * t) * 0.012 + sin(TAU * f * 1.003 * t) * 0.012
+            // Melodie alle zwei Schritte
+            if (j % 2 == 0) {
+                val ch = chords[bar]
+                val f = ch[lead[(j / 2) % 8] % 3] * (if (lead[(j / 2) % 8] >= 4) 4.0 else 2.0)
+                val d2 = t - j * step
+                s += (sin(TAU * f * d2) + 0.25 * sin(TAU * f * 3 * d2)) * exp(-d2 * 4.5) * att(d2, 0.006) * 0.045
+            }
+            // Kick und Hi-Hat
+            if (j % 4 == 0) s += sin(TAU * (120 - 300 * dt) * dt) * exp(-dt * 14) * 0.24
+            if (j % 2 == 1) s += sin(TAU * 7000 * dt + sin(TAU * 3100 * dt) * 4) * exp(-dt * 60) * 0.025
+            b[i] = s.toFloat()
+        }
+        return b
+    }
+
+    /** Sanfter Walzer im Dreivierteltakt („Sternenwalzer“). */
+    private fun music8(): FloatArray {
+        val beat = 0.5
+        val len = 24 * beat  // 8 Takte à 3 Schläge = 12 s
+        val b = buf(len)
+        val roots = doubleArrayOf(130.81, 110.0, 87.31, 98.0, 130.81, 110.0, 87.31, 98.0)
+        val mel = doubleArrayOf(659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 698.46, 659.25, 587.33,
+            523.25, 659.25, 783.99, 880.0, 1046.5, 880.0, 783.99, 698.46, 659.25, 587.33, 523.25, 523.25)
+        for (i in b.indices) {
+            val t = i / SR.toDouble()
+            val j = floor(t / beat).toInt()
+            val dt = t - j * beat
+            val bar = (j / 3) % 8
+            var s = 0.0
+            val r = roots[bar]
+            if (j % 3 == 0) s += (sin(TAU * r * dt) + 0.3 * sin(TAU * r * 2 * dt)) * exp(-dt * 3) * att(dt, 0.004) * 0.11
+            else for (m in doubleArrayOf(2.0, 2.52, 3.0)) s += sin(TAU * r * m * dt) * exp(-dt * 6) * att(dt, 0.004) * 0.028
+            val f = mel[j % 24]
+            s += (sin(TAU * f * dt) + 0.35 * sin(TAU * f * 2 * dt) + 0.1 * sin(TAU * f * 3 * dt)) * exp(-dt * 3.2) * att(dt, 0.005) * 0.05
             b[i] = s.toFloat()
         }
         return b

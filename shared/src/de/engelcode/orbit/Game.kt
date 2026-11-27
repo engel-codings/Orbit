@@ -22,8 +22,8 @@ import kotlin.random.Random
 class Game(context: Context) : World.Listener, Net.Listener {
 
     companion object {
-        const val VERSION_CODE = 20
-        const val VERSION_NAME = "1.4.1"
+        const val VERSION_CODE = 21
+        const val VERSION_NAME = "1.5.0"
         const val W = 1000f
 
         // Knopf-Stile
@@ -683,8 +683,10 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     private fun endlessTap(tx: Float, y: Float) {
         val mm = ttTop() + 330f + 70f
-        if (y > mm && y < mm + 260f) {
-            val k = ((tx - 40f) / 315f).toInt().coerceIn(0, 2)
+        if (y > mm && y < mm + 260f + 285f) {
+            val row = if (y > mm + 285f) 1 else 0
+            if (row == 0 && y > mm + 260f) return
+            val k = ((tx - 40f) / 315f).toInt().coerceIn(0, 2) + row * 3
             sound.play(Sound.CLICK); startMode(k + 1)
             return
         }
@@ -719,14 +721,16 @@ class Game(context: Context) : World.Listener, Net.Listener {
     private fun drawEndlessContent(c: Canvas) {
         val mm = ttTop() + 330f
         gfx.text(c, L.t(L.MINI_MODES), W / 2f, mm + 45f, 40f, Gfx.ACCENT)
-        for (k in 0 until 3) {
-            val x = 40f + k * 315f; val y = mm + 70f
-            val col = when (k) { 0 -> Gfx.GOLD; 1 -> Gfx.ORANGE; else -> Gfx.GREEN }
+        for (k in 0 until MODE_N) {
+            val x = 40f + (k % 3) * 315f; val y = mm + 70f + (k / 3) * 285f
+            val col = when (k) { 0, 4 -> Gfx.GOLD; 1 -> Gfx.ORANGE; 2 -> Gfx.GREEN; 3 -> Gfx.RED; else -> Gfx.ACCENT }
             gfx.glass(c, x, y, x + 290f, y + 260f, 36f, border = col)
-            gfx.icon(c, when (k) { 0 -> Gfx.I_CROWN; 1 -> Gfx.I_SPEED; else -> Gfx.I_HEART }, x + 145f, y + 50f, 24f, col)
+            gfx.icon(c, when (k) { 0 -> Gfx.I_CROWN; 1, 5 -> Gfx.I_SPEED; 2 -> Gfx.I_HEART; 3 -> Gfx.I_SHIELD; else -> Gfx.I_CROWN }, x + 145f, y + 50f, 24f, col)
+            if (k >= 3) gfx.text(c, L.t(L.NEW_TAG), x + 250f, y + 40f, 20f, Gfx.GOLD, maxW = 70f)
             gfx.text(c, L.t(L.MODE_NAMES[k]), x + 145f, y + 112f, 32f, Color.WHITE, maxW = 260f)
             for ((li, ln) in wrap(L.t(L.MODE_DESC[k]), 24f, 255f).take(2).withIndex()) gfx.text(c, ln, x + 145f, y + 152f + li * 30f, 24f, Gfx.DIM, false, maxW = 265f)
-            if (k < 2 && save.modeBest[k] > 0) gfx.text(c, L.f(L.MODE_RECORD, if (k == 1) fmtTime(save.modeBest[k] / 1000f) else save.modeBest[k].toString()), x + 145f, y + 215f, 24f, Gfx.GOLD, false, maxW = 260f)
+            val idx = when (k) { 0 -> 0; 1 -> 1; 3 -> 3; 4 -> 4; 5 -> 5; else -> -1 }
+            if (idx >= 0 && save.modeBest[idx] > 0) gfx.text(c, L.f(L.MODE_RECORD, when (k) { 1, 5 -> fmtTime(save.modeBest[idx] / 1000f); 4 -> "★ " + save.modeBest[idx]; else -> save.modeBest[idx].toString() }), x + 145f, y + 215f, 24f, Gfx.GOLD, false, maxW = 260f)
         }
         for (d in 0 until Levels.DIMS) {
             val top = 245f + (d / 2) * 285f
@@ -760,18 +764,23 @@ class Game(context: Context) : World.Listener, Net.Listener {
 
     // ===================================================================== Mini-Modi & Fähigkeitenbaum
 
-    private var mode = 0          // 0 normal, 1 Sternenjagd, 2 Sprint, 3 Zen
+    private var mode = 0          // 0 normal, 1 Sternenjagd, 2 Sprint, 3 Zen, 4 Überleben, 5 Sternenregen, 6 Marathon
     private var modeT = 0f
     private var modeStr = ""
     private var modeShown = -1
+    private var survBase = 1f
+    private val MODE_N = 6
 
     private fun startMode(m: Int) {
         mode = m
         startRun(0, 0L, 1)
         mode = m
-        modeT = if (m == 1) 60f else 0f
-        modeShown = -1
-        world.zen = true  // in allen Mini-Modi: kein Sterben, Fokus auf Tempo und Punkte
+        modeT = when (m) { 1 -> 60f; 5 -> 45f; else -> 0f }
+        modeShown = -1; modeTime = 0f
+        // Mini-Modi ohne Sterben – außer Überleben, dort zählt jeder Fehler
+        world.zen = m != 4
+        world.starRain = m == 5
+        survBase = world.speedMul
     }
 
     private fun finishMode() {
@@ -779,15 +788,25 @@ class Game(context: Context) : World.Listener, Net.Listener {
         commitRun()
         val result: String
         val best: Boolean
-        if (m == 1) {
-            best = world.score > save.modeBest[0]
-            if (best) save.modeBest[0] = world.score
-            result = L.f(L.MODE_RESULT_RUSH, world.score)
-        } else {
-            val ms = (runTime * 1000f).toInt()
-            best = save.modeBest[1] == 0 || ms < save.modeBest[1]
-            if (best) save.modeBest[1] = ms
-            result = fmtTime(runTime)
+        val ms = (modeTime * 1000f).toInt()
+        when (m) {
+            1, 4 -> {
+                val k = if (m == 1) 0 else 3
+                best = world.score > save.modeBest[k]
+                if (best) save.modeBest[k] = world.score
+                result = L.f(L.MODE_RESULT_RUSH, world.score)
+            }
+            5 -> {
+                best = world.runStars > save.modeBest[4]
+                if (best) save.modeBest[4] = world.runStars
+                result = L.f(L.MODE_RESULT_STARS, world.runStars)
+            }
+            else -> {
+                val k = if (m == 2) 1 else 5
+                best = save.modeBest[k] == 0 || ms < save.modeBest[k]
+                if (best) save.modeBest[k] = ms
+                result = fmtTime(modeTime)
+            }
         }
         save.flush()
         sound.play(Sound.WIN)
@@ -797,18 +816,36 @@ class Game(context: Context) : World.Listener, Net.Listener {
         showToast(result + if (best) "  ·  " + L.t(L.MODE_NEW) else "")
     }
 
+    private var modeTime = 0f
+
     private fun updateMode(dt: Float) {
-        if (mode == 1) { modeT -= dt; if (modeT <= 0f) finishMode() }
-        else if (mode == 2 && world.captures >= 25) finishMode()
+        if (mode == 0) return
+        modeTime += dt
+        when (mode) {
+            1, 5 -> { modeT -= dt; if (modeT <= 0f) finishMode() }
+            2 -> if (world.captures >= 25) finishMode()
+            6 -> if (world.captures >= 50) finishMode()
+            4 -> world.speedMul = survBase * (1f + 0.6f * min(modeTime, 150f) / 150f)
+        }
     }
 
     private fun drawModeHud(c: Canvas) {
-        if (mode != 1 && mode != 2) return
-        val v = if (mode == 1) modeT.coerceAtLeast(0f) else runTime
-        val ds = (v * 10f).toInt()
-        if (ds != modeShown) { modeShown = ds; modeStr = if (mode == 1) fmtTime(v) else fmtTime(v) + "  ·  " + world.captures + "/25" }
-        gfx.glass(c, W / 2f - 190f, 320f, W / 2f + 190f, 410f, 40f, border = if (mode == 1) Gfx.GOLD else Gfx.ORANGE)
-        gfx.text(c, modeStr, W / 2f, 380f, 40f, if (mode == 1) Gfx.GOLD else Gfx.ORANGE, maxW = 360f)
+        if (mode == 0 || mode == 3) return
+        val v = if (mode == 1 || mode == 5) modeT.coerceAtLeast(0f) else modeTime
+        val ds = (v * 10f).toInt() * 1000 + world.captures + world.runStars * 7
+        if (ds != modeShown) {
+            modeShown = ds
+            modeStr = when (mode) {
+                1 -> fmtTime(v)
+                2 -> fmtTime(v) + "  ·  " + world.captures + "/25"
+                6 -> fmtTime(v) + "  ·  " + world.captures + "/50"
+                5 -> fmtTime(v) + "  ·  ★ " + world.runStars
+                else -> { val m10 = (world.speedMul / survBase * 10f).toInt(); fmtTime(v) + "  ·  x" + (m10 / 10) + "." + (m10 % 10) }
+            }
+        }
+        val col = when (mode) { 1, 5 -> Gfx.GOLD; 4 -> Gfx.RED; else -> Gfx.ORANGE }
+        gfx.glass(c, W / 2f - 210f, 320f, W / 2f + 210f, 410f, 40f, border = col)
+        gfx.text(c, modeStr, W / 2f, 380f, 40f, col, maxW = 390f)
     }
 
     // Fähigkeitenbaum (37 Knoten): x, Eltern, Preis, Typ, Wert – Zeilen ergeben sich aus SK_ROWS
@@ -1139,7 +1176,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             cloudT += dt
             if (cloudT > 20f) {
                 cloudT = 0f
-                val sig = "${save.stars}_${save.levelDone}_${save.totalCrowns}_${save.best}_${save.games}_${save.ownedSkins}_${save.ownedSkins2}_${save.ownedTrails}"
+                val sig = "${save.stars}_${save.levelDone}_${save.totalCrowns}_${save.best}_${save.games}_${save.ownedSkins}_${save.ownedSkins2}_${save.ownedTrails}_${save.ownedTrails2}"
                 if (sig != cloudSig) { cloudSig = sig; Net.pushProfile(); Net.pushSave() }
             }
         }
@@ -1895,8 +1932,8 @@ class Game(context: Context) : World.Listener, Net.Listener {
         sound.vibrate(160)
         commitRun()
         if (versus) { Net.report(world.score, true); go(Screen.VSRESULT); return }
-        if (mode == 1) { finishMode(); return }
-        if (mode == 2) { mode = 0 }
+        if (mode == 1 || mode == 4 || mode == 5) { finishMode(); return }
+        if (mode == 2 || mode == 6) { mode = 0 }
         if (ttCourse >= 0) {
             ttTime += 5f
             showToast(L.t(L.TT_PENALTY))
@@ -1927,7 +1964,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             else { levelTimeStr = L.f(L.TIME_LINE, fmtTime(ms / 1000f), fmtTime(best / 1000f)); levelTimeNew = false }
         } else levelTimeStr = ""
         firstClear = runLevel > save.levelDone
-        levelReward = if (firstClear) Levels.reward(runLevel) else 0
+        levelReward = if (firstClear) Levels.reward(runLevel) * (if (weekend()) 2 else 1) else 0
         if (firstClear) {
             save.levelDone = runLevel
             save.stars += levelReward
@@ -1939,7 +1976,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         perfStr = L.f(L.CRIT_PERFECT, min(world.perfects, goal), goal)
         save.flush()
         runEarned += levelReward
-        earnedStr = "+$runEarned"
+        earnedStr = "+$runEarned" + if (firstClear && weekend()) "  (×2)" else ""
         crownSounds = 0
         winTimer = 1.3f
     }
@@ -2036,10 +2073,15 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (today > save.lastDay && screenTime > 0.4f) {
             pendingDay = today
             pendingStreak = if (today == save.lastDay + 1) save.dayStreak + 1 else 1
-            pendingBonus = 15 + 5 * min(pendingStreak - 1, 7)
-            openDialog(D_DAILY, L.t(L.DAILY_TITLE), arrayOf(L.f(L.DAILY_DAY, pendingStreak), L.f(L.T_PLUS_STARS, pendingBonus, L.stars(pendingBonus)).removeSuffix("!")), L.t(L.CLAIM), null)
+            val cd = (pendingStreak - 1) % 7
+            pendingBonus = DAILY_R[cd]
+            val rew = L.f(L.T_PLUS_STARS, pendingBonus, L.stars(pendingBonus)).removeSuffix("!") + if (cd == 6) "  +  " + L.t(L.DAILY_CHEST) else ""
+            openDialog(D_DAILY, L.t(L.DAILY_TITLE), arrayOf(L.f(L.DAILY_DAY, pendingStreak), "", "", "", rew), L.t(L.CLAIM), null)
         }
     }
+
+    /** Samstag oder Sonntag: doppelte Sterne für neu geschaffte Level. */
+    private fun weekend(): Boolean { val d = ((today() + 3) % 7).toInt(); return d == 5 || d == 6 }
 
     private fun today(): Long {
         val now = Platform.now()
@@ -2097,7 +2139,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
                     Screen.FRIENDS -> shopScroll = clampList(scrollStart - (y - downY), Net.friends.size, FR_TOP, FR_STEP)
                     Screen.SKILLS -> skScroll = (scrollStart + (y - downY)).coerceIn(0f, skMaxScroll())
                     Screen.CHANGELOG -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, logH - H + 300f))
-                    Screen.ENDLESS_SEL -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, ttTop() + 760f - H))
+                    Screen.ENDLESS_SEL -> shopScroll = (scrollStart - (y - downY)).coerceIn(0f, max(0f, ttTop() + 1045f - H))
                     Screen.CHAT, Screen.DM -> shopScroll = (scrollStart + (y - downY)).coerceIn(0f, max(0f, chatTotalH - (H - 330f - 200f)))
                     else -> shopScroll = clampShop(scrollStart - (y - downY))
                 }
@@ -2217,7 +2259,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bLb[2].id -> { lbTab = 2; lbDirty = true; shopScroll = 0f }
             bPause.id -> go(Screen.PAUSED)
             bResume.id -> go(Screen.PLAYING)
-            bRestart.id -> { commitRun(); startRun(runLevel) }
+            bRestart.id -> { commitRun(); if (mode != 0 && !versus) startMode(mode) else startRun(runLevel) }
             bQuit.id -> { commitRun(); leaveRun() }
             bRevive.id -> doRevive()
             bAgain.id -> startRun(runLevel)
@@ -2237,7 +2279,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
             bRow[4].id -> { save.showFps = !save.showFps; save.flush() }
             bRow[5].id -> { save.gfx = (save.gfx + 1) % 3; world.quality = save.gfx; save.flush() }
             bRow[8].id -> Platform.showInstall()
-            bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 6; save.flush(); sound.syncMusic() }
+            bRow[7].id -> { save.musicTrack = (save.musicTrack + 1) % 8; save.flush(); sound.syncMusic() }
             bBgStyle.id -> { save.bgStyle = (save.bgStyle + 1) % 9; save.flush(); world.bgStyle = save.bgStyle }
             bPcMode.id -> { save.pcMode = !save.pcMode; save.flush(); Platform.setPcMode(save.pcMode, L.cur, true); showToast(L.t(if (save.pcMode) L.PC_ON else L.PC_OFF)) }
             bLogSet.id, bSideLog.id -> { shopScroll = 0f; go(Screen.CHANGELOG) }
@@ -2334,8 +2376,14 @@ class Game(context: Context) : World.Listener, Net.Listener {
         }
     }
 
+    /** Belohnungskalender: 7 Tage, danach beginnt die Woche von vorn (die Serie zählt weiter). */
+    private val DAILY_R = intArrayOf(50, 100, 150, 250, 350, 500, 1000)
+    private val dailyStr = Array(7) { DAILY_R[it].toString() }
+
     private fun claimDaily() {
         closeDialog()
+        if ((pendingStreak - 1) % 7 == 6) save.chestReady = min(save.chestReady, Platform.now())
+        save.loginDays++
         save.lastDay = pendingDay
         save.dayStreak = pendingStreak
         if (pendingStreak > save.bestDayStreak) save.bestDayStreak = pendingStreak
@@ -2435,7 +2483,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         save.stars -= price
         when (tab) {
             0 -> { save.grantSkin(i); save.skin = i }
-            1 -> { save.ownedTrails = save.ownedTrails or (1 shl i); save.trail = i }
+            1 -> { save.grantTrail(i); save.trail = i }
             2 -> save.revives = min(Skins.REVIVE_MAX, save.revives + 1)
             4 -> save.upg[i] = min(3, save.upg[i] + 1)
             else -> save.shieldStarts = min(Skins.SHIELD_MAX, save.shieldStarts + 1)
@@ -2495,7 +2543,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         if (y + achScroll < achTop || i !in Achievements.list.indices || x < 40f || x > 960f) return
         if (Achievements.done(i, save) && !Achievements.claimed(i, save)) {
             val a = Achievements.list[i]
-            save.achClaimed = save.achClaimed or (1L shl i)
+            Achievements.claim(i, save)
             save.stars += a.reward
             save.flush()
             buildAch()
@@ -2659,6 +2707,7 @@ class Game(context: Context) : World.Listener, Net.Listener {
         gfx.text(c, "ORBIT", cx, ty, 200f, Color.WHITE)
         gfx.spaced(c, "PLANET JUMP", cx, ty + 70f, 36f, Gfx.ACCENT, 0.5f)
         gfx.text(c, rankStr, cx, ty + 130f, 30f, Gfx.DIM, false, maxW = 860f)
+        if (weekend() && H > 1500f) gfx.text(c, L.t(L.WEEKEND), cx, ty + 175f, 28f, Gfx.GOLD, alpha = (200 + 55 * sin(time * 3f)).toInt(), maxW = 860f)
 
         val pcy = playCY()
         val pulse = sin(time * 3f)
@@ -3345,8 +3394,25 @@ class Game(context: Context) : World.Listener, Net.Listener {
             else gfx.text(c, dlgLines[i], W / 2f, ly, 42f,
                 if (i == dlgLines.size - 1 && dialog == D_DAILY) Gfx.GOLD else Color.WHITE, dialog == D_DAILY, maxW = 780f)
         }
+        if (dialog == D_DAILY) drawDailyTiles(c)
         drawBtn(c, bDlgA)
         if (dlgTwo) drawBtn(c, bDlgB)
+    }
+
+    private fun drawDailyTiles(c: Canvas) {
+        val cur = (pendingStreak - 1) % 7
+        val top = dlgTop + 228f
+        for (d in 0 until 7) {
+            val x = 105f + d * 113f
+            val big = d == 6
+            val col = when { d < cur -> Gfx.GREEN; d == cur -> Gfx.GOLD; else -> Color.WHITE }
+            gfx.glass(c, x, top, x + 103f, top + 150f, 22f, if (d == cur) 255 else 170, border = col)
+            gfx.text(c, levelNum[d + 1], x + 51f, top + 36f, 26f, if (d <= cur) col else Gfx.DIM)
+            if (d < cur) gfx.icon(c, Gfx.I_CHECK, x + 51f, top + 80f, 18f, Gfx.GREEN)
+            else if (big) gfx.icon(c, Gfx.I_CHEST, x + 51f, top + 80f, 20f, if (d == cur) Gfx.GOLD else Gfx.DIM)
+            else gfx.starShape(c, x + 51f, top + 80f, 16f, 0f, if (d == cur) Gfx.GOLD else Gfx.DIM)
+            gfx.text(c, dailyStr[d], x + 51f, top + 132f, 24f, if (d == cur) Gfx.GOLD else Gfx.DIM, maxW = 95f)
+        }
     }
 
     private fun drawToast(c: Canvas) {

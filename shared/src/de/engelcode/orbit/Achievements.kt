@@ -24,6 +24,12 @@ object Achievements {
     private const val SKIPS = 17
     private const val WORMS = 18
     private const val TT = 19
+    private const val SURVIVE = 20
+    private const val RAIN = 21
+    private const val MARATHON = 22
+    private const val LOGIN = 23
+    private const val TRAILS = 24
+    private const val COMBO = 25
 
     class Ach(private val titles: Array<String>, val kind: Int, val goal: Int, val reward: Int) {
         val title: String get() = titles[L.cur]
@@ -91,7 +97,18 @@ object Achievements {
         Ach(n("Sturmjäger", "Storm chaser", "Охотник за бурей"), LEVEL, 510, 1500),
         Ach(n("Herr der Stürme", "Lord of storms", "Повелитель бурь"), LEVEL, 550, 4000),
         Ach(n("Zeuge des Urknalls", "Witness of the Big Bang", "Свидетель Большого взрыва"), LEVEL, 560, 1800),
-        Ach(n("Am Ursprung", "At the origin", "У истока"), LEVEL, 600, 8000)
+        Ach(n("Am Ursprung", "At the origin", "У истока"), LEVEL, 600, 8000),
+        Ach(n("Überlebenskünstler", "Survivor", "Мастер выживания"), SURVIVE, 30, 150),
+        Ach(n("Unkaputtbar", "Unbreakable", "Несокрушимый"), SURVIVE, 80, 400),
+        Ach(n("Sternenregen", "Star shower", "Звёздный дождь"), RAIN, 60, 150),
+        Ach(n("Sternenflut", "Star flood", "Звёздный потоп"), RAIN, 150, 400),
+        Ach(n("Langstreckenpilot", "Long-distance pilot", "Пилот дальних рейсов"), MARATHON, 1, 200),
+        Ach(n("Treuer Pilot", "Loyal pilot", "Верный пилот"), LOGIN, 7, 100),
+        Ach(n("Stammgast", "Regular", "Завсегдатай"), LOGIN, 30, 500),
+        Ach(n("Skin-Legende", "Skin legend", "Легенда скинов"), SKINS, 80, 800),
+        Ach(n("Spurensucher", "Trail seeker", "Следопыт"), TRAILS, 20, 300),
+        Ach(n("Combo-König", "Combo king", "Король комбо"), COMBO, 15, 200),
+        Ach(n("Combo-Gott", "Combo god", "Бог комбо"), COMBO, 30, 500)
     )
 
     private val DESC = arrayOf(
@@ -114,7 +131,13 @@ object Achievements {
         n("Lenke {0}-mal um", "Redirect {0} times", "Смени курс {0} раз"),
         n("Überspringe {0} Planeten", "Skip {0} planets", "Пропусти {0} планет"),
         n("Reise {0}-mal durch Wurmlöcher", "Travel through {0} wormholes", "Пройди через {0} червоточин"),
-        n("Beende {0} Zeitrennen", "Finish {0} time trials", "Заверши {0} гонок на время")
+        n("Beende {0} Zeitrennen", "Finish {0} time trials", "Заверши {0} гонок на время"),
+        n("{0} Punkte im Modus Überleben", "{0} points in Survival mode", "{0} очков в режиме «Выживание»"),
+        n("Sammle {0} Sterne im Sternenregen", "Collect {0} stars in Star Rain", "Собери {0} звёзд в «Звёздном дожде»"),
+        n("Beende einen Marathon", "Finish a marathon", "Заверши марафон"),
+        n("Hol dir an {0} Tagen die Tagesbelohnung", "Claim the daily reward on {0} days", "Забери ежедневную награду {0} дней"),
+        n("Besitze {0} Spuren", "Own {0} trails", "Собери {0} следов"),
+        n("Schaffe eine {0}er-Combo", "Reach a {0} combo", "Сделай комбо из {0}")
     )
     private val FIRST_PLANET = n("Erreiche deinen ersten Planeten", "Reach your first planet", "Достигни первой планеты")
 
@@ -144,11 +167,18 @@ object Achievements {
         SKIPS -> s.skips
         WORMS -> s.worms
         TT -> s.ttDone
+        SURVIVE -> s.modeBest[3]
+        RAIN -> s.modeBest[4]
+        MARATHON -> if (s.modeBest[5] > 0) 1 else 0
+        LOGIN -> s.loginDays
+        TRAILS -> s.ownedTrails.countOneBits() + s.ownedTrails2.countOneBits()
+        COMBO -> s.bestCombo
         else -> (s.playTime / 60f).toInt()
     }
 
     fun done(i: Int, s: Save) = value(list[i], s) >= list[i].goal
-    fun claimed(i: Int, s: Save) = s.achClaimed and (1L shl i) != 0L
+    fun claimed(i: Int, s: Save) = if (i < 64) s.achClaimed and (1L shl i) != 0L else s.achClaimed2 and (1L shl (i - 64)) != 0L
+    fun claim(i: Int, s: Save) { if (i < 64) s.achClaimed = s.achClaimed or (1L shl i) else s.achClaimed2 = s.achClaimed2 or (1L shl (i - 64)) }
 
     fun claimableCount(s: Save): Int {
         var n = 0

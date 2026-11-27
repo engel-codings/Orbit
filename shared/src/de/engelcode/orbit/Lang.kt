@@ -314,10 +314,16 @@ object L {
         a("+5 % Tempo und +15 % Sterne", "+5% speed and +15% stars", "+5 % скорость и +15 % звёзд"))
     val SKILL_REFUND = a("Neuer Fähigkeitenbaum! {0} Sterne erstattet", "New skill tree! {0} stars refunded", "Новое дерево навыков! Возвращено звёзд: {0}")
     val MINI_MODES = a("MINI-MODI", "MINI MODES", "МИНИ-РЕЖИМЫ")
-    val MODE_NAMES = arrayOf(a("Sternenjagd", "Star rush", "Звёздная охота"), a("Sprint 25", "Sprint 25", "Спринт 25"), a("Zen", "Zen", "Дзен"))
+    val MODE_NAMES = arrayOf(a("Sternenjagd", "Star rush", "Звёздная охота"), a("Sprint 25", "Sprint 25", "Спринт 25"), a("Zen", "Zen", "Дзен"),
+        a("Überleben", "Survival", "Выживание"), a("Sternenregen", "Star rain", "Звёздный дождь"), a("Marathon", "Marathon", "Марафон"))
     val MODE_DESC = arrayOf(a("60 Sekunden – so viele Punkte wie möglich", "60 seconds – score as much as you can", "60 секунд – набери максимум очков"),
         a("25 Planeten so schnell wie möglich", "25 planets as fast as possible", "25 планет как можно быстрее"),
-        a("Entspannt, ohne Hindernisse und ohne Sterben", "Relaxed, no hazards and no dying", "Спокойно, без препятствий и без смерти"))
+        a("Entspannt, ohne Hindernisse und ohne Sterben", "Relaxed, no hazards and no dying", "Спокойно, без препятствий и без смерти"),
+        a("Ein Leben – es wird immer schneller", "One life – it keeps getting faster", "Одна жизнь – всё быстрее и быстрее"),
+        a("45 Sekunden – Sterne über Sterne sammeln", "45 seconds – collect stars galore", "45 секунд – собирай море звёзд"),
+        a("50 Planeten so schnell wie möglich", "50 planets as fast as possible", "50 планет как можно быстрее"))
+    val MODE_RESULT_STARS = a("{0} Sterne gesammelt", "{0} stars collected", "Собрано звёзд: {0}")
+    val NEW_TAG = a("NEU", "NEW", "НОВОЕ")
     val MODE_RESULT_RUSH = a("{0} Punkte", "{0} points", "{0} очков")
     val MODE_RECORD = a("Rekord: {0}", "Record: {0}", "Рекорд: {0}")
     val MODE_NEW = a("NEUER REKORD!", "NEW RECORD!", "НОВЫЙ РЕКОРД!")
@@ -330,6 +336,7 @@ object L {
     val UPDATES = a("Updates", "Updates", "Обновления")
     val UPDATES_TITLE = a("UPDATE-LOG", "UPDATE LOG", "ЖУРНАЛ ОБНОВЛЕНИЙ")
     val CHANGELOG = arrayOf(
+        arrayOf(a("1.5", "1.5", "1.5"), a("3 neue Modi (Überleben, Sternenregen, Marathon), 7-Tage-Belohnungskalender, Wochenend-Bonus, 10 Skins, 6 Spuren, 2 Songs, 11 Erfolge", "3 new modes (Survival, Star rain, Marathon), 7-day reward calendar, weekend bonus, 10 skins, 6 trails, 2 songs, 11 achievements", "3 новых режима (Выживание, Звёздный дождь, Марафон), календарь наград на 7 дней, бонус выходных, 10 скинов, 6 следов, 2 песни, 11 достижений")),
         arrayOf(a("1.4.1", "1.4.1", "1.4.1"), a("Online-Bots mit Fähigkeiten und Extras (Schild, Boost, Bonuspunkte), immer auf dein Level abgestimmt; Web: PC-Modus mit Vollbild und Tastatur", "Online bots with skills and extras (shield, boost, bonus points), always matched to your level; web: PC mode with fullscreen and keyboard", "Онлайн-боты с навыками и бонусами (щит, ускорение, очки) под твой уровень; веб: режим ПК с полным экраном и клавиатурой")),
         arrayOf(a("1.4", "1.4", "1.4"), a("Riesiger Fähigkeitenbaum mit 37 Knoten, Dimension 9 Sturmfront und 10 Urknall, 600 Level, 10 neue Himmelskörper", "Huge skill tree with 37 nodes, dimension 9 Storm front and 10 Big Bang, 600 levels, 10 new celestial bodies", "Огромное дерево навыков (37 узлов), измерения 9 и 10, 600 уровней, 10 новых небесных тел")),
         arrayOf(a("1.3", "1.3", "1.3"), a("Clans mit Clan-Code, Mitglieder hinzufügen und Clan-Chat, eigener Spielmodi-Knopf, Menü-Zurück direkt zum Hauptmenü", "Clans with clan code, add members and clan chat, separate game modes button, menu back goes straight home", "Кланы с кодом, добавление участников и чат клана, отдельная кнопка режимов, «назад» сразу в главное меню")),
@@ -383,7 +390,7 @@ object L {
     val ITEM_UPG = a("{0} – Stufe {1}", "{0} – level {1}", "{0} – уровень {1}")
     val MAX = a("MAX", "MAX", "МАКС")
     val ENDLESS_LOCKED = a("Erreiche zuerst Level {0}", "Reach level {0} first", "Сначала дойди до уровня {0}")
-    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"), a("Nebel", "Nebula", "Туманность"), a("Arcade", "Arcade", "Аркада"), a("Galaxie", "Galaxy", "Галактика"), a("Sternenstaub", "Stardust", "Звёздная пыль"))
+    val MUSIC_TRACKS = arrayOf(a("Kosmos", "Cosmos", "Космос"), a("Puls", "Pulse", "Пульс"), a("Nebel", "Nebula", "Туманность"), a("Arcade", "Arcade", "Аркада"), a("Galaxie", "Galaxy", "Галактика"), a("Sternenstaub", "Stardust", "Звёздная пыль"), a("Neonfahrt", "Neon drive", "Неоновая поездка"), a("Sternenwalzer", "Star waltz", "Звёздный вальс"))
     val DIM3_HINT = a("Die Leere: keine Schwerkraft – ziele genau!", "The Void: no gravity – aim precisely!", "Пустота: нет гравитации – целься точно!")
     val DIM2_HINT = a("Spiegelwelt: Planeten stoßen dich ab!", "Mirror world: planets push you away!", "Зеркальный мир: планеты отталкивают тебя!")
 
@@ -417,15 +424,17 @@ object L {
     val RESET_LINE_1 = a("Sterne, Skins, Level, Kronen", "Stars, skins, levels, crowns", "Звёзды, скины, уровни, короны")
     val RESET_LINE_2 = a("und Erfolge werden gelöscht.", "and achievements will be deleted.", "и достижения будут удалены.")
     val DAILY_TITLE = a("Täglicher Bonus", "Daily bonus", "Ежедневный бонус")
+    val WEEKEND = a("★ Wochenend-Bonus: doppelte Sterne für neue Level", "★ Weekend bonus: double stars for new levels", "★ Бонус выходных: двойные звёзды за новые уровни")
+    val DAILY_CHEST = a("Truhe sofort bereit", "chest ready now", "сундук готов сразу")
     val DAILY_DAY = a("Tag {0} in Folge", "Day {0} in a row", "День {0} подряд")
     val NEWS_TITLE = a("Neu in Version {0}", "New in version {0}", "Новое в версии {0}")
     val NEWS = arrayOf(
-        a("• Online-Bots haben jetzt Fähigkeiten und Extras", "• Online bots now have skills and extras", "• Онлайн-боты теперь с навыками и бонусами"),
-        a("• Bots nutzen Schild, Boost und Bonuspunkte", "• Bots use shield, boost and bonus points", "• Боты используют щит, ускорение и бонусные очки"),
-        a("• Bots sind immer auf dein Level und deine Fähigkeiten abgestimmt", "• Bots always match your level and skills", "• Боты всегда под твой уровень и навыки"),
-        a("• Gegen Bots wirkt jetzt auch dein eigener Schild", "• Your own shield now works against bots too", "• Против ботов теперь работает и твой щит"),
-        a("• Web: PC-Modus mit Vollbild, Querformat-Rahmen und Tastatur", "• Web: PC mode with fullscreen, landscape frame and keyboard", "• Веб: режим ПК – полный экран, широкая рамка, клавиатура"),
-        a("• Leertaste, Enter oder Mausklick = springen", "• Space, Enter or mouse click = jump", "• Пробел, Enter или клик мышью = прыжок")
+        a("• 3 neue Modi: Überleben, Sternenregen, Marathon", "• 3 new modes: Survival, Star rain, Marathon", "• 3 новых режима: Выживание, Звёздный дождь, Марафон"),
+        a("• Neuer 7-Tage-Belohnungskalender mit bis zu 1000 Sternen", "• New 7-day reward calendar with up to 1000 stars", "• Новый 7-дневный календарь наград – до 1000 звёзд"),
+        a("• Wochenende: doppelte Sterne für neue Level", "• Weekends: double stars for new levels", "• По выходным: двойные звёзды за новые уровни"),
+        a("• 10 neue Skins mit 5 neuen Formen", "• 10 new skins with 5 new shapes", "• 10 новых скинов и 5 новых форм"),
+        a("• 6 neue Spuren und 2 neue Songs", "• 6 new trails and 2 new songs", "• 6 новых следов и 2 новые песни"),
+        a("• 11 neue Erfolge", "• 11 new achievements", "• 11 новых достижений")
     )
 
     // ------------------------------------------------------------- Missionen & Truhe

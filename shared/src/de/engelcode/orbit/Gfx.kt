@@ -1431,6 +1431,74 @@ class Gfx(context: Context) {
                 circle(c, x, y, 9f * s * (1f + 0.1f * sin(t * 8f)), col)
                 circle(c, x, y, 4.5f * s, sk.color2)
             }
+            Skins.EARTH -> {
+                circle(c, x, y, 14f * s, col)
+                // Kontinente wandern langsam über die Kugel
+                for (k in 0 until 3) {
+                    val ph = ((t * 0.35f + k / 3f) % 1f)
+                    val ox = (ph * 2f - 1f) * 14f * s
+                    val oy = (k - 1) * 6f * s
+                    val vis = 1f - kotlin.math.abs(ph * 2f - 1f)
+                    if (vis > 0.08f) {
+                        fill.color = sk.color2; fill.alpha = (235 * vis).toInt()
+                        rect.set(x + ox - 6f * s * vis, y + oy - 3.5f * s, x + ox + 6f * s * vis, y + oy + 3.5f * s)
+                        c.drawOval(rect, fill)
+                    }
+                }
+                circle(c, x - 4.5f * s, y - 5f * s, 4f * s, Color.WHITE, 90)
+                ring(c, x, y, 16.5f * s, sk.glow, 1.5f * s, 150)
+            }
+            Skins.SPIRAL -> {
+                circle(c, x, y, 7f * s, col)
+                for (arm in 0 until 3) {
+                    var lx = x; var ly = y
+                    for (k in 1..8) {
+                        val a = t * 4f + arm * 2.094f + k * 0.42f
+                        val r = k * 2.4f * s
+                        val nx = x + cos(a) * r; val ny = y + sin(a) * r
+                        seg(c, lx, ly, nx, ny, if (arm == 0) sk.color2 else col, 255 - k * 22, (4.2f - k * 0.35f) * s)
+                        lx = nx; ly = ny
+                    }
+                }
+                circle(c, x, y, 3.5f * s, Color.WHITE, 230)
+            }
+            Skins.HEXAGRAM -> {
+                c.save(); c.translate(x, y)
+                for (tri in 0 until 2) {
+                    c.save(); c.rotate(t * (if (tri == 0) 60f else -60f) + tri * 60f)
+                    stroke.color = if (tri == 0) col else sk.color2; stroke.alpha = 255; stroke.strokeWidth = 3f * s
+                    val r = 17f * s
+                    val ax = 0f; val ay = -r
+                    val bx = r * 0.866f; val by = r * 0.5f
+                    val cx2 = -r * 0.866f; val cy2 = r * 0.5f
+                    c.drawLine(ax, ay, bx, by, stroke); c.drawLine(bx, by, cx2, cy2, stroke); c.drawLine(cx2, cy2, ax, ay, stroke)
+                    c.restore()
+                }
+                c.restore()
+                circle(c, x, y, 6f * s * (1f + 0.15f * sin(t * 5f)), col)
+                circle(c, x, y, 2.5f * s, Color.WHITE)
+            }
+            Skins.MOONS -> {
+                circle(c, x, y, 11f * s, col)
+                circle(c, x - 3.5f * s, y - 3.5f * s, 3f * s, Color.WHITE, 120)
+                for (k in 0 until 3) {
+                    val a = t * (2.2f + k * 0.7f) + k * 2.1f
+                    val r = (17f + k * 4f) * s
+                    circle(c, x + cos(a) * r, y + sin(a) * r * 0.55f, (3.6f - k * 0.6f) * s, if (k == 1) col else sk.color2)
+                }
+            }
+            Skins.SUNBURST -> {
+                c.save(); c.translate(x, y); c.rotate(t * 45f)
+                for (k in 0 until 12) {
+                    c.save(); c.rotate(k * 30f)
+                    val len = (if (k % 2 == 0) 23f else 18f) * s * (1f + 0.12f * sin(t * 6f + k))
+                    seg(c, 0f, -10f * s, 0f, -len, if (k % 2 == 0) col else sk.color2, 230, 2.8f * s)
+                    c.restore()
+                }
+                c.restore()
+                circle(c, x, y, 11f * s, col)
+                circle(c, x, y, 6f * s, Color.WHITE, 220)
+            }
             Skins.CROWN -> {
                 shape(c, crownPath, x, y, 18f * s, sin(t * 3f) * 8f, col)
                 circle(c, x, y - 2f * s, 3.5f * s, RED)
@@ -1543,6 +1611,43 @@ class Gfx(context: Context) {
                     val col = lerpColor(0xFF2EE59D.toInt(), 0xFF7B61FF.toInt(), (sin(t * 2f + i * 0.25f) + 1f) / 2f)
                     seg(c, px, py, x, y, col, (f * 90f).toInt(), 12f + 24f * f)
                     seg(c, px, py, x, y, Color.WHITE, (f * 120f).toInt(), 1.5f + 2f * f)
+                }
+                Skins.T_HELIX -> {
+                    val dx = x - px; val dy = y - py
+                    val len = sqrt(dx * dx + dy * dy) + 0.001f
+                    val o = sin(i * 0.7f - t * 12f) * 11f * f
+                    val ox = -dy / len * o; val oy = dx / len * o
+                    if (i % 2 == 0) {
+                        circle(c, x + ox, y + oy, 2f + 3.5f * f, tr.color, (f * 240f).toInt())
+                        circle(c, x - ox, y - oy, 2f + 3.5f * f, Color.WHITE, (f * 200f).toInt())
+                    }
+                    if (i % 4 == 0) seg(c, x + ox, y + oy, x - ox, y - oy, tr.color, (f * 90f).toInt(), 1.5f)
+                }
+                Skins.T_DIAMONDS -> if (i % 3 == 0) {
+                    c.save(); c.translate(x, y); c.rotate(45f + t * 90f)
+                    val sz = 3f + 6f * f
+                    fill.color = tr.color; fill.alpha = (f * 240f).toInt()
+                    c.drawRect(-sz, -sz, sz, sz, fill)
+                    fill.color = Color.WHITE; fill.alpha = (f * 200f).toInt()
+                    c.drawRect(-sz * 0.4f, -sz * 0.4f, sz * 0.4f, sz * 0.4f, fill)
+                    c.restore()
+                }
+                Skins.T_RINGS -> if (i % 4 == 0) {
+                    ring(c, x, y, 4f + 16f * (1f - f), tr.color, 2f + 2f * f, (f * 230f).toInt())
+                }
+                Skins.T_DASH -> if ((i / 2) % 2 == 0) seg(c, px, py, x, y, tr.color, (f * 240f).toInt(), 3f + 5f * f)
+                Skins.T_TWISTER -> {
+                    val dx = x - px; val dy = y - py
+                    val len = sqrt(dx * dx + dy * dy) + 0.001f
+                    for (k in 0 until 3) {
+                        val o = sin(i * 0.6f - t * 14f + k * 2.094f) * 13f * f
+                        if (i % 2 == 0) circle(c, x - dy / len * o, y + dx / len * o, 1.5f + 3.5f * f, rainbow[(k * 12 + i * 2 + (t * 40f).toInt()) % 36], (f * 230f).toInt())
+                    }
+                }
+                Skins.T_ORBS -> if (i % 3 == 0) {
+                    val pulse = 1f + 0.25f * sin(t * 8f + i)
+                    circle(c, x, y, (4f + 9f * f) * pulse, tr.color, (f * 70f).toInt())
+                    circle(c, x, y, (2f + 4f * f) * pulse, Color.WHITE, (f * 230f).toInt())
                 }
                 Skins.T_MATRIX -> if (i % 2 == 0) {
                     val sz = 3f + 5f * f

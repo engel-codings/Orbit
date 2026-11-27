@@ -45,6 +45,11 @@ object Skins {
     const val BUTTERFLY = 38
     const val RINGPLANET = 39
     const val EMBER = 40
+    const val EARTH = 41
+    const val SPIRAL = 42
+    const val HEXAGRAM = 43
+    const val MOONS = 44
+    const val SUNBURST = 45
 
     // Spur-Stile
     const val T_LINE = 0
@@ -70,6 +75,12 @@ object Skins {
     const val T_DOTS = 20
     const val T_EMBERS = 21
     const val T_AURORA = 22
+    const val T_HELIX = 23
+    const val T_DIAMONDS = 24
+    const val T_RINGS = 25
+    const val T_DASH = 26
+    const val T_TWISTER = 27
+    const val T_ORBS = 28
 
     /**
      * reqLevel / reqCrowns: muss zusätzlich zum Preis erreicht sein.
@@ -112,7 +123,9 @@ object Skins {
         63 to (PK_CAPTURE to 10), 67 to (PK_STARS to 15), 70 to (PK_SHIELD to 30), 74 to (PK_REDIRECT to 2),
         75 to (PK_STARS to 20), 76 to (PK_COMBO to 3), 77 to (PK_CAPTURE to 7), 78 to (PK_MAGNET to 4),
         79 to (PK_SHIELD to 25), 80 to (PK_STARS to 12), 81 to (PK_REDIRECT to 1), 82 to (PK_AIM to 50),
-        83 to (PK_COMBO to 5), 84 to (PK_CAPTURE to 12), 85 to (PK_STARS to 25)
+        83 to (PK_COMBO to 5), 84 to (PK_CAPTURE to 12), 85 to (PK_STARS to 25),
+        86 to (PK_MAGNET to 3), 88 to (PK_AIM to 30), 89 to (PK_SHIELD to 20), 91 to (PK_STARS to 15),
+        93 to (PK_COMBO to 4), 94 to (PK_CAPTURE to 10), 95 to (PK_REDIRECT to 2)
     )
 
     val skins = arrayOf(
@@ -201,7 +214,17 @@ object Skins {
         Skin(n("Adlerauge", "Eagle eye", "Орлиный глаз"), 5200, c(0xFFFFAB40), c(0xFFFF6D00), PRISM, reqLevel = 120),
         Skin(n("Turbo", "Turbo", "Турбо"), 6500, c(0xFFFF1744), c(0xFFFFEA00), EMBER, c(0xFFFFEA00), reqLevel = 150),
         Skin(n("Riesenfang", "Giant catch", "Большой улов"), 8000, c(0xFF64FFDA), c(0xFF1DE9B6), GALAXY, c(0xFF00B8D4), reqCrowns = 500),
-        Skin(n("Sternenkönig", "Star king", "Звёздный король"), 11000, c(0xFFFFD54F), c(0xFFFFFFFF), CROWN, c(0xFFFFD54F), reqCrowns = 800)
+        Skin(n("Sternenkönig", "Star king", "Звёздный король"), 11000, c(0xFFFFD54F), c(0xFFFFFFFF), CROWN, c(0xFFFFD54F), reqCrowns = 800),
+        Skin(n("Erde", "Earth", "Земля"), 1500, c(0xFF2F80ED), c(0xFF4CC9F0), EARTH, c(0xFF2EE59D)),
+        Skin(n("Mars", "Mars", "Марс"), 2200, c(0xFFD9542B), c(0xFFFF7A00), EARTH, c(0xFF8A2A00), reqLevel = 35),
+        Skin(n("Spirale", "Spiral", "Спираль"), 2600, c(0xFF7B61FF), c(0xFF7B61FF), SPIRAL, c(0xFF4CC9F0), reqLevel = 50),
+        Skin(n("Giftspirale", "Toxic spiral", "Ядовитая спираль"), 4600, c(0xFF76FF03), c(0xFF00E676), SPIRAL, c(0xFFFFEA00), reqLevel = 140),
+        Skin(n("Sternsiegel", "Star seal", "Звёздная печать"), 3200, c(0xFFFFD166), c(0xFFFFB703), HEXAGRAM, c(0xFF4CC9F0), reqLevel = 75),
+        Skin(n("Mondtanz", "Moon dance", "Танец лун"), 3800, c(0xFFE8FBFF), c(0xFF7FE7FF), MOONS, c(0xFFFFD166), reqLevel = 95),
+        Skin(n("Trabanten", "Satellites", "Спутники"), 5600, c(0xFFF15BB5), c(0xFFF15BB5), MOONS, c(0xFF2EE59D), reqCrowns = 350),
+        Skin(n("Sonnenstrahl", "Sunbeam", "Солнечный луч"), 4400, c(0xFFFFD54F), c(0xFFFFB300), SUNBURST, c(0xFFFF7A00), reqLevel = 160),
+        Skin(n("Supernova", "Supernova", "Сверхновая"), 9500, c(0xFFFFFFFF), c(0xFFFF1744), SUNBURST, c(0xFFE040FB), reqLevel = 520),
+        Skin(n("Ursprung", "Origin", "Начало"), 0, c(0xFFFFFFFF), c(0xFF64FFDA), HEXAGRAM, c(0xFFE040FB), reqLevel = 600)
     )
 
     val trails = arrayOf(
@@ -236,7 +259,13 @@ object Skins {
         Trail(n("Quantenstaub", "Quantum dust", "Квантовая пыль"), 6000, c(0xFF00E5FF), T_STARDUST, reqLevel = 375),
         Trail(n("Lichtspur", "Light trail", "Световой след"), 7500, c(0xFF76FF03), T_COMET, reqCrowns = 700),
         Trail(n("Pulswelle", "Pulse wave", "Пульсовая волна"), 5500, c(0xFF64FFDA), T_WAVES, reqLevel = 420),
-        Trail(n("Ereignisspur", "Event trail", "След событий"), 7000, c(0xFFFF1744), T_LASER, reqLevel = 470)
+        Trail(n("Ereignisspur", "Event trail", "След событий"), 7000, c(0xFFFF1744), T_LASER, reqLevel = 470),
+        Trail(n("Doppelhelix", "Double helix", "Двойная спираль"), 1900, c(0xFF4CC9F0), T_HELIX, reqLevel = 40),
+        Trail(n("Diamanten", "Diamonds", "Бриллианты"), 2600, c(0xFFBDE8FF), T_DIAMONDS, reqLevel = 80),
+        Trail(n("Ringe", "Rings", "Кольца"), 2100, c(0xFFF15BB5), T_RINGS, reqCrowns = 200),
+        Trail(n("Morse", "Morse", "Морзе"), 900, c(0xFFFFD166), T_DASH),
+        Trail(n("Wirbelsturm", "Twister", "Вихрь"), 5200, 0, T_TWISTER, reqLevel = 230),
+        Trail(n("Lichtkugeln", "Light orbs", "Световые шары"), 6200, c(0xFF64FFDA), T_ORBS, reqLevel = 510)
     )
 
     const val REVIVE_PRICE = 120

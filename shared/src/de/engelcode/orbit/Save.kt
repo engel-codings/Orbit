@@ -6,7 +6,7 @@ import android.content.Context
 class Save(context: Context) {
 
     companion object {
-        private val LONGS = setOf("achClaimedL", "challengeDay", "chestReady", "lastDay", "missionDay", "ownedSkinsL", "ownedSkins2L", "skillTreeL", "wheelDay", "tt0", "tt1", "tt2", "tt3")
+        private val LONGS = setOf("achClaimedL", "achClaimed2L", "challengeDay", "chestReady", "lastDay", "missionDay", "ownedSkinsL", "ownedSkins2L", "skillTreeL", "wheelDay", "tt0", "tt1", "tt2", "tt3")
         /** Datentyp eines gespeicherten Wertes (für den Cloud-Speicher). */
         fun typeOf(k: String, v: String): Char = when {
             k in LONGS -> 'l'
@@ -48,7 +48,10 @@ class Save(context: Context) {
     var skillTreeL: Long = p.getLong("skillTreeL", 0L)
     var bgStyle = p.getInt("bgStyle", 0)
     var pcMode = p.getBoolean("pcMode", false)
-    val modeBest = IntArray(3) { p.getInt("mode$it", 0) }
+    val modeBest = IntArray(6) { p.getInt("mode$it", 0) }
+    var ownedTrails2 = p.getInt("ownedTrails2", 0)
+    var achClaimed2 = p.getLong("achClaimed2L", 0L)
+    var loginDays = p.getInt("loginDays", 0)
     var ownedTrails = p.getInt("ownedTrails", 1)
     var revives = p.getInt("revives", 0)
     var shieldStarts = p.getInt("shieldStarts", 0)
@@ -137,7 +140,8 @@ class Save(context: Context) {
 
     fun ownsSkin(i: Int) = if (i < 64) ownedSkins and (1L shl i) != 0L else ownedSkins2 and (1L shl (i - 64)) != 0L
     fun grantSkin(i: Int) { if (i < 64) ownedSkins = ownedSkins or (1L shl i) else ownedSkins2 = ownedSkins2 or (1L shl (i - 64)) }
-    fun ownsTrail(i: Int) = ownedTrails and (1 shl i) != 0
+    fun ownsTrail(i: Int) = if (i < 32) ownedTrails and (1 shl i) != 0 else ownedTrails2 and (1 shl (i - 32)) != 0
+    fun grantTrail(i: Int) { if (i < 32) ownedTrails = ownedTrails or (1 shl i) else ownedTrails2 = ownedTrails2 or (1 shl (i - 32)) }
     fun skinCount() = ownedSkins.countOneBits() + ownedSkins2.countOneBits()
 
     fun flush() {
@@ -146,7 +150,7 @@ class Save(context: Context) {
         p.edit()
             .putInt("best", best).putInt("stars", stars)
             .putInt("skin", skin).putInt("trail", trail)
-            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("skillTree", skillTree).putLong("skillTreeL", skillTreeL).putInt("bgStyle", bgStyle).putInt("mode0", modeBest[0]).putInt("mode1", modeBest[1]).putInt("mode2", modeBest[2]).putInt("ownedTrails", ownedTrails)
+            .putLong("ownedSkinsL", ownedSkins).putLong("ownedSkins2L", ownedSkins2).putInt("avatar", avatar).putBoolean("photoPub", photoPub).putInt("weekId", weekId).putInt("weekBest", weekBest).putString("lt", levelTimes.entries.joinToString(",") { "${it.key}:${it.value}" }).putInt("bestCombo", bestCombo).putInt("skillTree", skillTree).putLong("skillTreeL", skillTreeL).putInt("bgStyle", bgStyle).putInt("mode0", modeBest[0]).putInt("mode1", modeBest[1]).putInt("mode2", modeBest[2]).putInt("mode3", modeBest[3]).putInt("mode4", modeBest[4]).putInt("mode5", modeBest[5]).putInt("ownedTrails", ownedTrails).putInt("ownedTrails2", ownedTrails2).putLong("achClaimed2L", achClaimed2).putInt("loginDays", loginDays)
             .putInt("lang", lang)
             .putInt("revives", revives).putInt("shieldStarts", shieldStarts)
             .putInt("levelDone", levelDone).putString("crowns", sb.toString())
@@ -177,7 +181,7 @@ class Save(context: Context) {
     /** Setzt alles außer den Einstellungen zurück. */
     fun resetProgress() {
         best = 0; stars = 0; skin = 0; trail = 0
-        ownedSkins = 1L; ownedSkins2 = 0L; ownedTrails = 1; revives = 0; shieldStarts = 0; levelDone = 0
+        ownedSkins = 1L; ownedSkins2 = 0L; ownedTrails = 1; ownedTrails2 = 0; achClaimed2 = 0L; loginDays = 0; for (i in modeBest.indices) modeBest[i] = 0; revives = 0; shieldStarts = 0; levelDone = 0
         for (i in crowns.indices) crowns[i] = 0
         recount()
         achClaimed = 0L
